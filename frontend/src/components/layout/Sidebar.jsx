@@ -20,6 +20,7 @@ const NAV = {
     { to: '/client/messages', label: 'Messages', icon: 'message' },
     { to: '/client/reviews', label: 'Reviews', icon: 'star' },
     { to: '/profile', label: 'Profile', icon: 'user', disabled: false },
+    { to: '/', label: 'Home', icon: 'home', end: true },
   ],
   [ROLES.PROVIDER]: [
     { to: '/provider/dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -98,6 +99,7 @@ export function Sidebar({ onNavigate }) {
               ) : (
                 <NavLink
                   to={item.to}
+                  end={item.end}
                   onClick={onNavigate}
                   className={({ isActive }) =>
                     cn(
