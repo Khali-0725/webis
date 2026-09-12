@@ -30,6 +30,13 @@ const PATHS = {
   flag: 'M5 21V4M5 4h12l-2 4 2 4H5',
   menu: 'M4 7h16M4 12h16M4 17h16',
   close: 'M6 6l12 12M18 6L6 18',
+  zap: 'M13 2L4 14h6l-1 8 9-12h-6l1-8z',
+  thermometer: 'M14 4a2 2 0 00-4 0v9.34a4 4 0 104 0V4z M12 8v6',
+  hammer: 'M15 4l5 5-2.5 2.5L12.5 6.5zM11 8L3 16v4h4l8-8',
+  sparkles:
+    'M12 3l1.8 4.7L18 9.5l-4.2 1.8L12 16l-1.8-4.7L6 9.5l4.2-1.8zM18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z',
+  paintbrush: 'M9 11l6-6 3 3-6 6zM8 12l-3 7c-.4 1 .4 2 1.4 1.6L13 17',
+  home: 'M4 11l8-7 8 7M6 10v10h5v-6h2v6h5V10',
 };
 
 export function Icon({ name, className = 'h-5 w-5', strokeWidth = 1.8 }) {
