@@ -10,6 +10,8 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Authentication business rules.
@@ -59,7 +61,17 @@ class AuthService
             return $user;
         });
 
-        event(new Registered($user));
+        // A mail-provider hiccup must never undo a successful registration -
+        // the account already exists at this point, and the verification
+        // email can always be resent via POST /auth/email/verification-notification.
+        try {
+            event(new Registered($user));
+        } catch (Throwable $e) {
+            Log::warning('Registration succeeded but the verification email failed to send.', [
+                'user_id' => $user->id,
+                'exception' => $e->getMessage(),
+            ]);
+        }
 
         return $user;
     }

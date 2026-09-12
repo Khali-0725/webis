@@ -5,7 +5,9 @@ namespace Tests\Feature\Auth;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -28,6 +30,21 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'Password123',
             'accepted_terms' => true,
         ], $overrides);
+    }
+
+    public function test_registration_succeeds_even_if_the_verification_email_fails_to_send(): void
+    {
+        // Simulates a mail-provider failure (e.g. a rejected send) - the
+        // account must still be created and the request must still succeed.
+        Event::listen(Registered::class, function () {
+            throw new \RuntimeException('Simulated mail provider failure.');
+        });
+
+        $this->postJson('/api/auth/register', $this->payload())
+            ->assertCreated()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('users', ['email' => 'juan@example.com']);
     }
 
     public function test_a_visitor_can_register_as_a_client(): void
