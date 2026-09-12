@@ -1,0 +1,34 @@
+# Dependencies
+/backend/vendor
+/frontend/node_modules
+
+# Environment - never commit real credentials
+.env
+.env.local
+.env.*.local
+/backend/.env
+/frontend/.env
+
+# Build output
+/frontend/dist
+/backend/public/build
+/backend/public/hot
+/backend/public/storage
+
+# Laravel runtime
+/backend/storage/*.key
+/backend/storage/framework/cache/*
+/backend/storage/framework/sessions/*
+/backend/storage/framework/views/*
+/backend/storage/logs/*
+/backend/.phpunit.cache
+/backend/.phpunit.result.cache
+/backend/database/*.sqlite
+
+# Editors / OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+*.log
+

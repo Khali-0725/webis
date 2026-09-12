@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/sanctum/:path*", "destination": "https://REPLACE-WITH-RENDER-BACKEND-URL.onrender.com/sanctum/:path*" },
+    { "source": "/api/:path*", "destination": "https://REPLACE-WITH-RENDER-BACKEND-URL.onrender.com/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
