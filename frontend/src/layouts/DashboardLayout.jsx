@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Icon } from '@/components/ui/Icon';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
+import { ROLES } from '@/constants';
 
 /**
  * The shell used by all three portals: fixed navy sidebar on desktop, a
@@ -11,7 +13,9 @@ import { useAuth } from '@/hooks/useAuth';
  * page title, notification bell and the signed-in user's name.
  */
 export function DashboardLayout({ title }) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const unreadCount = useUnreadCount();
+  const canMessage = role === ROLES.CLIENT || role === ROLES.PROVIDER;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
   const [lastPath, setLastPath] = useState(location.pathname);
@@ -83,13 +87,32 @@ export function DashboardLayout({ title }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="relative rounded-lg p-2 text-navy-700 hover:bg-canvas"
-              aria-label="Notifications"
-            >
-              <Icon name="bell" />
-            </button>
+            {canMessage ? (
+              <Link
+                to={`/${role}/messages`}
+                className="relative rounded-lg p-2 text-navy-700 hover:bg-canvas"
+                aria-label={
+                  unreadCount > 0 ? `Notifications, ${unreadCount} unread message(s)` : 'Notifications'
+                }
+              >
+                <Icon name="bell" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="rounded-lg p-2 text-navy-300"
+                aria-label="No notifications"
+                title="No notifications"
+              >
+                <Icon name="bell" />
+              </button>
+            )}
             <div className="flex items-center gap-2">
               <Avatar
                 initials={user?.initials}

@@ -8,12 +8,34 @@ import { Avatar } from '@/components/ui/Avatar';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { conversationApi } from '@/services/api/conversationApi';
 import { queryKeys } from '@/services/api/queryClient';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/utils/cn';
+import { ROLES } from '@/constants';
+
+const QUICK_REPLIES = {
+  [ROLES.CLIENT]: [
+    'What time will you arrive?',
+    'Is the schedule still available?',
+    'Can we reschedule this booking?',
+    'How much will this cost in total?',
+    "I'm running a few minutes late.",
+    'Thank you, see you then!',
+  ],
+  [ROLES.PROVIDER]: [
+    "I'm on my way, arriving in about 15 minutes.",
+    "I've arrived at the location.",
+    'Could you confirm the exact address or a nearby landmark?',
+    'Sorry, I need to reschedule. Are you free another day?',
+    'The service is complete. Thank you for booking!',
+    'Please check the QR code for payment details.',
+  ],
+};
 
 export default function ConversationThreadPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { role } = useAuth();
   const [body, setBody] = useState('');
   const [confirmPrompt, setConfirmPrompt] = useState(null);
   const [formError, setFormError] = useState(null);
@@ -158,6 +180,24 @@ export default function ConversationThreadPage() {
             </Button>
           </div>
         </Alert>
+      )}
+
+      {QUICK_REPLIES[role]?.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {QUICK_REPLIES[role].map((reply) => (
+            <button
+              key={reply}
+              type="button"
+              onClick={() => {
+                setBody(reply);
+                setConfirmPrompt(null);
+              }}
+              className="rounded-full border border-line bg-white px-3 py-1.5 text-xs text-ink-muted transition-colors hover:border-navy-300 hover:text-ink"
+            >
+              {reply}
+            </button>
+          ))}
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
