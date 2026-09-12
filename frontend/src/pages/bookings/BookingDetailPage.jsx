@@ -9,6 +9,7 @@ import { StarRating } from '@/components/ui/StarRating';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { LocationView } from '@/components/map/LocationView';
 import { bookingApi } from '@/services/api/bookingApi';
+import { conversationApi } from '@/services/api/conversationApi';
 import { paymentApi } from '@/services/api/paymentApi';
 import { reviewApi } from '@/services/api/reviewApi';
 import { queryKeys } from '@/services/api/queryClient';
@@ -408,6 +409,29 @@ export default function BookingDetailPage() {
     onError: (err) => setNotice({ tone: 'error', message: err?.message ?? 'That action failed.' }),
   });
 
+  const messageMutation = useMutation({
+    mutationFn: async () => {
+      if (role === ROLES.CLIENT) {
+        return conversationApi.start({ provider_profile_id: booking.provider.id });
+      }
+
+      // A provider cannot start a conversation (only a client can) - find
+      // the existing thread with this booking's client instead.
+      const conversations = await conversationApi.list();
+      const existing = conversations.find((c) => c.other_participant?.id === booking.client?.id);
+
+      if (!existing) {
+        throw { message: 'This client has not started a conversation with you yet.' };
+      }
+
+      return existing;
+    },
+    onSuccess: (conversation) => {
+      navigate(`/${role}/messages/${conversation.id}`);
+    },
+    onError: (err) => setNotice({ tone: 'error', message: err?.message ?? 'Could not open the conversation.' }),
+  });
+
   if (isPending) {
     return <LoadingState label="Loading booking…" className="mt-10" />;
   }
@@ -536,6 +560,15 @@ export default function BookingDetailPage() {
           {(isClient || isProvider) && canTransitionTo('cancelled') && !showCancelForm && (
             <Button variant="outline" onClick={() => setShowCancelForm(true)}>
               Cancel booking
+            </Button>
+          )}
+          {(isClient || isProvider) && (
+            <Button
+              variant="outline"
+              onClick={() => messageMutation.mutate()}
+              loading={messageMutation.isPending}
+            >
+              Message {isClient ? 'provider' : 'client'}
             </Button>
           )}
           <Button variant="subtle" onClick={() => navigate(backPath)}>
