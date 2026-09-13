@@ -160,6 +160,7 @@ export default function PaymentMethodsPage() {
                   <img
                     src={method.qr_image_url}
                     alt={`${method.type_label} QR code`}
+                    crossOrigin="use-credentials"
                     className="h-16 w-16 rounded-lg border border-line object-cover"
                   />
                 ) : (

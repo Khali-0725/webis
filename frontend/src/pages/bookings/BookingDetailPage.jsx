@@ -185,6 +185,7 @@ function PaymentSection({ booking, isClient, isProvider }) {
                 <img
                   src={payment.payment_method.qr_image_url}
                   alt="Payment QR code"
+                  crossOrigin="use-credentials"
                   className="h-40 w-40 rounded-lg border border-line object-cover"
                 />
               )}
