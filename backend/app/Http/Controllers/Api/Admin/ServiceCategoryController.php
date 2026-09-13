@@ -9,6 +9,7 @@ use App\Http\Resources\ServiceCategoryResource;
 use App\Models\ServiceCategory;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class ServiceCategoryController extends Controller
@@ -27,6 +28,8 @@ class ServiceCategoryController extends Controller
 
         $category = ServiceCategory::create($data);
 
+        Cache::forget('public:service-categories');
+
         return ApiResponse::created(new ServiceCategoryResource($category), 'Category created successfully.');
     }
 
@@ -40,6 +43,8 @@ class ServiceCategoryController extends Controller
 
         $category->update($data);
 
+        Cache::forget('public:service-categories');
+
         return ApiResponse::ok(new ServiceCategoryResource($category), 'Category updated successfully.');
     }
 
@@ -50,6 +55,8 @@ class ServiceCategoryController extends Controller
     public function toggle(ServiceCategory $category): JsonResponse
     {
         $category->update(['is_active' => ! $category->is_active]);
+
+        Cache::forget('public:service-categories');
 
         return ApiResponse::ok(new ServiceCategoryResource($category), $category->is_active
             ? 'Category activated.'
