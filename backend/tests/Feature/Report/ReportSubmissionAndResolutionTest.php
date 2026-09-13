@@ -4,6 +4,7 @@ namespace Tests\Feature\Report;
 
 use App\Enums\ReportReason;
 use App\Enums\ReportStatus;
+use App\Models\Booking;
 use App\Models\Report;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,6 +32,28 @@ class ReportSubmissionAndResolutionTest extends TestCase
             'reporter_id' => $reporter->id,
             'reportable_type' => User::class,
             'reportable_id' => $target->id,
+        ]);
+    }
+
+    public function test_a_provider_can_report_a_client_for_non_payment_on_a_booking(): void
+    {
+        $booking = Booking::factory()->create();
+        $reporter = $booking->providerProfile->user;
+
+        $this->actingAs($reporter)
+            ->postJson('/api/reports', [
+                'reportable_type' => 'booking',
+                'reportable_id' => $booking->id,
+                'reason' => ReportReason::NonPayment->value,
+                'details' => 'Client never paid after the job was done.',
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('reports', [
+            'reporter_id' => $reporter->id,
+            'reportable_type' => Booking::class,
+            'reportable_id' => $booking->id,
+            'reason' => ReportReason::NonPayment->value,
         ]);
     }
 

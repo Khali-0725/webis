@@ -127,6 +127,19 @@ export const SETTLEMENT_METHOD_META = Object.freeze({
 });
 
 /**
+ * @see backend/app/Enums/ReportReason.php
+ */
+export const REPORT_REASON_META = Object.freeze({
+  non_payment: { label: 'Client did not pay' },
+  off_platform_transaction: { label: 'Asked to transact off-platform' },
+  fraud_or_scam: { label: 'Fraud or scam' },
+  inappropriate_content: { label: 'Inappropriate content or behaviour' },
+  poor_service_quality: { label: 'Poor service quality' },
+  impersonation: { label: 'Impersonation / fake account' },
+  other: { label: 'Other' },
+});
+
+/**
  * @see backend/app/Enums/PaymentMethodType.php
  */
 export const PAYMENT_METHOD_TYPE = Object.freeze({
