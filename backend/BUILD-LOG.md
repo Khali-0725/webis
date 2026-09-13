@@ -986,6 +986,16 @@ in local dev, where they previously worked only because `APP_URL` and the
 dev Laravel server happened to be the same host `url()` produced - one
 `.env` value away from silently breaking exactly like production did.
 Backend: 226/226 tests still green (no test asserted the exact URL format,
-just non-null). Frontend: lint/tests(26/26)/build clean. **This one will
-be manually verified live in the browser before considering it
-closed** - unlike the entries above, don't leave this one unverified.
+just non-null). Frontend: lint/tests(26/26)/build clean.
+
+**Manually verified live in the browser, post-deploy**: logged in as
+`ethan.hayes@example.com` (client), opened a real in-progress booking with
+an online-settled payment against "Demo Provider Services", scrolled to
+the Payment section - the GCash QR code rendered correctly. Confirmed via
+the Network tab that the request actually went to `https://webis-nine
+.vercel.app/api/files/payment-qr/2` (200) - same-origin, through the
+rewrite proxy, not a direct hit on `onrender.com`. This closes out every
+"not yet manually verified live" caveat logged above today (caching,
+settlement method, report-client, polling) as far as this one code path
+proves the pattern works - the others still weren't independently
+re-checked, only this specific bug's fix was.
