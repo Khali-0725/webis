@@ -86,14 +86,14 @@ Wrong-folder errors:
 Backend (in `backend`):
 
 ```
-php artisan test                    run the test suite (expect 40 passed)
+php artisan test                    run the test suite (expect 228 passed)
 php artisan migrate:fresh --seed    wipe and rebuild the database
 ```
 
 Frontend (in `frontend`):
 
 ```
-npm run test     run the frontend tests (expect 16 passed)
+npm run test     run the frontend tests (expect 26 passed)
 npm run lint     check code style
 npm run build    production build
 ```
@@ -113,6 +113,12 @@ MySQL is not green in Laragon. Press Start All.
 `SANCTUM_STATEFUL_DOMAINS` in `backend/.env` must contain the exact origin the
 SPA runs on, including the port. Use `localhost` in the browser, not
 `127.0.0.1` — the browser treats them as different sites.
+
+**Avatars, QR codes, or payment-proof images don't load, but everything
+else works**
+The backend (Tab 1) was not running yet when the frontend (Tab 2) started,
+or was restarted after. Restart `npm run dev` in Tab 2 with the backend
+already up in Tab 1 first.
 
 **Port 8000 already in use**
 An older `php artisan serve` is still running. Close that tab, or run

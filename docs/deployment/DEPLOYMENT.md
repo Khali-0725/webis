@@ -21,14 +21,28 @@ Render backend, server-side. The browser only ever talks to the
 session cookie is a normal first-party cookie again. Zero Sanctum/CORS
 architecture changes needed, just this one proxy layer.
 
-## Known limitation, accepted for the testing phase
+## File storage — Backblaze B2 (S3-compatible), not local disk
 
-Render's free tier has no persistent disk. Uploaded files (avatars,
-verification documents, payment proofs) are written to the container's
-local filesystem and **are lost on every redeploy or restart**. This is
-fine for a testing/demo deployment; revisit with a real object-storage
-disk (Render's paid disks, or an S3-compatible bucket) before treating any
-uploaded data as durable.
+Render's free tier has no persistent disk, so uploaded files (avatars,
+verification documents, payment proofs, payment-method QR codes) are
+**not** written to the container's local filesystem — they'd be lost on
+every redeploy or restart. Instead, `WEBIS_UPLOAD_DISK=s3` points Laravel's
+`s3`-driver disk (`config/filesystems.php`) at a free Backblaze B2 bucket
+using B2's S3-compatible API, so uploads durably survive redeploys. See
+the `AWS_*` variables in the Render environment table below — the
+`league/flysystem-aws-s3-v3` Composer package (already in
+`backend/composer.json`) is what makes Laravel's generic `s3` disk driver
+work against a non-AWS S3-compatible endpoint like B2's.
+
+A second, unrelated thing this enables: `ProviderPaymentMethodResource`,
+`PaymentResource`, `UserResource`, `ConversationResource`, and
+`MessageResource` all build their file URLs as a **relative**
+`/api/files/...` path rather than an absolute one — this is what lets the
+browser resolve them against whatever origin actually served the page
+(Vercel's rewrite proxy in production, the Vite dev proxy locally) instead
+of hitting Render directly and losing the session cookie. This is
+independent of which disk driver serves the bytes underneath; don't
+special-case it when adding a new file-serving route.
 
 ---
 
@@ -84,7 +98,14 @@ uploaded data as durable.
    | `MAIL_USERNAME` | *(your Gmail address)* |
    | `MAIL_PASSWORD` | *(your Gmail App Password — see below)* |
    | `MAIL_FROM_ADDRESS` | *(same Gmail address)* |
-   | `WEBIS_UPLOAD_DISK` | `local` |
+   | `WEBIS_UPLOAD_DISK` | `s3` |
+   | `FILESYSTEM_DISK` | `s3` |
+   | `AWS_ACCESS_KEY_ID` | *(Backblaze B2 application key ID)* |
+   | `AWS_SECRET_ACCESS_KEY` | *(Backblaze B2 application key)* |
+   | `AWS_DEFAULT_REGION` | *(B2 region code, e.g. `us-west-002` — shown on the bucket's page)* |
+   | `AWS_BUCKET` | *(your B2 bucket name)* |
+   | `AWS_ENDPOINT` | *(B2's S3-compatible endpoint, e.g. `https://s3.us-west-002.backblazeb2.com`)* |
+   | `AWS_USE_PATH_STYLE_ENDPOINT` | `true` |
 
    `SESSION_SAME_SITE=none` + `SESSION_SECURE_COOKIE=true` is required for
    cross-site cookies at all (even proxied through Vercel, Render itself
@@ -99,7 +120,15 @@ uploaded data as durable.
 5. First deploy will be slow (Docker build + Composer install). Watch the
    logs for `Migrating:` lines to confirm the database connected.
 6. Free tier detail: the service sleeps after ~15 minutes idle; the next
-   request takes 30-50s to wake it up. Normal for a testing deployment.
+   request takes 30-50s to wake it up. Mitigated two ways so it stays warm
+   in practice: `.github/workflows/keep-alive.yml` pings
+   `/api/health` on a `*/10 * * * *` schedule (GitHub's scheduler is
+   best-effort and can drift to every 1-2 hours on a quiet repo, so treat
+   this as a bonus, not the fix), and a free **UptimeRobot** HTTP monitor
+   pinging the same `/api/health` URL every 5 minutes, which is the one
+   that actually keeps the 15-minute idle window from ever being reached.
+   Set one up at [uptimerobot.com](https://uptimerobot.com) if it isn't
+   already configured.
 
 ## 3. Frontend — Vercel
 
