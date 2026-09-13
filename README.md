@@ -6,7 +6,7 @@ WEBIS connects clients in Tanza, Cavite with verified independent service provid
 
 > **Build status — all 12 phases complete.** Backend 228/228 tests, frontend 26/26. Every module from `docs/PHASE-0-REQUIREMENTS-AUDIT.md` is built, tested, and has been running live (see below). Ongoing fixes and small feature additions since the 12-phase plan closed are logged in `backend/BUILD-LOG.md`'s "Post-Phase 12 changes" section, not as new phases.
 
-**Live deployment** (free tier, testing phase — see `docs/deployment/DEPLOYMENT.md` for the full setup): React frontend on Vercel, Laravel API on Render, MySQL on Aiven, uploaded files on Backblaze B2 (S3-compatible). A GitHub Actions workflow plus an external uptime monitor ping the backend periodically so Render's free tier doesn't spin it down between visits.
+**Live deployment** (free tier, testing phase — see `docs/deployment/DEPLOYMENT.md` for the full setup): React frontend on Vercel, Laravel API on Render (Singapore), MySQL-compatible TiDB Cloud Starter (AWS Singapore, same region as the API), uploaded files on Backblaze B2 (S3-compatible). An UptimeRobot monitor on the backend's `/api/health` every 5 minutes keeps Render's free tier from spinning down between visits (a GitHub Actions cron does the same as a best-effort backup).
 
 ---
 
@@ -197,7 +197,7 @@ and pick 8.3 or 8.4, then restart Laragon.
 |---|---|
 | `docs/PHASE-0-REQUIREMENTS-AUDIT.md` | Requirements matrix, thesis contradictions, ERD proposal, API inventory, roadmap |
 | `docs/database/ERD.md` | Entity-relationship diagram |
-| `docs/deployment/DEPLOYMENT.md` | Deploying to Render + Vercel + Aiven + Backblaze B2 for free |
+| `docs/deployment/DEPLOYMENT.md` | Deploying to Render + Vercel + TiDB Cloud + Backblaze B2 for free |
 | `backend/BUILD-LOG.md` | **The authoritative build log** — per-phase decisions, bugs found and fixed, and every change made after the 12-phase plan closed. Architecture conventions, endpoint/request/response shape, and the test plan all live here rather than in separate `docs/` files, which were superseded by this log during the build. |
 
 ---

@@ -1054,3 +1054,63 @@ elsewhere. Frontend only: lint/tests(26/26)/build clean. Not independently
 re-verified live this time (no provider credentials available to this
 session for the account the user was testing with, unlike the earlier
 QR check which used seeded/known accounts) - ask the user to confirm.
+
+### 2026-09-13 (evening) — Backend kept sleeping; DB moved to Singapore
+
+**Sleeping backend — root cause was the monitor's target, not the
+monitor.** User reported the site "always asleep" despite UptimeRobot
+looking fine. Checked the actual state rather than the assumption:
+`curl /api/health` took 26s (cold start) then 4s — so it *was* asleep.
+UptimeRobot's only monitor pointed at `webis-nine.vercel.app` (the
+frontend) — Vercel never sleeps, so it showed 100% up while doing nothing
+for Render. The GitHub Actions `keep-alive.yml` cron (`*/10`) was also
+checked via the Actions API: 8 runs in ~24h, i.e. **every ~2 hours**, not
+every 10 minutes — GitHub's scheduler is best-effort exactly as the docs
+warned. Fix: added an UptimeRobot HTTP monitor on
+`https://webis-f9qa.onrender.com/api/health`, 5-min interval. The Vercel
+monitor was left in place (harmless, 2 of 50 slots). Documented the trap in
+`docs/deployment/DEPLOYMENT.md`.
+
+**DB region migration — the "known, documented gap" above is now closed.**
+Aiven's free tier lets you pick only a geographical *area* (Asia Pacific =
+DigitalOcean Bangalore); Singapore is not available on it at all, so the
+earlier plan of "Aiven Singapore" was never going to work. Moved to **TiDB
+Cloud Starter** (free forever, no card, MySQL wire-compatible) in **AWS
+Singapore (ap-southeast-1)** — same city as Render's Singapore region.
+Cluster `webis-sg`, database `defaultdb` (same name as Aiven's so
+`DB_DATABASE` didn't change). Zero application code changes.
+
+Compatibility audit before committing to it: keyword search is `LIKE`
+(`Public\ServiceController::index`), so the `FULLTEXT` index on
+`services.title,description` from migration `..._000021` is never used —
+stripped that one `FULLTEXT KEY` line from the dump before import (TiDB
+Starter rejects it). No triggers/procedures/updatable views anywhere;
+enum/json/foreign keys/strict `sql_mode`/`ACOS`-`RADIANS` Haversine all
+supported. All 33 tables are `utf8mb4_unicode_ci`. Migration path: fresh
+`mysqldump` from Aiven (`--set-gtid-purged=OFF --single-transaction`,
+`--result-file=` rather than PowerShell `>` which writes UTF-16) →
+`mysql.exe --ssl-mode=REQUIRED -e "source ..."` into TiDB. The import
+"failed" on line 1181 with `Unsupported charset cp850` — that is the final
+`SET CHARACTER_SET_CLIENT=@OLD_...` cleanup line (cp850 = Windows console
+default), after every table and row was already in. Verified row counts in
+TiDB against the dump for 9 tables (users 10, barangays 41, migrations 30,
+messages 10, bookings/payments 5, categories 8, services 2, providers 1):
+exact match. Render env changed: `DB_HOST`/`DB_PORT=4000`/`DB_USERNAME`/
+`DB_PASSWORD`, and `MYSQL_ATTR_SSL_CA=/etc/ssl/certs/ca-certificates.crt`
+(TiDB uses a public CA; the Debian bundle in `php:8.3-cli` covers it). The
+user entered the values themselves — this session was blocked from typing
+into Render's env form, correctly. Removed the now-unused
+`backend/storage/certs/aiven-ca.pem` + its README.
+
+Verified live post-deploy: new instance logged `Nothing to migrate` /
+`Your service is live`, no SQL errors; `/api/services` returned real data;
+and TiDB's `cache` table showed fresh `webis-cache-public:services:*` rows
+written by the app — proof it is reading *and* writing the new DB. Timing
+from the user's machine (includes PH→SG network): `/api/services` uncached
+~0.45s (was ~0.9-1.1s), `/api/service-categories` 0.33s. The remaining
+~0.3s floor is Vercel-proxy + network, not the DB.
+
+**Left for the user:** the Aiven `mysql-webis` service is still running
+untouched as a rollback target. Delete it once satisfied (Aiven free tier
+allows one MySQL service, so it also frees the slot). `webis_backup.sql`
+and `webis_backup_tidb.sql` on the Desktop are the pre-migration dumps.
