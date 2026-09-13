@@ -1,7 +1,8 @@
 # Deploying WEBIS for free (testing phase)
 
-Stack: **Aiven** (MySQL, always-free) + **Render** (Laravel API, free web
-service) + **Vercel** (React SPA, free static hosting). Total cost: ₱0.
+Stack: **TiDB Cloud Starter** (MySQL-compatible, always-free, AWS
+Singapore) + **Render** (Laravel API, free web service, Singapore) +
+**Vercel** (React SPA, free static hosting). Total cost: ₱0.
 
 ## Why this exact stack, and the one non-obvious trick
 
@@ -46,20 +47,45 @@ special-case it when adding a new file-serving route.
 
 ---
 
-## 1. Database — Aiven (MySQL)
+## 1. Database — TiDB Cloud Starter (MySQL-compatible)
 
-1. Sign up at [aiven.io](https://aiven.io) (no credit card needed for the
-   free plan).
-2. Create a new service → **MySQL** → free plan → pick any region close to
-   you.
-3. Once it's provisioned, open the service's **Overview** tab and copy:
-   - Host, Port, Database name (`defaultdb`), User, Password
-   - The **CA Certificate** (download it as `ca.pem`)
-4. Save `ca.pem` into this repo at `backend/storage/certs/aiven-ca.pem`
-   (create the folder). The Dockerfile already copies the whole app
-   directory into the image, so it ships with the container automatically.
-   Don't commit real database credentials anywhere — only this
-   certificate file, which isn't a secret.
+**Put the database in the same region as the Render service.** The
+backend was originally on Aiven's free MySQL, which only offers a
+"geographical area" on the free plan (Asia Pacific = DigitalOcean
+Bangalore) — no Singapore. With Render in Singapore, every query paid a
+Singapore↔Bangalore round trip plus a TLS handshake, and `/api/services`
+sat at ~1s even when warm. Moving to TiDB Cloud Starter in AWS Singapore
+(2026-09-13) roughly halved that with zero code changes.
+
+1. Sign up at [tidbcloud.com](https://tidbcloud.com) (Google/GitHub login,
+   no credit card).
+2. **My TiDB → Create Resource** → plan **Starter** (the default is the
+   paid Essential — change it) → cloud AWS → region **Singapore
+   (ap-southeast-1)** → Create. Free quota: 5 GiB storage, 50M request
+   units/month, 5 instances per org.
+3. In the **SQL Editor**, run
+   `CREATE DATABASE defaultdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
+   (the name only has to match `DB_DATABASE` on Render).
+4. **Overview → Connect** → **Generate Password** (shown once, save it).
+   Host is `gateway01.ap-southeast-1.prod.aws.tidbcloud.com`, port `4000`,
+   user `<prefix>.root`.
+5. No CA file to ship: TiDB Cloud's public endpoint uses a public CA, so
+   `MYSQL_ATTR_SSL_CA` points at the Debian system bundle already inside
+   the `php:8.3-cli` image (see the table below). The old
+   `backend/storage/certs/aiven-ca.pem` is unused.
+
+TiDB compatibility notes for this codebase: keyword search is `LIKE`, not
+`MATCH ... AGAINST`, so the `FULLTEXT` index on `services` is never used —
+strip its `FULLTEXT KEY` line from any mysqldump before importing (TiDB
+Starter rejects it). No triggers, stored procedures, or updatable views
+anywhere. Everything else (enum, json, foreign keys, `ONLY_FULL_GROUP_BY`
+strict mode, Haversine math in `ServiceController`) works unchanged.
+
+Importing an existing dump from Windows: run `mysql.exe` with
+`--ssl-mode=REQUIRED -D defaultdb -e "source C:/path/dump.sql"`. It will
+fail on the very last cleanup line (`SET CHARACTER_SET_CLIENT=@OLD...`,
+"Unsupported charset cp850" — the Windows console's default) *after* all
+tables and rows are already in; that error is harmless.
 
 ## 2. Backend — Render (Web Service, Docker)
 
@@ -68,8 +94,8 @@ special-case it when adding a new file-serving route.
 2. On [render.com](https://render.com), **New → Web Service**, connect
    the repo, set **Root Directory** to `backend`, **Runtime** to
    **Docker** (it will pick up `backend/Dockerfile` automatically).
-3. Under **Environment**, add these variables (values from Aiven for the
-   `DB_*` ones):
+3. Under **Environment**, add these variables (values from TiDB Cloud for
+   the `DB_*` ones):
 
    | Key | Value |
    |---|---|
@@ -86,12 +112,12 @@ special-case it when adding a new file-serving route.
    | `SESSION_SAME_SITE` | `none` |
    | `SESSION_SECURE_COOKIE` | `true` |
    | `DB_CONNECTION` | `mysql` |
-   | `DB_HOST` | *(from Aiven)* |
-   | `DB_PORT` | *(from Aiven, usually not 3306)* |
+   | `DB_HOST` | `gateway01.ap-southeast-1.prod.aws.tidbcloud.com` |
+   | `DB_PORT` | `4000` |
    | `DB_DATABASE` | `defaultdb` |
-   | `DB_USERNAME` | *(from Aiven)* |
-   | `DB_PASSWORD` | *(from Aiven)* |
-   | `MYSQL_ATTR_SSL_CA` | `/app/storage/certs/aiven-ca.pem` |
+   | `DB_USERNAME` | *(from TiDB Cloud, `<prefix>.root`)* |
+   | `DB_PASSWORD` | *(from TiDB Cloud, generated once)* |
+   | `MYSQL_ATTR_SSL_CA` | `/etc/ssl/certs/ca-certificates.crt` |
    | `MAIL_MAILER` | `smtp` |
    | `MAIL_HOST` | `smtp.gmail.com` |
    | `MAIL_PORT` | `587` |
@@ -128,7 +154,11 @@ special-case it when adding a new file-serving route.
    pinging the same `/api/health` URL every 5 minutes, which is the one
    that actually keeps the 15-minute idle window from ever being reached.
    Set one up at [uptimerobot.com](https://uptimerobot.com) if it isn't
-   already configured.
+   already configured. **The monitor must target the Render backend URL
+   (`https://<service>.onrender.com/api/health`), not the Vercel frontend.**
+   A monitor on `*.vercel.app` always reports 100% up (Vercel never sleeps)
+   while doing nothing to keep Render awake — that exact misconfiguration
+   is why the backend kept cold-starting on 2026-09-13.
 
 ## 3. Frontend — Vercel
 
@@ -175,8 +205,8 @@ special-case it when adding a new file-serving route.
   Render, or `vercel.json`'s rewrite destination still has the placeholder
   URL in it.
 - **500 error mentioning SSL on every DB query** — `MYSQL_ATTR_SSL_CA`
-  path wrong, or `aiven-ca.pem` wasn't actually committed/copied into the
-  image. Check the Dockerfile build logs for the file.
+  must be `/etc/ssl/certs/ca-certificates.crt` (the system bundle in the
+  `php:8.3-cli` image); TiDB Cloud rejects non-TLS connections outright.
 - **419 "Page expired" on every POST** — `SANCTUM_STATEFUL_DOMAINS` on
   Render doesn't exactly match the Vercel domain (no `https://`, no
   trailing slash — just the bare host).
