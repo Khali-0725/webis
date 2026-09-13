@@ -169,7 +169,10 @@ function PaymentSection({ booking, isClient, isProvider }) {
               aria-label="Close preview"
               onClick={() => setShowProofPreview(false)}
               onKeyDown={(event) => event.key === 'Escape' && setShowProofPreview(false)}
-              className="fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/80 p-6"
+              // Leaflet's own panes/controls sit at z-index up to 1000
+              // (its zoom buttons are 1000) - a plain z-50 overlay would
+              // render underneath the map on this same page.
+              className="fixed inset-0 z-[1100] flex cursor-zoom-out items-center justify-center bg-black/80 p-6"
             >
               <img
                 src={payment.current_proof.url}
