@@ -1177,6 +1177,8 @@ TiDB's request-unit quota). lint / 26/26 tests / build clean.
 `VITE_PUSHER_APP_KEY`, `VITE_PUSHER_APP_CLUSTER=ap1` (baked at build →
 redeploy). With none of these set, both ends degrade to polling exactly
 as before; the code was pushed before the env was set for that reason.
-Not yet verified live at the time of writing — verify by opening the same
-booking/thread as client and provider in two browsers and confirming the
-other side updates within ~1s of a send / status change / proof upload.
+**Verified live by the user** the same evening after both deploys: chat
+between client and provider updates instantly ("super bilis"). Pusher
+Sandbox limits for reference: 200k messages/day (one per event per
+subscriber - our pushes are 1-2 each), 100 concurrent connections; past
+either, the affected clients just fall back to polling.
