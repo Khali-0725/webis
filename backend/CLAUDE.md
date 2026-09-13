@@ -910,3 +910,24 @@ has none either. Backend: 226/226 tests green (1 new -
 `test_a_provider_can_report_a_client_for_non_payment_on_a_booking`).
 Frontend: lint/tests(26/26)/build all clean. Also not yet manually verified
 live - same caveat as directly above.
+
+**Same day, follow-up — booking/payment pages now poll:** user reported
+that a booking's status/payment change (client submits proof, provider
+starts/completes the job) only ever showed up after a full page refresh.
+Root cause is frontend-only, no backend change: `queryClient.js` sets
+`refetchOnWindowFocus: false` project-wide and nothing else triggers a
+background refetch on its own - `staleTime` alone (30s, also project-wide)
+just controls cache freshness for a *new* mount, it doesn't poll. The
+messaging feature already solved this the same way the audit doc's Q-3
+scope decision intends (no WebSockets/Reverb anywhere in this project):
+`refetchInterval` (5s on `ConversationThreadPage`, 30s on the list/badge).
+Applied the identical pattern to the pages this gap was actually reported
+on: `BookingDetailPage.jsx`'s booking-detail and payment queries now poll
+every 5s (matches the open-thread cadence - this is the "someone is
+actively looking at one live thing" case), and both `client/bookings/
+BookingListPage.jsx` and `provider/bookings/BookingListPage.jsx` poll every
+30s (matches the list/badge cadence). Did not touch `ReviewSection`'s query
+or any other page - out of scope for what was reported, and reviews only
+ever change right after a Completed transition the viewer just caused
+themselves. Frontend only: lint/tests(26/26)/build clean. Not yet manually
+verified live (same caveat as the two entries above).

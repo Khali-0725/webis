@@ -19,6 +19,7 @@ export default function BookingListPage() {
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.bookings.list({ status, page }),
     queryFn: () => bookingApi.list({ ...(status ? { status } : {}), page }),
+    refetchInterval: 30_000,
   });
 
   return (
