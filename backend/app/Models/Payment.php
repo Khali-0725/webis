@@ -8,16 +8,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * One payment per booking (UNIQUE booking_id).
  *
  * VERIFIED means a human reviewed the uploaded proof — nothing here
- * pretends a bank transferred money.
+ * pretends a bank transferred money. Soft-deleted, unlike most of this
+ * codebase (which prefers a status/visibility flag over deletion) - a
+ * financial record is the one thing here that must never actually
+ * disappear, even if something later needs to remove it from normal views.
  */
 class Payment extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'booking_id',
