@@ -1001,3 +1001,32 @@ rewrite proxy, not a direct hit on `onrender.com`. This closes out every
 settlement method, report-client, polling) as far as this one code path
 proves the pattern works - the others still weren't independently
 re-checked, only this specific bug's fix was.
+
+**Same day, follow-up — soft deletes added to `Payment` only, deliberately
+not everywhere.** User asked to add soft deletes to "payment and other
+features," leaving the choice of which ones up to this session. Audited
+every model without `SoftDeletes` (17 of 22) and every actual delete
+pathway in `routes/api.php` first, rather than adding the trait blindly:
+this codebase already has a strong, consistent existing convention of
+never hard-deleting anything meaningful - `ServiceCategory`/`Barangay`/
+`ProviderPaymentMethod` use an `is_active` toggle, `Review` uses
+`is_visible`, `PaymentProof` uses `superseded_at`, and `AuditLog`/
+`BookingStatusHistory`/`ChatViolation`/`Report` are meant to be immutable
+history that must never be hideable at all, soft or otherwise. The
+*entire* API surface has exactly **one** real hard-delete endpoint
+(`Provider\AvailabilityController::destroyException`, deliberately - an
+availability exception is ephemeral calendar data with no audit need).
+Against that backdrop, `Payment` was the one real gap: a financial record
+with **zero** protection against deletion (no status/visibility flag doing
+the job, unlike everything else), and the one the user explicitly named.
+Added `SoftDeletes` to `App\Models\Payment` + migration
+`2026_09_13_000002_add_soft_deletes_to_payments_table`. Nothing currently
+calls `->delete()` on a `Payment` anywhere in the app - this is
+forward protection (e.g. for a future admin "void payment" action or a
+user-deletion cascade), not a fix for an existing bug. Did not touch the
+other 16 models - each already has an equivalent-or-better mechanism for
+its actual use case, and adding an unused `deleted_at` column with no
+caller would be exactly the kind of speculative scaffolding this
+project's own conventions elsewhere argue against. Backend: 228/228 tests
+green (2 new - `PaymentSoftDeleteTest`, both a plain Unit test since this
+needed no HTTP layer to exercise).
