@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/services/api/queryClient';
 import { AppRoutes } from '@/routes';
 import { useAuthBootstrap } from '@/hooks/useAuth';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { Button } from '@/components/ui/Button';
 
 /**
@@ -46,9 +47,13 @@ class ErrorBoundary extends Component {
   }
 }
 
-/** Resolves the session once before the router renders anything protected. */
+/**
+ * Resolves the session once before the router renders anything protected,
+ * then keeps the signed-in user's realtime channel open for the session.
+ */
 function AuthBootstrap({ children }) {
   useAuthBootstrap();
+  useRealtimeSync();
 
   return children;
 }

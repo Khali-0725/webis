@@ -14,6 +14,7 @@ import { paymentApi } from '@/services/api/paymentApi';
 import { reportApi } from '@/services/api/reportApi';
 import { reviewApi } from '@/services/api/reviewApi';
 import { queryKeys } from '@/services/api/queryClient';
+import { POLL_FAST } from '@/services/realtime/echo';
 import { useAuth } from '@/hooks/useAuth';
 import { BOOKING_TRANSITIONS, PAYMENT_STATUS_META, REPORT_REASON_META, ROLES, SETTLEMENT_METHOD_META } from '@/constants';
 
@@ -39,7 +40,7 @@ function PaymentSection({ booking, isClient, isProvider }) {
   const { data: payment, isPending } = useQuery({
     queryKey: queryKeys.payments.forBooking(booking.id),
     queryFn: () => paymentApi.getForBooking(booking.id),
-    refetchInterval: 5_000,
+    refetchInterval: POLL_FAST,
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.payments.forBooking(booking.id) });
@@ -532,7 +533,7 @@ export default function BookingDetailPage() {
   const { data: booking, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.bookings.detail(id),
     queryFn: () => bookingApi.get(id),
-    refetchInterval: 5_000,
+    refetchInterval: POLL_FAST,
   });
 
   // Shares its cache with PaymentSection's own useQuery below (same key) -
@@ -542,7 +543,7 @@ export default function BookingDetailPage() {
     queryKey: queryKeys.payments.forBooking(id),
     queryFn: () => paymentApi.getForBooking(id),
     enabled: Boolean(booking),
-    refetchInterval: 5_000,
+    refetchInterval: POLL_FAST,
   });
 
   const invalidate = () => {

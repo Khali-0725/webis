@@ -6,6 +6,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { conversationApi } from '@/services/api/conversationApi';
 import { queryKeys } from '@/services/api/queryClient';
+import { POLL_SLOW } from '@/services/realtime/echo';
 import { useAuth } from '@/hooks/useAuth';
 import { ROLES } from '@/constants';
 
@@ -16,7 +17,7 @@ export default function ConversationListPage() {
   const { data: conversations = [], isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.conversations.list,
     queryFn: conversationApi.list,
-    refetchInterval: 30_000,
+    refetchInterval: POLL_SLOW,
   });
 
   return (

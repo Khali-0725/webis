@@ -13,6 +13,7 @@ use App\Models\ProviderPaymentMethod;
 use App\Models\Service;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Support\Realtime;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -34,7 +35,7 @@ class BookingService
      */
     public function create(User $client, array $data): Booking
     {
-        return DB::transaction(function () use ($client, $data) {
+        $booking = DB::transaction(function () use ($client, $data) {
             $service = Service::query()
                 ->published()
                 ->active()
@@ -129,6 +130,12 @@ class BookingService
 
             return $booking->fresh(['service.category', 'providerProfile.user', 'location.barangay']);
         });
+
+        // The client's own list refetches off the mutation; the provider is
+        // the one who has to learn about a new request unprompted.
+        Realtime::push([$booking->providerProfile->user_id], 'bookings', ['booking_id' => $booking->id]);
+
+        return $booking;
     }
 
     private function assertLeadTime(string $date, Carbon $startTime): void

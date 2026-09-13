@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\BookingStatusHistory;
 use App\Models\ProviderProfile;
 use App\Models\User;
+use App\Support\Realtime;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,7 +24,7 @@ class BookingStateMachine
 {
     public function transition(Booking $booking, BookingStatus $to, User $actor, ?string $reason = null): Booking
     {
-        return DB::transaction(function () use ($booking, $to, $actor, $reason) {
+        $updated = DB::transaction(function () use ($booking, $to, $actor, $reason) {
             $locked = Booking::whereKey($booking->id)->lockForUpdate()->firstOrFail();
             $from = $locked->status;
 
@@ -76,6 +77,16 @@ class BookingStateMachine
 
             return $locked->fresh();
         });
+
+        // Both sides watch a booking's status; the actor's own screen is
+        // refreshed too, which is harmless and covers a second open tab.
+        Realtime::push(
+            [$updated->client_id, $updated->providerProfile?->user_id],
+            'bookings',
+            ['booking_id' => $updated->id],
+        );
+
+        return $updated;
     }
 
     private function authorizeTransition(Booking $booking, BookingStatus $to, User $actor, ?string $reason): void

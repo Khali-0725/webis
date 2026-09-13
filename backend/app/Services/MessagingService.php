@@ -11,6 +11,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\ProviderProfile;
 use App\Models\User;
+use App\Support\Realtime;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -84,7 +85,7 @@ class MessagingService
             );
         }
 
-        return DB::transaction(function () use ($conversation, $sender, $body, $confirmOverride, $result) {
+        $outcome = DB::transaction(function () use ($conversation, $sender, $body, $confirmOverride, $result) {
             $tier = $result['tier'];
             $escalated = $this->isEscalated($sender);
 
@@ -117,6 +118,16 @@ class MessagingService
 
             return ['status' => 'sent', 'message' => $message];
         });
+
+        if ($outcome['status'] === 'sent') {
+            Realtime::push(
+                [$this->otherParticipantId($conversation, $sender)],
+                'messages',
+                ['conversation_id' => $conversation->id],
+            );
+        }
+
+        return $outcome;
     }
 
     public function markRead(Conversation $conversation, User $reader): void
@@ -133,6 +144,21 @@ class MessagingService
                 $conversation->forceFill(['provider_unread_count' => 0])->save();
             }
         });
+
+        // The other side's thread shows read receipts (read_at), so it is the
+        // one whose view changed here.
+        Realtime::push(
+            [$this->otherParticipantId($conversation, $reader)],
+            'messages',
+            ['conversation_id' => $conversation->id],
+        );
+    }
+
+    private function otherParticipantId(Conversation $conversation, User $user): int
+    {
+        return $conversation->client_id === $user->id
+            ? $conversation->provider_user_id
+            : $conversation->client_id;
     }
 
     public function unreadCountFor(User $user): int

@@ -1114,3 +1114,67 @@ from the user's machine (includes PH→SG network): `/api/services` uncached
 untouched as a rollback target. Delete it once satisfied (Aiven free tier
 allows one MySQL service, so it also frees the slot). `webis_backup.sql`
 and `webis_backup_tidb.sql` on the Desktop are the pre-migration dumps.
+
+### 2026-09-13 (evening) — Realtime pushes via Pusher (supersedes Q-3)
+
+User asked that messages, bookings and payments update "realtime, hindi
+need pa mag-wait ng 20-30 seconds." This deliberately overrides the audit
+doc's Q-3 "polling only" decision (annotated there) — Q-3's objection was
+running a WebSocket daemon, which a hosted broker removes. Chose **Pusher
+Channels** (free Sandbox, `ap1` Singapore) over Reverb: Render free runs
+one `artisan serve` process, a second free Reverb service would sleep too,
+and Vercel's rewrite proxy can't forward WebSockets.
+
+**Backend** (`pusher/pusher-php-server` ^7.3; `config/broadcasting.php`
+published): one generic event `App\Events\UserDataChanged`
+(`ShouldBroadcastNow` — no queue worker on Render, a queued broadcast
+would rot in `jobs`), `broadcastAs('data.changed')`, addressed to
+`private-App.Models.User.{id}` per affected user, payload =
+`{scope, ...ids}` only — never data, so authorization stays solely in the
+policy-guarded API the SPA refetches through. `App\Support\Realtime::push()`
+is the single call site, wraps `broadcast()` in try/catch → `Log::warning`
+so a Pusher outage can never fail a request that already committed. It is
+called **after** each `DB::transaction()` returns (the services were
+restructured from `return DB::transaction(...)` to `$x = DB::transaction
+(...); Realtime::push(...); return $x;`), never inside — a push from
+inside a transaction could announce a write that then rolls back. Wired:
+`MessagingService::send` (recipient only, and only on `status === 'sent'`
+— a warn-tier `requires_confirmation` or a blocked message pushes
+nothing) and `markRead` (the *other* side, whose read receipts changed);
+`BookingService::create` (provider only — the client's list refetches off
+the mutation); `BookingStateMachine::transition` and all three
+`PaymentService` methods (client + provider). Channel auth registered via
+`withBroadcasting(routes/channels.php, ['prefix' => 'api', 'middleware'
+=> ['api', 'auth:sanctum']])` → `POST /api/broadcasting/auth` — the `api`
+prefix is load-bearing (Vercel only proxies `/api/*`; the auth call must
+carry the Sanctum cookie). `routes/channels.php` has exactly one rule:
+own channel only. Non-obvious test detail: the suite's `null` broadcaster
+skips channel authorization entirely, so `RealtimePushTest` switches
+`broadcasting.default` to `pusher` with dummy keys (signs locally, no
+network) *and* re-`require`s `routes/channels.php`, because channels are
+registered on whichever driver was resolved at boot. 233/233 green (5
+new).
+
+**Frontend** (`laravel-echo` ^2.5, `pusher-js` ^8.6):
+`src/services/realtime/echo.js` builds Echo lazily; `realtimeEnabled =
+Boolean(VITE_PUSHER_APP_KEY)`, and the authorizer posts to
+`/broadcasting/auth` through the shared axios `api` instance (cookie +
+XSRF header) rather than pusher-js's own XHR. `useRealtimeSync()` (mounted
+once in `App.jsx`'s `AuthBootstrap`, next to `useAuthBootstrap`) subscribes
+to the user's channel and maps scope → `queryClient.invalidateQueries`
+prefixes: `messages` → `['conversations']`; `bookings` → `['bookings']`;
+`payments` → `['payments']`, `['bookings']`, `['provider','earnings']`. It
+disconnects when `user` becomes null (logout). The six existing
+`refetchInterval`s now read `POLL_FAST` (30s with realtime, else the old
+5s) / `POLL_SLOW` (120s, else 30s) from the same module — polling stays as
+the fallback, just quieter when pushes do the work (also matters for
+TiDB's request-unit quota). lint / 26/26 tests / build clean.
+
+**Env:** Render — `BROADCAST_CONNECTION=pusher`, `PUSHER_APP_ID`,
+`PUSHER_APP_KEY`, `PUSHER_APP_SECRET`, `PUSHER_APP_CLUSTER=ap1`. Vercel —
+`VITE_PUSHER_APP_KEY`, `VITE_PUSHER_APP_CLUSTER=ap1` (baked at build →
+redeploy). With none of these set, both ends degrade to polling exactly
+as before; the code was pushed before the env was set for that reason.
+Not yet verified live at the time of writing — verify by opening the same
+booking/thread as client and provider in two browsers and confirming the
+other side updates within ~1s of a send / status change / proof upload.
