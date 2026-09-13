@@ -808,3 +808,84 @@ There is no Phase 13. If the user returns with "continue," there is no
 next phase to automatically resume — check with them what they want next
 (defense prep, manuscript rewrites reflecting the fixes above, a specific
 new feature, deployment, etc.) rather than assuming a phase number.
+
+## Post-Phase 12 changes
+
+Work done after the 12-phase plan closed. Not phases — logged here for the
+same reason every phase above is logged: so a future session doesn't have
+to re-derive it from a diff.
+
+### 2026-09-13 — Production performance (Render free tier) + cash settlement
+
+**Performance:** the live Render deployment (backend on Render, Singapore
+region; MySQL on Aiven, DigitalOcean Bangalore/`blr` region) was measured
+slow on real page navigation even though the service was awake — `/api/health`
+~0.5s but `/api/services` (3 eager-loaded relations) consistently ~0.9-1s.
+Added `Cache::remember()` to `Public\ServiceController::index()` (60s TTL,
+keyed on the full query string - filters/sort/page all vary it, so no
+manual invalidation) and `Public\ServiceCategoryController::index()` (10min
+TTL, with explicit `Cache::forget()` added to every `Admin\
+ServiceCategoryController` mutation - store/update/toggle - since categories
+change rarely enough that busting on write is simple and worth doing).
+Measured effect was smaller than expected (~1.0-1.1s, not sub-300ms) -
+the real bottleneck is the Aiven DB being in a different region *and* a
+different cloud provider than Render, over the public internet (Aiven
+"Deployment model: Public internet"), paying a full TLS handshake + network
+round trip per query regardless of query complexity. A same-region DB
+migration (Aiven Singapore) was planned but not completed - blocked by
+Aiven's free tier 1-service limit blocking a moment where old+new would
+coexist, and no Singapore option showing on a new free-tier account attempt.
+**Deliberately left as a known, documented gap** — not fixed. A verified
+mysqldump backup of the Bangalore DB exists on the user's machine
+(`webis_backup.sql`, `--set-gtid-purged=OFF`, 33 tables) if the region
+migration is picked up again later.
+
+**Cash settlement option (new feature, user-requested):** clients previously
+had no choice - every booking assumed online QR-proof payment (Phase 7).
+Added `App\Enums\SettlementMethod` (`cash`/`online`), a `payments
+.settlement_method` column (migration `2026_09_13_000001`, default
+`online` - existing/demo rows unaffected), and a required `settlement_method`
+field on `POST /bookings` (`StoreBookingRequest`, client picks it before
+booking, not after). `BookingService::create()` only looks up the
+provider's default `ProviderPaymentMethod` when `online` is chosen: cash
+leaves `provider_payment_method_id` null, and booking online with no
+provider payment method configured is now a 422
+("choose cash instead"), not a silently-null payment method as before.
+
+The real behavior change (this is what the user actually asked for):
+`PaymentService::verify()` now accepts a cash payment straight from
+`Pending` (no proof possible for cash - the provider confirms receipt in
+person) instead of requiring `ProofSubmitted` (still required for online).
+`BookingStateMachine::transition()` gates the `InProgress → Completed` hop
+on `payment->status === Verified` for *both* settlement methods - a job
+cannot be marked done until the provider has confirmed ("did you really
+receive the payment?") receiving it, cash or online. This does not
+contradict Phase 7's confirmed Q-2 decision (payment does not gate
+`Accepted → InProgress`) - Q-2 was scoped to the start of work, this gate is
+on completion, a different hop. Also closed a real gap:
+`PaymentService::submitProof()` now rejects proof submission on a cash
+payment (422) - without this a client could accidentally move a cash
+payment to `ProofSubmitted`, which `verify()`'s cash branch (expects
+`Pending`) would then permanently refuse, soft-locking the booking.
+
+Frontend: `ServiceDetailPage.jsx`'s `BookingRequestForm` gained a required
+Cash/Online radio choice (`SETTLEMENT_METHOD_META` in `constants/index.js`).
+`BookingDetailPage.jsx`'s `PaymentSection` branches its whole payment
+display on `settlement_method` (cash shows no QR/proof-upload UI at all),
+and the provider's "verify" action for both methods now sits behind an
+inline confirm step ("Did you really receive the ₱X payment?" → Yes/Not
+yet) rather than firing on a single click - this is the "did you really
+receive the payment" prompt the user asked for. The "Mark completed"
+button on the same page is now disabled (not hidden - a disabled button
+with a `title` explaining why the provider still sees it exists) until
+`payment.status === 'verified'`.
+
+Backend: 225/225 tests green (7 new: 3 booking-creation cases for cash/
+online/missing-method, 1 state-machine completion gate, 2 payment-verify
+cash cases, 1 cash-proof-rejection case). Frontend: `npm run lint` clean,
+`npm test` 26/26 green (unchanged - no new frontend tests added for this
+UI, same as every prior phase's frontend work relying on the phase-end
+manual verification instead), `npm run build` clean. Not yet manually
+verified end-to-end against the live dev DB via curl/browser (unlike every
+phase above) - the user has not yet exercised the new booking flow
+live; do that before calling this fully done if picked up again.

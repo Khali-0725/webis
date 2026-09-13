@@ -119,6 +119,14 @@ export const PAYMENT_STATUS_META = Object.freeze({
 });
 
 /**
+ * @see backend/app/Enums/SettlementMethod.php
+ */
+export const SETTLEMENT_METHOD_META = Object.freeze({
+  cash: { label: 'Cash', description: 'Pay the provider directly, in person.' },
+  online: { label: 'Online Payment', description: "Pay via the provider's GCash, Maya, bank, or QR Ph." },
+});
+
+/**
  * @see backend/app/Enums/PaymentMethodType.php
  */
 export const PAYMENT_METHOD_TYPE = Object.freeze({

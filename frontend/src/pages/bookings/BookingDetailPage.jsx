@@ -14,7 +14,7 @@ import { paymentApi } from '@/services/api/paymentApi';
 import { reviewApi } from '@/services/api/reviewApi';
 import { queryKeys } from '@/services/api/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { BOOKING_TRANSITIONS, PAYMENT_STATUS_META, ROLES } from '@/constants';
+import { BOOKING_TRANSITIONS, PAYMENT_STATUS_META, ROLES, SETTLEMENT_METHOD_META } from '@/constants';
 
 /**
  * Manual QR-proof settlement (Phase 7) - one section, both audiences: the
@@ -27,6 +27,7 @@ function PaymentSection({ booking, isClient, isProvider }) {
   const [proofFile, setProofFile] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showVerifyConfirm, setShowVerifyConfirm] = useState(false);
   const [notice, setNotice] = useState(null);
 
   const { data: payment, isPending } = useQuery({
@@ -50,7 +51,8 @@ function PaymentSection({ booking, isClient, isProvider }) {
     mutationFn: () => paymentApi.verify(payment.id),
     onSuccess: () => {
       invalidate();
-      setNotice({ tone: 'success', message: 'Payment verified.' });
+      setShowVerifyConfirm(false);
+      setNotice({ tone: 'success', message: 'Payment marked as received. You can now mark this job completed.' });
     },
     onError: (error) => setNotice({ tone: 'error', message: error?.message ?? 'Failed to verify the payment.' }),
   });
@@ -75,6 +77,16 @@ function PaymentSection({ booking, isClient, isProvider }) {
   }
 
   const meta = PAYMENT_STATUS_META[payment.status] ?? { label: payment.status_label, tone: 'neutral' };
+  const settlementMeta = SETTLEMENT_METHOD_META[payment.settlement_method];
+  const isCash = payment.settlement_method === 'cash';
+
+  // Cash has no proof to submit - the provider confirms straight from
+  // Pending. Online still requires the client's proof first.
+  const canConfirmReceipt = isProvider && (
+    (isCash && payment.status === 'pending')
+    || (!isCash && payment.status === 'proof_submitted')
+  );
+  const canReject = isProvider && !isCash && payment.status === 'proof_submitted';
 
   const handleSubmitProof = (event) => {
     event.preventDefault();
@@ -124,7 +136,19 @@ function PaymentSection({ booking, isClient, isProvider }) {
         </div>
 
         <div>
-          {!payment.payment_method && (
+          <p className="text-xs text-ink-muted">Payment method</p>
+          <p className="mb-2 text-sm font-medium text-ink">{settlementMeta?.label ?? payment.settlement_method_label}</p>
+
+          {isCash && (
+            <p className="text-sm text-ink-muted">
+              This booking is settled in cash, paid directly to the provider.
+              {isProvider
+                ? ' Confirm below once you have actually received it.'
+                : ' Have the amount ready for the provider.'}
+            </p>
+          )}
+
+          {!isCash && !payment.payment_method && (
             <p className="text-sm text-ink-muted">
               {isClient
                 ? 'The provider’s payment details appear here once they accept this booking.'
@@ -132,7 +156,7 @@ function PaymentSection({ booking, isClient, isProvider }) {
             </p>
           )}
 
-          {payment.payment_method && (
+          {!isCash && payment.payment_method && (
             <div className="space-y-2">
               <p className="text-xs text-ink-muted">Pay via {payment.payment_method.type_label}</p>
               {payment.payment_method.qr_image_url && (
@@ -154,7 +178,7 @@ function PaymentSection({ booking, isClient, isProvider }) {
         </div>
       </div>
 
-      {isClient && payment.payment_method && ['pending', 'rejected'].includes(payment.status) && (
+      {isClient && !isCash && payment.payment_method && ['pending', 'rejected'].includes(payment.status) && (
         <form onSubmit={handleSubmitProof} className="mt-5 space-y-3 border-t border-line pt-4">
           <p className="text-sm font-medium text-ink">Submit your payment proof</p>
           <input
@@ -176,18 +200,43 @@ function PaymentSection({ booking, isClient, isProvider }) {
         </form>
       )}
 
-      {isProvider && payment.status === 'proof_submitted' && (
+      {(canConfirmReceipt || canReject) && (
         <div className="mt-5 space-y-3 border-t border-line pt-4">
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => verifyMutation.mutate()} loading={verifyMutation.isPending}>
-              Verify payment
-            </Button>
-            {!showRejectForm && (
-              <Button variant="outline" onClick={() => setShowRejectForm(true)}>
-                Reject payment
-              </Button>
-            )}
-          </div>
+          {!showVerifyConfirm && (
+            <div className="flex flex-wrap gap-2">
+              {canConfirmReceipt && (
+                <Button onClick={() => setShowVerifyConfirm(true)}>
+                  {isCash ? 'Confirm cash received' : 'Verify payment'}
+                </Button>
+              )}
+              {canReject && !showRejectForm && (
+                <Button variant="outline" onClick={() => setShowRejectForm(true)}>
+                  Reject payment
+                </Button>
+              )}
+            </div>
+          )}
+
+          {showVerifyConfirm && (
+            <div className="space-y-2 rounded-lg bg-slate-50 p-3">
+              <p className="text-sm font-medium text-ink">
+                Did you really receive the {isCash ? 'cash' : 'online'} payment
+                {payment.amount != null ? ` of ₱${payment.amount}` : ''}?
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  loading={verifyMutation.isPending}
+                  onClick={() => verifyMutation.mutate()}
+                >
+                  Yes, I received it
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setShowVerifyConfirm(false)}>
+                  Not yet
+                </Button>
+              </div>
+            </div>
+          )}
 
           {showRejectForm && (
             <div className="space-y-2">
@@ -386,6 +435,15 @@ export default function BookingDetailPage() {
     queryFn: () => bookingApi.get(id),
   });
 
+  // Shares its cache with PaymentSection's own useQuery below (same key) -
+  // only fetched once - so the "Mark completed" gate stays in sync with
+  // whatever PaymentSection just did (submit proof / verify / reject).
+  const { data: payment } = useQuery({
+    queryKey: queryKeys.payments.forBooking(id),
+    queryFn: () => paymentApi.getForBooking(id),
+    enabled: Boolean(booking),
+  });
+
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.bookings.detail(id) });
     queryClient.invalidateQueries({ queryKey: ['bookings'] });
@@ -549,11 +607,16 @@ export default function BookingDetailPage() {
               Start job
             </Button>
           )}
-          {isProvider && canTransitionTo('completed') && (
+          {isProvider && canTransitionTo('completed') && payment?.status === 'verified' && (
             <Button
               onClick={() => actionMutation.mutate({ action: 'status', payload: 'completed' })}
               loading={actionMutation.isPending}
             >
+              Mark completed
+            </Button>
+          )}
+          {isProvider && canTransitionTo('completed') && payment && payment.status !== 'verified' && (
+            <Button disabled title="Confirm you received the payment (see the Payment section below) before completing this job.">
               Mark completed
             </Button>
           )}

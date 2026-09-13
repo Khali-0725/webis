@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PaymentStatus;
+use App\Enums\SettlementMethod;
 use App\Exceptions\DomainException;
 use App\Models\Payment;
 use App\Models\PaymentProof;
@@ -25,6 +26,10 @@ class PaymentService
 
             if ($locked->status->isSettled()) {
                 throw DomainException::conflict('This payment has already been settled and can no longer be changed.');
+            }
+
+            if ($locked->settlement_method === SettlementMethod::Cash) {
+                throw DomainException::unprocessable('This booking is settled in cash - no proof is needed.');
             }
 
             $locked->proofs()->whereNull('superseded_at')->update(['superseded_at' => now()]);
@@ -58,8 +63,19 @@ class PaymentService
         return DB::transaction(function () use ($payment, $actor) {
             $locked = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->status !== PaymentStatus::ProofSubmitted) {
-                throw DomainException::conflict('Only a payment with a submitted proof can be verified.');
+            // Cash never has a proof to submit - the provider confirms
+            // receipt directly from Pending. Online still requires the
+            // client's proof to have been submitted first.
+            $requiredStatus = $locked->settlement_method === SettlementMethod::Cash
+                ? PaymentStatus::Pending
+                : PaymentStatus::ProofSubmitted;
+
+            if ($locked->status !== $requiredStatus) {
+                throw DomainException::conflict(
+                    $locked->settlement_method === SettlementMethod::Cash
+                        ? 'Only a pending cash payment can be verified.'
+                        : 'Only a payment with a submitted proof can be verified.'
+                );
             }
 
             $locked->forceFill([

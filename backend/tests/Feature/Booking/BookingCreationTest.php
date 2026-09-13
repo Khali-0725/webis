@@ -3,7 +3,9 @@
 namespace Tests\Feature\Booking;
 
 use App\Models\Barangay;
+use App\Models\Payment;
 use App\Models\ProviderAvailabilityRule;
+use App\Models\ProviderPaymentMethod;
 use App\Models\ProviderProfile;
 use App\Models\Service;
 use App\Models\User;
@@ -53,6 +55,7 @@ class BookingCreationTest extends TestCase
             'address_line' => '123 Test Street',
             'latitude' => 14.3,
             'longitude' => 120.85,
+            'settlement_method' => 'cash',
         ];
     }
 
@@ -81,6 +84,75 @@ class BookingCreationTest extends TestCase
         ]);
         $this->assertDatabaseCount('booking_locations', 1);
         $this->assertDatabaseCount('booking_status_histories', 1);
+    }
+
+    public function test_client_can_book_with_cash_settlement_without_a_provider_payment_method(): void
+    {
+        [, $profile, $service] = $this->verifiedProviderWithService();
+        $client = User::factory()->client()->create();
+
+        $date = $this->futureDateOnWeekday(3);
+        ProviderAvailabilityRule::factory()->create([
+            'provider_profile_id' => $profile->id,
+            'day_of_week' => $date->dayOfWeek,
+            'start_time' => '08:00',
+            'end_time' => '17:00',
+        ]);
+
+        $payload = $this->bookingPayload($service, $date, '10:00');
+        $payload['settlement_method'] = 'cash';
+
+        $response = $this->actingAs($client)->postJson('/api/bookings', $payload)->assertStatus(201);
+
+        $payment = Payment::where('booking_id', $response->json('data.id'))->firstOrFail();
+        $this->assertSame('cash', $payment->settlement_method->value);
+        $this->assertNull($payment->provider_payment_method_id);
+    }
+
+    public function test_client_can_book_with_online_settlement_when_provider_has_a_payment_method(): void
+    {
+        [, $profile, $service] = $this->verifiedProviderWithService();
+        $client = User::factory()->client()->create();
+        $method = ProviderPaymentMethod::factory()->create(['provider_profile_id' => $profile->id]);
+
+        $date = $this->futureDateOnWeekday(3);
+        ProviderAvailabilityRule::factory()->create([
+            'provider_profile_id' => $profile->id,
+            'day_of_week' => $date->dayOfWeek,
+            'start_time' => '08:00',
+            'end_time' => '17:00',
+        ]);
+
+        $payload = $this->bookingPayload($service, $date, '10:00');
+        $payload['settlement_method'] = 'online';
+
+        $response = $this->actingAs($client)->postJson('/api/bookings', $payload)->assertStatus(201);
+
+        $payment = Payment::where('booking_id', $response->json('data.id'))->firstOrFail();
+        $this->assertSame('online', $payment->settlement_method->value);
+        $this->assertSame($method->id, $payment->provider_payment_method_id);
+    }
+
+    public function test_booking_online_without_a_configured_provider_payment_method_is_rejected(): void
+    {
+        [, $profile, $service] = $this->verifiedProviderWithService();
+        $client = User::factory()->client()->create();
+        // No ProviderPaymentMethod created for this provider.
+
+        $date = $this->futureDateOnWeekday(3);
+        ProviderAvailabilityRule::factory()->create([
+            'provider_profile_id' => $profile->id,
+            'day_of_week' => $date->dayOfWeek,
+            'start_time' => '08:00',
+            'end_time' => '17:00',
+        ]);
+
+        $payload = $this->bookingPayload($service, $date, '10:00');
+        $payload['settlement_method'] = 'online';
+
+        $this->actingAs($client)->postJson('/api/bookings', $payload)->assertStatus(422);
+
+        $this->assertDatabaseCount('bookings', 0);
     }
 
     public function test_double_booking_the_same_slot_is_rejected(): void

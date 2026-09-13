@@ -27,6 +27,8 @@ class PaymentResource extends JsonResource
             'reference_number' => $this->reference_number,
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
+            'settlement_method' => $this->settlement_method->value,
+            'settlement_method_label' => $this->settlement_method->label(),
             'rejection_reason' => $this->rejection_reason,
             'verified_at' => $this->verified_at?->toIso8601String(),
             'payment_method' => $showPaymentMethod

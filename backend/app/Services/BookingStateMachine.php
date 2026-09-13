@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\BookingStatus;
+use App\Enums\PaymentStatus;
 use App\Exceptions\DomainException;
 use App\Models\Booking;
 use App\Models\BookingStatusHistory;
@@ -31,6 +32,15 @@ class BookingStateMachine
             }
 
             $this->authorizeTransition($locked, $to, $actor, $reason);
+
+            // The provider must have already confirmed receiving the
+            // payment (cash confirmed directly, online confirmed after the
+            // client's proof) before a job can be marked done.
+            if ($to === BookingStatus::Completed && $locked->payment?->status !== PaymentStatus::Verified) {
+                throw DomainException::unprocessable(
+                    'Payment must be confirmed as received before this booking can be marked as completed.'
+                );
+            }
 
             $attributes = ['status' => $to];
 
