@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PaymentStatus;
+use App\Enums\SettlementMethod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +24,7 @@ class Payment extends Model
         'client_id',
         'provider_profile_id',
         'provider_payment_method_id',
+        'settlement_method',
         'amount',
         'currency',
         'reference_number',
@@ -33,6 +35,7 @@ class Payment extends Model
         return [
             'amount' => 'decimal:2',
             'status' => PaymentStatus::class,
+            'settlement_method' => SettlementMethod::class,
             'verified_at' => 'datetime',
         ];
     }

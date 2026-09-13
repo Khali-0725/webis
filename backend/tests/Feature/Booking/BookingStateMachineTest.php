@@ -3,6 +3,7 @@
 namespace Tests\Feature\Booking;
 
 use App\Models\Booking;
+use App\Models\Payment;
 use App\Models\ProviderProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,8 +90,13 @@ class BookingStateMachineTest extends TestCase
 
     public function test_provider_can_progress_an_accepted_booking_to_completed(): void
     {
-        [, $providerUser, $booking] = $this->pendingBooking();
+        [$client, $providerUser, $booking] = $this->pendingBooking();
         $booking->forceFill(['status' => \App\Enums\BookingStatus::Accepted, 'accepted_at' => now()])->save();
+        Payment::factory()->cash()->verified()->create([
+            'booking_id' => $booking->id,
+            'client_id' => $client->id,
+            'provider_profile_id' => $booking->provider_profile_id,
+        ]);
 
         $this->actingAs($providerUser)
             ->postJson("/api/bookings/{$booking->id}/status", ['to' => 'in_progress'])
@@ -106,12 +112,34 @@ class BookingStateMachineTest extends TestCase
         $this->assertDatabaseCount('booking_status_histories', 2);
     }
 
+    public function test_a_booking_cannot_be_completed_before_payment_is_verified(): void
+    {
+        [$client, $providerUser, $booking] = $this->pendingBooking();
+        $booking->forceFill(['status' => \App\Enums\BookingStatus::InProgress, 'started_at' => now()])->save();
+        Payment::factory()->create([
+            'booking_id' => $booking->id,
+            'client_id' => $client->id,
+            'provider_profile_id' => $booking->provider_profile_id,
+        ]);
+
+        $this->actingAs($providerUser)
+            ->postJson("/api/bookings/{$booking->id}/status", ['to' => 'completed'])
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'in_progress']);
+    }
+
     public function test_completing_a_booking_increments_the_providers_completed_count(): void
     {
-        [, $providerUser, $booking] = $this->pendingBooking();
+        [$client, $providerUser, $booking] = $this->pendingBooking();
         $profile = $providerUser->providerProfile;
         $profile->forceFill(['completed_bookings_count' => 2])->save();
         $booking->forceFill(['status' => \App\Enums\BookingStatus::Accepted, 'accepted_at' => now()])->save();
+        Payment::factory()->cash()->verified()->create([
+            'booking_id' => $booking->id,
+            'client_id' => $client->id,
+            'provider_profile_id' => $booking->provider_profile_id,
+        ]);
 
         $this->actingAs($providerUser)->postJson("/api/bookings/{$booking->id}/status", ['to' => 'in_progress'])->assertOk();
         $this->actingAs($providerUser)->postJson("/api/bookings/{$booking->id}/status", ['to' => 'completed'])->assertOk();

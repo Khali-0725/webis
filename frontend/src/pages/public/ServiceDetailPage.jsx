@@ -12,7 +12,7 @@ import { bookingApi } from '@/services/api/bookingApi';
 import { conversationApi } from '@/services/api/conversationApi';
 import { queryKeys } from '@/services/api/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { PRICING_TYPE_META, ROLES } from '@/constants';
+import { PRICING_TYPE_META, ROLES, SETTLEMENT_METHOD_META } from '@/constants';
 
 function priceLabelFor(service) {
   return service.pricing_type === 'quote'
@@ -37,6 +37,7 @@ function BookingRequestForm({ service, onClose }) {
   const [pin, setPin] = useState({ latitude: null, longitude: null });
   const [landmarkNotes, setLandmarkNotes] = useState('');
   const [clientNotes, setClientNotes] = useState('');
+  const [settlementMethod, setSettlementMethod] = useState('');
   const [formError, setFormError] = useState(null);
 
   const { data: barangays = [] } = useQuery({
@@ -71,6 +72,10 @@ function BookingRequestForm({ service, onClose }) {
       setFormError('Please drop a pin on the map for the service location.');
       return;
     }
+    if (!settlementMethod) {
+      setFormError('Please choose how you will pay for this booking.');
+      return;
+    }
 
     createMutation.mutate({
       service_id: service.id,
@@ -82,6 +87,7 @@ function BookingRequestForm({ service, onClose }) {
       longitude: pin.longitude,
       landmark_notes: landmarkNotes || undefined,
       client_notes: clientNotes || undefined,
+      settlement_method: settlementMethod,
     });
   };
 
@@ -246,6 +252,37 @@ function BookingRequestForm({ service, onClose }) {
                 ? 'Only you and the provider (once they accept) can see this pin.'
                 : 'Drop a pin on the map to the left.'}
             </p>
+          </div>
+
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-ink">
+              How will you pay?<span className="ml-0.5 text-red-600">*</span>
+            </p>
+            <div className="space-y-2">
+              {Object.entries(SETTLEMENT_METHOD_META).map(([value, meta]) => (
+                <label
+                  key={value}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 text-sm ${
+                    settlementMethod === value
+                      ? 'border-navy-700 bg-navy-50'
+                      : 'border-line hover:border-navy-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="settlement-method"
+                    value={value}
+                    checked={settlementMethod === value}
+                    onChange={(event) => setSettlementMethod(event.target.value)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="block font-medium text-ink">{meta.label}</span>
+                    <span className="block text-xs text-ink-muted">{meta.description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2 pt-2">

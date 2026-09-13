@@ -82,6 +82,28 @@ class PaymentProofTest extends TestCase
         $this->assertSame(1, \App\Models\PaymentProof::whereNull('superseded_at')->count());
     }
 
+    public function test_proof_cannot_be_submitted_for_a_cash_booking(): void
+    {
+        Storage::fake('local');
+        $client = User::factory()->client()->create();
+        $providerUser = User::factory()->provider()->create();
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
+        $booking = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+        Payment::factory()->cash()->create([
+            'booking_id' => $booking->id,
+            'client_id' => $client->id,
+            'provider_profile_id' => $profile->id,
+        ]);
+
+        $this->actingAs($client)
+            ->post("/api/bookings/{$booking->id}/payment/proof", [
+                'proof' => UploadedFile::fake()->image('proof.jpg'),
+            ])
+            ->assertStatus(422);
+
+        $this->assertDatabaseCount('payment_proofs', 0);
+    }
+
     public function test_someone_else_cannot_submit_proof_for_a_booking_that_is_not_theirs(): void
     {
         Storage::fake('local');

@@ -31,6 +31,24 @@ class PaymentVerificationTest extends TestCase
         return [$client, $providerUser, $payment];
     }
 
+    /**
+     * @return array{0: User, 1: User, 2: Payment}
+     */
+    private function pendingCashPayment(): array
+    {
+        $client = User::factory()->client()->create();
+        $providerUser = User::factory()->provider()->create();
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
+        $booking = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+        $payment = Payment::factory()->cash()->create([
+            'booking_id' => $booking->id,
+            'client_id' => $client->id,
+            'provider_profile_id' => $profile->id,
+        ]);
+
+        return [$client, $providerUser, $payment];
+    }
+
     public function test_the_provider_can_verify_a_submitted_payment(): void
     {
         [, $providerUser, $payment] = $this->proofSubmittedPayment();
@@ -39,6 +57,34 @@ class PaymentVerificationTest extends TestCase
             ->postJson("/api/payments/{$payment->id}/verify")
             ->assertOk()
             ->assertJsonPath('data.status', 'verified');
+    }
+
+    public function test_the_provider_can_verify_a_pending_cash_payment_directly(): void
+    {
+        [, $providerUser, $payment] = $this->pendingCashPayment();
+
+        $this->actingAs($providerUser)
+            ->postJson("/api/payments/{$payment->id}/verify")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'verified')
+            ->assertJsonPath('data.settlement_method', 'cash');
+    }
+
+    public function test_a_pending_online_payment_cannot_be_verified_without_a_submitted_proof(): void
+    {
+        $client = User::factory()->client()->create();
+        $providerUser = User::factory()->provider()->create();
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
+        $booking = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+        $payment = Payment::factory()->create([
+            'booking_id' => $booking->id,
+            'client_id' => $client->id,
+            'provider_profile_id' => $profile->id,
+        ]);
+
+        $this->actingAs($providerUser)
+            ->postJson("/api/payments/{$payment->id}/verify")
+            ->assertStatus(409);
     }
 
     public function test_the_provider_can_reject_a_submitted_payment(): void

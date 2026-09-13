@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\BookingStatus;
+use App\Enums\SettlementMethod;
 use App\Exceptions\DomainException;
 use App\Models\Booking;
 use App\Models\BookingLocation;
@@ -97,6 +98,22 @@ class BookingService
                 'changed_by' => $client->id,
             ]);
 
+            $settlementMethod = SettlementMethod::from($data['settlement_method']);
+            $providerPaymentMethodId = null;
+
+            if ($settlementMethod === SettlementMethod::Online) {
+                $providerPaymentMethodId = ProviderPaymentMethod::where('provider_profile_id', $providerProfileId)
+                    ->where('is_default', true)
+                    ->where('is_active', true)
+                    ->value('id');
+
+                if (! $providerPaymentMethodId) {
+                    throw DomainException::unprocessable(
+                        'This provider has not set up an online payment method yet. Please choose cash instead.'
+                    );
+                }
+            }
+
             // Every booking settles through exactly one Payment row (Phase 7)
             // - created up front, same as DemoDataSeeder assumes, so
             // GET /bookings/{id}/payment never has to branch on "does one
@@ -105,10 +122,8 @@ class BookingService
                 'booking_id' => $booking->id,
                 'client_id' => $client->id,
                 'provider_profile_id' => $providerProfileId,
-                'provider_payment_method_id' => ProviderPaymentMethod::where('provider_profile_id', $providerProfileId)
-                    ->where('is_default', true)
-                    ->where('is_active', true)
-                    ->value('id'),
+                'provider_payment_method_id' => $providerPaymentMethodId,
+                'settlement_method' => $settlementMethod,
                 'amount' => $service->price,
             ]);
 

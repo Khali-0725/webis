@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Booking;
 
+use App\Enums\SettlementMethod;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreBookingRequest extends FormRequest
 {
@@ -23,6 +25,7 @@ class StoreBookingRequest extends FormRequest
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'landmark_notes' => ['nullable', 'string', 'max:1000'],
             'client_notes' => ['nullable', 'string', 'max:1000'],
+            'settlement_method' => ['required', Rule::in(SettlementMethod::values())],
         ];
     }
 }
