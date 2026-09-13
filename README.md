@@ -4,7 +4,9 @@ Capstone system for the study *Design and Development of a Web-Based Platform fo
 
 WEBIS connects clients in Tanza, Cavite with verified independent service providers: service listings with barangay-based discovery, time-slot booking with an exact service-location pin, in-platform messaging with off-platform-contact filtering, QR-based payment recording, ratings, and an administrator console.
 
-> **Build status — Phase 1 of 12 complete and verified.** Backend 40/40 tests, frontend 16/16. The foundation (API conventions, authentication, role authorization, design system, base layouts) is built and tested. Feature modules land in later phases. See `docs/PHASE-0-REQUIREMENTS-AUDIT.md` for the full roadmap.
+> **Build status — all 12 phases complete.** Backend 228/228 tests, frontend 26/26. Every module from `docs/PHASE-0-REQUIREMENTS-AUDIT.md` is built, tested, and has been running live (see below). Ongoing fixes and small feature additions since the 12-phase plan closed are logged in `backend/BUILD-LOG.md`'s "Post-Phase 12 changes" section, not as new phases.
+
+**Live deployment** (free tier, testing phase — see `docs/deployment/DEPLOYMENT.md` for the full setup): React frontend on Vercel, Laravel API on Render, MySQL on Aiven, uploaded files on Backblaze B2 (S3-compatible). A GitHub Actions workflow plus an external uptime monitor ping the backend periodically so Render's free tier doesn't spin it down between visits.
 
 ---
 
@@ -116,6 +118,16 @@ cp .env.example .env          # Windows: copy .env.example .env
 npm run dev                   # http://localhost:5173
 ```
 
+The backend must be running on `http://localhost:8000` (the default) before
+starting the frontend, even though most API calls use the absolute
+`VITE_API_URL` from `.env` and don't need this: a handful of responses
+(avatar, QR code, payment-proof images) embed a *relative* `/api/files/...`
+URL on purpose, so the same code works unchanged in production behind
+Vercel's rewrite proxy. Locally, `vite.config.js`'s dev-server `proxy`
+forwards those to `localhost:8000` — if the backend isn't up yet, those
+images (not the rest of the app) will 404 until you restart `npm run dev`
+with the backend already running.
+
 ### 4. Sign in
 
 Seeded demo accounts — **password for all: `password123`**
@@ -184,12 +196,9 @@ and pick 8.3 or 8.4, then restart Laragon.
 | File | Contents |
 |---|---|
 | `docs/PHASE-0-REQUIREMENTS-AUDIT.md` | Requirements matrix, thesis contradictions, ERD proposal, API inventory, roadmap |
-| `docs/PHASE-1-REPORT.md` | What Phase 1 delivered and how it was verified |
-| `docs/architecture/ARCHITECTURE.md` | Request lifecycle, layering rules, security model *(Phase 2)* |
-| `docs/database/ERD.md` | Final entity-relationship diagram *(Phase 2)* |
-| `docs/api/API.md` | Endpoint reference *(built up per phase)* |
-| `docs/deployment/DEPLOYMENT.md` | Production deployment *(Phase 12)* |
-| `docs/testing/TESTING.md` | Test plan and the thesis Table 6 functional-test matrix *(Phase 11)* |
+| `docs/database/ERD.md` | Entity-relationship diagram |
+| `docs/deployment/DEPLOYMENT.md` | Deploying to Render + Vercel + Aiven + Backblaze B2 for free |
+| `backend/BUILD-LOG.md` | **The authoritative build log** — per-phase decisions, bugs found and fixed, and every change made after the 12-phase plan closed. Architecture conventions, endpoint/request/response shape, and the test plan all live here rather than in separate `docs/` files, which were superseded by this log during the build. |
 
 ---
 
