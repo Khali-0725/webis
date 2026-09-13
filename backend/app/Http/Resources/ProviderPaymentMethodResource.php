@@ -22,8 +22,14 @@ class ProviderPaymentMethodResource extends JsonResource
             'is_default' => $this->is_default,
             'is_active' => $this->is_active,
             // Never the raw path - only a served, policy-gated URL, and only
-            // when the model actually has one.
-            'qr_image_url' => $this->qr_image_path ? url('/api/files/payment-qr/'.$this->id) : null,
+            // when the model actually has one. Relative, not url() - the SPA
+            // is served from a different origin than this API in production
+            // (Vercel -> Render) and reaches /api/* through same-origin
+            // rewrite proxies (vercel.json / the Vite dev proxy) specifically
+            // so the Sanctum session cookie travels; an absolute APP_URL
+            // link here would bypass that proxy and the request would arrive
+            // with no cookie at all.
+            'qr_image_url' => $this->qr_image_path ? '/api/files/payment-qr/'.$this->id : null,
         ];
     }
 }

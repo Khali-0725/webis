@@ -42,7 +42,9 @@ class PaymentResource extends JsonResource
                     'original_name' => $current->original_name,
                     'reference_number' => $current->reference_number,
                     'uploaded_at' => $current->created_at?->toIso8601String(),
-                    'url' => url('/api/files/payment-proof/'.$current->id),
+                    // Relative, not url() - see the comment on qr_image_url
+                    // in ProviderPaymentMethodResource for why.
+                    'url' => '/api/files/payment-proof/'.$current->id,
                 ] : null;
             }),
         ];

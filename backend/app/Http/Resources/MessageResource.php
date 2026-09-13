@@ -21,8 +21,10 @@ class MessageResource extends JsonResource
                 'id' => $this->sender->id,
                 'full_name' => $this->sender->full_name,
                 'initials' => $this->sender->initials,
+                // Relative, not url() - see the comment on qr_image_url in
+                // ProviderPaymentMethodResource for why.
                 'avatar_url' => $this->sender->avatar_path
-                    ? url('/api/files/avatar/'.$this->sender->id).'?t='.$this->sender->updated_at->timestamp
+                    ? '/api/files/avatar/'.$this->sender->id.'?t='.$this->sender->updated_at->timestamp
                     : null,
             ]),
             'body' => $this->body,

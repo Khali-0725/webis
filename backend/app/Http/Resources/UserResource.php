@@ -28,7 +28,9 @@ class UserResource extends JsonResource
             'initials' => $this->initials,
             'email' => $this->email,
             'phone' => $this->phone,
-            'avatar_url' => $this->avatar_path ? url('/api/files/avatar/'.$this->id).'?t='.$this->updated_at->timestamp : null,
+            // Relative, not url() - see the comment on qr_image_url in
+            // ProviderPaymentMethodResource for why.
+            'avatar_url' => $this->avatar_path ? '/api/files/avatar/'.$this->id.'?t='.$this->updated_at->timestamp : null,
             'role' => $this->role->value,
             'role_label' => $this->role->label(),
             'status' => $this->status->value,
