@@ -8,6 +8,7 @@ use App\Models\Service;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ServiceController extends Controller
 {
@@ -18,53 +19,59 @@ class ServiceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Service::query()
-            ->published()
-            ->active()
-            ->whereHas('providerProfile', fn ($q) => $q->verified())
-            ->with(['category', 'providerProfile.user', 'providerProfile.baseBarangay']);
+        $cacheKey = 'public:services:'.md5($request->getQueryString() ?? '');
 
-        if ($keyword = $request->string('q')->trim()->toString()) {
-            $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('description', 'like', "%{$keyword}%");
-            });
-        }
+        $paginated = Cache::remember($cacheKey, now()->addSeconds(60), function () use ($request) {
+            $query = Service::query()
+                ->published()
+                ->active()
+                ->whereHas('providerProfile', fn ($q) => $q->verified())
+                ->with(['category', 'providerProfile.user', 'providerProfile.baseBarangay']);
 
-        if ($category = $request->string('category')->trim()->toString()) {
-            $query->whereHas('category', fn ($q) => $q->where('slug', $category));
-        }
+            if ($keyword = $request->string('q')->trim()->toString()) {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('title', 'like', "%{$keyword}%")
+                        ->orWhere('description', 'like', "%{$keyword}%");
+                });
+            }
 
-        if ($barangayId = $request->integer('barangay_id')) {
-            $query->whereHas(
-                'providerProfile',
-                fn ($q) => $q->where('base_barangay_id', $barangayId)
-                    ->orWhereHas('serviceAreas', fn ($a) => $a->where('barangay_id', $barangayId))
-            );
-        }
+            if ($category = $request->string('category')->trim()->toString()) {
+                $query->whereHas('category', fn ($q) => $q->where('slug', $category));
+            }
 
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->float('min_price'));
-        }
+            if ($barangayId = $request->integer('barangay_id')) {
+                $query->whereHas(
+                    'providerProfile',
+                    fn ($q) => $q->where('base_barangay_id', $barangayId)
+                        ->orWhereHas('serviceAreas', fn ($a) => $a->where('barangay_id', $barangayId))
+                );
+            }
 
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->float('max_price'));
-        }
+            if ($request->filled('min_price')) {
+                $query->where('price', '>=', $request->float('min_price'));
+            }
 
-        $query = match ($request->string('sort')->toString()) {
-            'price_low' => $query->orderBy('price'),
-            'price_high' => $query->orderByDesc('price'),
-            'rating' => $query->join('provider_profiles', 'provider_profiles.id', '=', 'services.provider_profile_id')
-                ->orderByDesc('provider_profiles.rating_avg')
-                ->select('services.*'),
-            'most_booked' => $query->withCount('bookings')->orderByDesc('bookings_count'),
-            'nearest' => $this->applyNearestSort($query, $request),
-            default => $query->orderByDesc('services.created_at'),
-        };
+            if ($request->filled('max_price')) {
+                $query->where('price', '<=', $request->float('max_price'));
+            }
 
-        $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
+            $query = match ($request->string('sort')->toString()) {
+                'price_low' => $query->orderBy('price'),
+                'price_high' => $query->orderByDesc('price'),
+                'rating' => $query->join('provider_profiles', 'provider_profiles.id', '=', 'services.provider_profile_id')
+                    ->orderByDesc('provider_profiles.rating_avg')
+                    ->select('services.*'),
+                'most_booked' => $query->withCount('bookings')->orderByDesc('bookings_count'),
+                'nearest' => $this->applyNearestSort($query, $request),
+                default => $query->orderByDesc('services.created_at'),
+            };
 
-        return ApiResponse::paginated($query->paginate($perPage), ServiceResource::class);
+            $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
+
+            return $query->paginate($perPage);
+        });
+
+        return ApiResponse::paginated($paginated, ServiceResource::class);
     }
 
     public function show(Service $service): JsonResponse
