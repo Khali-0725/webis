@@ -8,6 +8,7 @@ use App\Exceptions\DomainException;
 use App\Models\Payment;
 use App\Models\PaymentProof;
 use App\Models\User;
+use App\Support\Realtime;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
@@ -21,7 +22,7 @@ class PaymentService
 {
     public function submitProof(Payment $payment, User $client, UploadedFile $file, ?string $referenceNumber): Payment
     {
-        return DB::transaction(function () use ($payment, $client, $file, $referenceNumber) {
+        $updated = DB::transaction(function () use ($payment, $client, $file, $referenceNumber) {
             $locked = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->status->isSettled()) {
@@ -56,11 +57,15 @@ class PaymentService
 
             return $locked->fresh(['proofs', 'paymentMethod']);
         });
+
+        $this->pushChange($updated);
+
+        return $updated;
     }
 
     public function verify(Payment $payment, User $actor): Payment
     {
-        return DB::transaction(function () use ($payment, $actor) {
+        $updated = DB::transaction(function () use ($payment, $actor) {
             $locked = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
 
             // Cash never has a proof to submit - the provider confirms
@@ -87,11 +92,15 @@ class PaymentService
 
             return $locked->fresh();
         });
+
+        $this->pushChange($updated);
+
+        return $updated;
     }
 
     public function reject(Payment $payment, User $actor, string $reason): Payment
     {
-        return DB::transaction(function () use ($payment, $actor, $reason) {
+        $updated = DB::transaction(function () use ($payment, $actor, $reason) {
             $locked = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->status !== PaymentStatus::ProofSubmitted) {
@@ -106,5 +115,18 @@ class PaymentService
 
             return $locked->fresh();
         });
+
+        $this->pushChange($updated);
+
+        return $updated;
+    }
+
+    private function pushChange(Payment $payment): void
+    {
+        Realtime::push(
+            [$payment->client_id, $payment->providerProfile?->user_id],
+            'payments',
+            ['booking_id' => $payment->booking_id, 'payment_id' => $payment->id],
+        );
     }
 }

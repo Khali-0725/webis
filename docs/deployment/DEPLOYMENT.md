@@ -118,6 +118,11 @@ tables and rows are already in; that error is harmless.
    | `DB_USERNAME` | *(from TiDB Cloud, `<prefix>.root`)* |
    | `DB_PASSWORD` | *(from TiDB Cloud, generated once)* |
    | `MYSQL_ATTR_SSL_CA` | `/etc/ssl/certs/ca-certificates.crt` |
+   | `BROADCAST_CONNECTION` | `pusher` |
+   | `PUSHER_APP_ID` | *(Pusher Channels → App Keys)* |
+   | `PUSHER_APP_KEY` | *(Pusher Channels → App Keys)* |
+   | `PUSHER_APP_SECRET` | *(Pusher Channels → App Keys)* |
+   | `PUSHER_APP_CLUSTER` | `ap1` |
    | `MAIL_MAILER` | `smtp` |
    | `MAIL_HOST` | `smtp.gmail.com` |
    | `MAIL_PORT` | `587` |
@@ -170,17 +175,55 @@ tables and rows are already in; that error is harmless.
    replace both
    `REPLACE-WITH-RENDER-BACKEND-URL.onrender.com` placeholders with your
    actual Render service URL from step 2 above, then commit and push.
-4. Environment variable:
+4. Environment variables:
 
    | Key | Value |
    |---|---|
    | `VITE_API_URL` | *(leave the value completely empty)* |
+   | `VITE_PUSHER_APP_KEY` | *(same `key` as on Render — public, it ships in the JS bundle)* |
+   | `VITE_PUSHER_APP_CLUSTER` | `ap1` |
 
-   This is deliberate — see `frontend/src/services/api/client.js`'s
-   handling of an explicitly-empty `VITE_API_URL`: it means "call the
-   current origin," which is what makes the Vercel rewrite proxy trick
-   above work. Setting it to the Render URL directly would defeat the
-   whole point and bring back the third-party-cookie problem.
+   The empty `VITE_API_URL` is deliberate — see
+   `frontend/src/services/api/client.js`'s handling of an explicitly-empty
+   value: it means "call the current origin," which is what makes the
+   Vercel rewrite proxy trick above work. Setting it to the Render URL
+   directly would defeat the whole point and bring back the
+   third-party-cookie problem. `VITE_*` values are baked in at build time,
+   so changing them needs a redeploy.
+
+## 3b. Realtime — Pusher Channels
+
+Messages, booking status changes and payment updates reach the other
+party instantly instead of on the next poll. Added 2026-09-13; supersedes
+the audit doc's Q-3 "polling only" decision (the original objection was
+having to run a WebSocket daemon — a hosted broker removes that).
+
+- **Why Pusher, not Reverb:** Render's free web service runs a single
+  `php artisan serve` process with no room for a second long-running
+  daemon; a separate free Reverb service would sleep like the API does,
+  and Vercel's rewrite proxy cannot forward WebSockets anyway. Pusher's
+  free Sandbox plan (200k messages/day, 100 concurrent connections, no
+  card) with the `ap1` Singapore cluster is more than this project uses.
+- **Setup:** [pusher.com](https://pusher.com) → Channels → Create app →
+  cluster `ap1` → App Keys. Put `app_id`/`key`/`secret`/`cluster` on
+  Render (table above) and `key`/`cluster` on Vercel. Without the key the
+  app silently falls back to polling on both ends — see
+  `frontend/src/services/realtime/echo.js` (`realtimeEnabled`,
+  `POLL_FAST`/`POLL_SLOW`).
+- **How it works:** services call `App\Support\Realtime::push()` *after*
+  their DB transaction commits, which broadcasts one generic
+  `UserDataChanged` event (`data.changed`) to each affected user's
+  `private-App.Models.User.{id}` channel. The payload names only a scope
+  (`messages`/`bookings`/`payments`) and an id — never the data. The SPA
+  (`useRealtimeSync`) maps the scope to React Query keys and invalidates
+  them, so the refetch goes through the normal policy-guarded API.
+  `ShouldBroadcastNow` because there is no queue worker on Render; a
+  failed push is logged at warning level and never fails the request.
+- **Channel auth** is `POST /api/broadcasting/auth` (note the `api`
+  prefix — the Vercel proxy only forwards `/api/*`), through the same
+  Sanctum cookie session, using the shared axios instance as Echo's
+  authorizer so the CSRF header rides along. `routes/channels.php` allows
+  a user onto their own channel only.
 
 5. Deploy. Vercel gives you a `https://<something>.vercel.app` URL —
    this is the `FRONTEND_URL`/`SANCTUM_STATEFUL_DOMAINS`/

@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { conversationApi } from '@/services/api/conversationApi';
 import { queryKeys } from '@/services/api/queryClient';
+import { POLL_FAST } from '@/services/realtime/echo';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/utils/cn';
 import { ROLES } from '@/constants';
@@ -44,7 +45,7 @@ export default function ConversationThreadPage() {
   const messagesQuery = useQuery({
     queryKey: queryKeys.conversations.messages(id),
     queryFn: () => conversationApi.listMessages(id),
-    refetchInterval: 5_000,
+    refetchInterval: POLL_FAST,
   });
 
   // Always jump to the newest message - on first load, after sending, and

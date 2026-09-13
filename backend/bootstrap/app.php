@@ -16,6 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Registers POST /api/broadcasting/auth. The `api` prefix is deliberate:
+    // the Vercel rewrite proxy only forwards /api/* and /sanctum/*, and the
+    // channel-auth request must ride the same first-party Sanctum session as
+    // every other API call.
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum']],
+    )
     ->withMiddleware(function (Middleware $middleware): void {
         /*
          * The SPA authenticates over Sanctum's stateful cookie session.
