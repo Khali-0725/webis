@@ -12,6 +12,7 @@ enum ReportReason: string
     case InappropriateContent = 'inappropriate_content';
     case PoorServiceQuality = 'poor_service_quality';
     case Impersonation = 'impersonation';
+    case NonPayment = 'non_payment';
     case Other = 'other';
 
     public function label(): string
@@ -22,6 +23,7 @@ enum ReportReason: string
             self::InappropriateContent => 'Inappropriate content or behaviour',
             self::PoorServiceQuality => 'Poor service quality',
             self::Impersonation => 'Impersonation / fake account',
+            self::NonPayment => 'Client did not pay',
             self::Other => 'Other',
         };
     }

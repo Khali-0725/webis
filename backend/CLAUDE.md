@@ -889,3 +889,24 @@ manual verification instead), `npm run build` clean. Not yet manually
 verified end-to-end against the live dev DB via curl/browser (unlike every
 phase above) - the user has not yet exercised the new booking flow
 live; do that before calling this fully done if picked up again.
+
+**Same day, follow-up — "Report this client" wired up:** picked up the gap
+Phase 9/10 both explicitly deferred ("a natural small addition whenever
+someone next touches those pages" - Phase 10's own words). The backend
+(`POST /reports`, generic polymorphic Report against user/service/booking)
+already existed and was already tested; nothing there needed to change
+except adding `ReportReason::NonPayment` ('Client did not pay') since the
+motivating case was a provider reporting a client who never paid. Added
+`frontend/src/services/api/reportApi.js` (the client/provider-facing report
+submission API - only `services/api/admin/reportApi.js`, the admin
+list/resolve one, existed before this) and a "Report this client" action in
+`BookingDetailPage.jsx`'s `PaymentSection`, provider-only, reason dropdown
+defaulting to "Client did not pay" but open to any `ReportReason` (reused
+the existing enum rather than building a payment-specific report type),
+reports the *booking* (not just the user) so admin has full context
+(client, provider, payment status) from one record. No dedupe/one-report-
+per-booking limit added - out of scope for what was asked, and the backend
+has none either. Backend: 226/226 tests green (1 new -
+`test_a_provider_can_report_a_client_for_non_payment_on_a_booking`).
+Frontend: lint/tests(26/26)/build all clean. Also not yet manually verified
+live - same caveat as directly above.

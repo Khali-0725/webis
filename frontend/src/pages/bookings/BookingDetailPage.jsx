@@ -11,10 +11,11 @@ import { LocationView } from '@/components/map/LocationView';
 import { bookingApi } from '@/services/api/bookingApi';
 import { conversationApi } from '@/services/api/conversationApi';
 import { paymentApi } from '@/services/api/paymentApi';
+import { reportApi } from '@/services/api/reportApi';
 import { reviewApi } from '@/services/api/reviewApi';
 import { queryKeys } from '@/services/api/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { BOOKING_TRANSITIONS, PAYMENT_STATUS_META, ROLES, SETTLEMENT_METHOD_META } from '@/constants';
+import { BOOKING_TRANSITIONS, PAYMENT_STATUS_META, REPORT_REASON_META, ROLES, SETTLEMENT_METHOD_META } from '@/constants';
 
 /**
  * Manual QR-proof settlement (Phase 7) - one section, both audiences: the
@@ -28,6 +29,10 @@ function PaymentSection({ booking, isClient, isProvider }) {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showVerifyConfirm, setShowVerifyConfirm] = useState(false);
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportReason, setReportReason] = useState('non_payment');
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportSubmitted, setReportSubmitted] = useState(false);
   const [notice, setNotice] = useState(null);
 
   const { data: payment, isPending } = useQuery({
@@ -66,6 +71,22 @@ function PaymentSection({ booking, isClient, isProvider }) {
       setNotice({ tone: 'success', message: 'Payment rejected.' });
     },
     onError: (error) => setNotice({ tone: 'error', message: error?.message ?? 'Failed to reject the payment.' }),
+  });
+
+  const reportMutation = useMutation({
+    mutationFn: () =>
+      reportApi.submit({
+        reportable_type: 'booking',
+        reportable_id: booking.id,
+        reason: reportReason,
+        details: reportDetails || undefined,
+      }),
+    onSuccess: () => {
+      setShowReportForm(false);
+      setReportSubmitted(true);
+      setNotice({ tone: 'success', message: 'Report submitted. Our admin team will review this booking.' });
+    },
+    onError: (error) => setNotice({ tone: 'error', message: error?.message ?? 'Failed to submit the report.' }),
   });
 
   if (isPending || !payment) {
@@ -255,6 +276,52 @@ function PaymentSection({ booking, isClient, isProvider }) {
               >
                 Confirm rejection
               </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {isProvider && !reportSubmitted && (
+        <div className="mt-5 space-y-3 border-t border-line pt-4">
+          {!showReportForm ? (
+            <Button variant="outline" size="sm" onClick={() => setShowReportForm(true)}>
+              Report this client
+            </Button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-ink">Report this client to admin</p>
+              <select
+                value={reportReason}
+                onChange={(event) => setReportReason(event.target.value)}
+                aria-label="Report reason"
+                className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none sm:max-w-xs"
+              >
+                {Object.entries(REPORT_REASON_META).map(([value, meta]) => (
+                  <option key={value} value={value}>
+                    {meta.label}
+                  </option>
+                ))}
+              </select>
+              <textarea
+                rows={2}
+                value={reportDetails}
+                onChange={(event) => setReportDetails(event.target.value)}
+                placeholder="Add any details that would help admin review this (optional)"
+                className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-navy-500 focus:outline-none"
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  loading={reportMutation.isPending}
+                  onClick={() => reportMutation.mutate()}
+                >
+                  Submit report
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setShowReportForm(false)}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
         </div>
