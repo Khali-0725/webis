@@ -77,15 +77,39 @@ final class ApiResponse
         return response()->json([
             'success' => true,
             'data' => $data,
-            'meta' => array_merge([
-                'page' => $paginator->currentPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'last_page' => $paginator->lastPage(),
-                'from' => $paginator->firstItem(),
-                'to' => $paginator->lastItem(),
-            ], $extraMeta),
+            'meta' => array_merge(self::paginationMeta($paginator), $extraMeta),
         ], 200);
+    }
+
+    /**
+     * @return array<string, int|null>
+     */
+    public static function paginationMeta(LengthAwarePaginator $paginator): array
+    {
+        return [
+            'page' => $paginator->currentPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
+            'last_page' => $paginator->lastPage(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
+        ];
+    }
+
+    /**
+     * Fully materialises a resource into plain arrays and scalars - the only
+     * shape safe to put in the cache. `config('cache.serializable_classes')`
+     * is `false` (Laravel 13's default against gadget-chain attacks), so any
+     * object that reaches the cache - an Eloquent model, a paginator, a
+     * nested JsonResource, an enum - comes back as an incomplete class on
+     * the next hit and 500s. `resolve()` alone is not enough: nested
+     * resources stay objects inside the resolved array.
+     *
+     * @return array<int|string, mixed>
+     */
+    public static function toArray(JsonResource|ResourceCollection $resource): array
+    {
+        return json_decode(json_encode($resource->resolve(), JSON_THROW_ON_ERROR), true, flags: JSON_THROW_ON_ERROR);
     }
 
     /**

@@ -79,7 +79,24 @@ TiDB compatibility notes for this codebase: keyword search is `LIKE`, not
 strip its `FULLTEXT KEY` line from any mysqldump before importing (TiDB
 Starter rejects it). No triggers, stored procedures, or updatable views
 anywhere. Everything else (enum, json, foreign keys, `ONLY_FULL_GROUP_BY`
-strict mode, Haversine math in `ServiceController`) works unchanged.
+strict mode, Haversine math in `ServiceController`, and the `database`
+cache/session stores) works unchanged.
+
+**Cache rule that is *not* TiDB-specific:** `config/cache.php` has
+`'serializable_classes' => false` (Laravel 13's default against
+gadget-chain attacks), so **no PHP object survives a cache round trip** —
+an Eloquent collection, a paginator, a nested `JsonResource`, an enum all
+come back as `__PHP_Incomplete_Class` on the next hit and the request
+500s while every miss succeeds. Only cache plain arrays/scalars; use
+`ApiResponse::toArray($resource)` to materialise a resource first. The
+suite's `array` store never serializes, so
+`tests/Feature/Public/PublicListingCacheTest` runs on the `file` store
+to catch this. (Bitten 2026-09-13: the home page's "Browse by category"
+500'd on every cache hit, i.e. always except once per 10 minutes.)
+
+`CACHE_STORE=file` on Render is still the right choice regardless: the
+container disk is writable, cache is ephemeral by nature, and a hit no
+longer costs a DB round trip or TiDB request units.
 
 Importing an existing dump from Windows: run `mysql.exe` with
 `--ssl-mode=REQUIRED -D defaultdb -e "source C:/path/dump.sql"`. It will
@@ -108,6 +125,7 @@ tables and rows are already in; that error is harmless.
    | `SANCTUM_STATEFUL_DOMAINS` | `<your-vercel-app>.vercel.app` |
    | `CORS_ALLOWED_ORIGINS` | `https://<your-vercel-app>.vercel.app` |
    | `SESSION_DRIVER` | `database` |
+   | `CACHE_STORE` | `file` — see §1 cache note |
    | `SESSION_DOMAIN` | *(leave unset)* |
    | `SESSION_SAME_SITE` | `none` |
    | `SESSION_SECURE_COOKIE` | `true` |
