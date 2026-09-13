@@ -29,6 +29,7 @@ function PaymentSection({ booking, isClient, isProvider }) {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showVerifyConfirm, setShowVerifyConfirm] = useState(false);
+  const [showProofPreview, setShowProofPreview] = useState(false);
   const [showReportForm, setShowReportForm] = useState(false);
   const [reportReason, setReportReason] = useState('non_payment');
   const [reportDetails, setReportDetails] = useState('');
@@ -142,17 +143,40 @@ function PaymentSection({ booking, isClient, isProvider }) {
           {payment.current_proof && (
             <div className="mt-3">
               <p className="text-xs text-ink-muted">Submitted proof</p>
-              <a
-                href={payment.current_proof.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm font-medium text-brand hover:underline"
+              <button
+                type="button"
+                onClick={() => setShowProofPreview(true)}
+                className="mt-1 block cursor-zoom-in rounded-lg border border-line"
               >
-                {payment.current_proof.original_name}
-              </a>
+                <img
+                  src={payment.current_proof.url}
+                  alt={`Payment proof: ${payment.current_proof.original_name}`}
+                  crossOrigin="use-credentials"
+                  className="h-28 w-28 rounded-lg object-cover"
+                />
+              </button>
+              <p className="mt-1 text-xs text-ink-muted">{payment.current_proof.original_name}</p>
               {payment.current_proof.reference_number && (
                 <p className="text-xs text-ink-muted">Ref: {payment.current_proof.reference_number}</p>
               )}
+            </div>
+          )}
+
+          {showProofPreview && payment.current_proof && (
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Close preview"
+              onClick={() => setShowProofPreview(false)}
+              onKeyDown={(event) => event.key === 'Escape' && setShowProofPreview(false)}
+              className="fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/80 p-6"
+            >
+              <img
+                src={payment.current_proof.url}
+                alt={`Payment proof: ${payment.current_proof.original_name}`}
+                crossOrigin="use-credentials"
+                className="max-h-full max-w-full rounded-lg object-contain"
+              />
             </div>
           )}
         </div>
