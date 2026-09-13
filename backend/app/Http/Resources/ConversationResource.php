@@ -25,8 +25,10 @@ class ConversationResource extends JsonResource
                 'id' => $other->id,
                 'full_name' => $other->full_name,
                 'initials' => $other->initials,
+                // Relative, not url() - see the comment on qr_image_url in
+                // ProviderPaymentMethodResource for why.
                 'avatar_url' => $other->avatar_path
-                    ? url('/api/files/avatar/'.$other->id).'?t='.$other->updated_at->timestamp
+                    ? '/api/files/avatar/'.$other->id.'?t='.$other->updated_at->timestamp
                     : null,
             ] : null,
             'unread_count' => $unreadCount,

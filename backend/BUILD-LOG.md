@@ -955,3 +955,37 @@ type is ever rendered as an `<img>` behind a non-public file route, it
 needs this same attribute - it is not automatic. Frontend only: no backend
 change. Lint/tests(26/26)/build clean. Not yet manually verified live -
 same caveat as the entries above.
+
+**Same day, real root cause found (the `crossOrigin` fix above was
+necessary but not sufficient).** Used a real browser session to actually log in
+live (`provider.mark@example.com` / `password123`, a seeded verified
+provider) and read the Network tab, rather than guessing further. Finding:
+every ordinary API call in production goes to `https://webis-nine.vercel
+.app/api/...` (not `.../onrender.com/...`) - `frontend/vercel.json` rewrites
+`/api/:path*` and `/sanctum/:path*` to the Render backend, which is why the
+Sanctum cookie (issued for the vercel.app origin the browser actually
+talked to) works at all for a genuinely cross-site frontend/backend split.
+But `ProviderPaymentMethodResource::qr_image_url`, `PaymentResource`'s
+`current_proof.url`, `UserResource::avatar_url`, and the two
+`Conversation`/`MessageResource` copies of `avatar_url` all built their
+link with Laravel's `url()` helper - an **absolute** `APP_URL` link
+straight to `onrender.com`, bypassing the rewrite proxy entirely. A request
+straight to `onrender.com` is genuinely cross-site from the browser's
+perspective, the vercel.app-scoped cookie never applies to it, and no
+`crossOrigin` attribute or CORS setting on earth fixes that - the request
+has to go through the same proxy every other API call does. `avatar_url`
+happened to still work despite the bug because `avatar` is the one
+intentionally *public* file route (no cookie needed) - it was never proof
+the pattern was safe, just proof that specific route doesn't need auth.
+Fixed by making all 5 relative (`'/api/files/...'`, no `url()` wrapper) so
+the browser resolves them against whatever origin actually served the
+page - Vercel's rewrite in production. Added a matching Vite dev-server
+proxy (`server.proxy` in `vite.config.js`, `/api` and `/sanctum` ->
+`http://localhost:8000`) so these same relative URLs also resolve correctly
+in local dev, where they previously worked only because `APP_URL` and the
+dev Laravel server happened to be the same host `url()` produced - one
+`.env` value away from silently breaking exactly like production did.
+Backend: 226/226 tests still green (no test asserted the exact URL format,
+just non-null). Frontend: lint/tests(26/26)/build clean. **This one will
+be manually verified live in the browser before considering it
+closed** - unlike the entries above, don't leave this one unverified.
