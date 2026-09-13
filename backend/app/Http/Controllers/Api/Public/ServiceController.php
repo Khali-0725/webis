@@ -21,7 +21,8 @@ class ServiceController extends Controller
     {
         $cacheKey = 'public:services:'.md5($request->getQueryString() ?? '');
 
-        $paginated = Cache::remember($cacheKey, now()->addSeconds(60), function () use ($request) {
+        // Cache the materialised page, never the paginator - see ApiResponse::toArray().
+        $page = Cache::remember($cacheKey, now()->addSeconds(60), function () use ($request) {
             $query = Service::query()
                 ->published()
                 ->active()
@@ -68,10 +69,15 @@ class ServiceController extends Controller
 
             $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
 
-            return $query->paginate($perPage);
+            $paginated = $query->paginate($perPage);
+
+            return [
+                'data' => ApiResponse::toArray(ServiceResource::collection($paginated->getCollection())),
+                'meta' => ApiResponse::paginationMeta($paginated),
+            ];
         });
 
-        return ApiResponse::paginated($paginated, ServiceResource::class);
+        return ApiResponse::ok($page['data'], meta: $page['meta']);
     }
 
     public function show(Service $service): JsonResponse

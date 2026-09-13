@@ -13,10 +13,13 @@ class ServiceCategoryController extends Controller
 {
     public function index(): JsonResponse
     {
+        // Cache the materialised array, never the models - see ApiResponse::toArray().
         $categories = Cache::remember('public:service-categories', now()->addMinutes(10), function () {
-            return ServiceCategory::active()->ordered()->get();
+            return ApiResponse::toArray(ServiceCategoryResource::collection(
+                ServiceCategory::active()->ordered()->get(),
+            ));
         });
 
-        return ApiResponse::ok(ServiceCategoryResource::collection($categories));
+        return ApiResponse::ok($categories);
     }
 }

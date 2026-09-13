@@ -1112,6 +1112,40 @@ from the user's machine (includes PH→SG network): `/api/services` uncached
 ~0.45s (was ~0.9-1.1s), `/api/service-categories` 0.33s. The remaining
 ~0.3s floor is Vercel-proxy + network, not the DB.
 
+**Follow-up bug, same night — home page 500 ("Browse by category").**
+User: navigating Home showed "Something went wrong on our end." Probed
+the endpoints the landing page calls: `/api/service-categories` 500, all
+others 200. Pattern found by hitting `/api/services?per_page=3` three
+times: **miss → 200, hit → 500, hit → 500.** First (wrong) hypothesis
+was TiDB mangling the NUL bytes in PHP-serialized models on the read
+path; switching Render to `CACHE_STORE=file` made hits *faster* (0.1s)
+but still 500 — so not the store. Reproduced in a throwaway test on the
+`file` store with `withoutExceptionHandling()`: **"tried to call a
+method on an incomplete object `Illuminate\Database\Eloquent\
+Collection`"**. Real root cause: `config/cache.php` ships
+`'serializable_classes' => false` (Laravel 13's default against
+gadget-chain attacks if `APP_KEY` leaks), so every store unserializes
+with `allowed_classes => false` and any object in the cache comes back
+as `__PHP_Incomplete_Class`. The morning's `Cache::remember()` in
+`Public\ServiceCategoryController` / `Public\ServiceController` cached
+an Eloquent Collection / a `LengthAwarePaginator` → broken on every hit
+since it was written, on Aiven too; it was never noticed because (a) the
+suite's `array` store doesn't serialize at all, and (b) every live probe
+that day used a fresh query string (always a miss), while the categories
+key was read back only after its 10-min TTL rolled — "works, then breaks."
+Fix (code, not config — kept the security default): controllers now
+cache plain arrays via new `ApiResponse::toArray($resource)` (`resolve()`
+→ `json_encode`/`json_decode`, because `resolve()` alone leaves nested
+`JsonResource`s as objects) plus new `ApiResponse::paginationMeta()`, and
+respond with `ApiResponse::ok($data, meta: $meta)` — same envelope as
+`paginated()`. `tests/Feature/Public/PublicListingCacheTest` runs on the
+`file` store, calls each endpoint twice and asserts identical JSON;
+verified it fails (2/2) against the old controllers. 235/235 green.
+`CACHE_STORE=file` stays on Render — right anyway (no DB round trip / no
+TiDB RUs per hit; `storage/framework/cache` already created in the
+Dockerfile). Lesson for future caching here: never `Cache::remember()` a
+model, collection, paginator, resource or enum in this project.
+
 **Left for the user:** the Aiven `mysql-webis` service is still running
 untouched as a rollback target. Delete it once satisfied (Aiven free tier
 allows one MySQL service, so it also frees the slot). `webis_backup.sql`
