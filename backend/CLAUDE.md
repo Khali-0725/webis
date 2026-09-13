@@ -1030,3 +1030,29 @@ caller would be exactly the kind of speculative scaffolding this
 project's own conventions elsewhere argue against. Backend: 228/228 tests
 green (2 new - `PaymentSoftDeleteTest`, both a plain Unit test since this
 needed no HTTP layer to exercise).
+
+**Same day, follow-up — provider still couldn't view a submitted payment
+proof.** User reported clicking the proof still returned `{"success":
+false,"message":"You must be signed in to do that.",...}` even after the
+relative-URL fix (which did already cover `PaymentResource`'s
+`current_proof.url`). Root cause this time is different, and is on the
+*rendering* side, not the URL: the proof was a plain `<a href=... target=
+"_blank">` link doing a real top-level navigation to the file route, and
+that direct navigation - not a same-page subresource fetch like the QR
+`<img>` - is the one still exposed to whatever cookie/auth edge case a
+raw cross-tab navigation hits that an embedded resource fetch on the
+already-authenticated page does not. Rather than keep chasing the exact
+mechanism, changed the *pattern*: replaced the link with the same treatment
+already proven to work live for the QR code - an `<img crossOrigin=
+"use-credentials">` thumbnail fetched as part of the authenticated page
+itself, click-to-enlarge into a simple fixed-overlay lightbox (no new
+network request - reuses the already-loaded image). This was also a
+direct request from the user ("parang QR sana nakadisplay agad ... pwede
+i-click then lalaki") - the fix and the UX ask happened to be the same
+change. Confirmed proof uploads are always images (`SubmitPaymentProof
+Request` restricts to `config('webis.uploads.image_mimes')`), so an
+`<img>` is always valid here, unlike a hypothetical PDF/doc upload
+elsewhere. Frontend only: lint/tests(26/26)/build clean. Not independently
+re-verified live this time (no provider credentials available to this
+session for the account the user was testing with, unlike the earlier
+QR check which used seeded/known accounts) - ask the user to confirm.
