@@ -929,3 +929,29 @@ or any other page - out of scope for what was reported, and reviews only
 ever change right after a Completed transition the viewer just caused
 themselves. Frontend only: lint/tests(26/26)/build clean. Not yet manually
 verified live (same caveat as the two entries above).
+
+**Same day, bug fix — QR code image not loading for the client.** Root
+cause: `payment-qr` (and `payment-proof`) are intentionally *not* public
+like the avatar route (Phase 7's own design - "never web-readable by path")
+- they sit behind `auth:sanctum` + a Policy check, unlike `avatar` which is
+deliberately public. Frontend and backend are different origins (Vercel vs
+Render), so this needs the Sanctum session cookie to travel cross-origin.
+Axios already does this correctly (`withCredentials: true`, matching
+`cors.php`'s `supports_credentials: true` + explicit `allowed_origins`) -
+but a plain `<img src="...">` tag does **not** send credentials on a
+cross-origin request by default, regardless of any of that CORS setup; it
+needs the `crossOrigin="use-credentials"` attribute explicitly, which
+nothing had. Without it, the browser's image request carried no session
+cookie, `auth:sanctum` rejected it, and the browser rendered the resulting
+non-image JSON response as a broken image. `Avatar.jsx` was never affected
+- that route is public, no cookie needed. Fixed by adding
+`crossOrigin="use-credentials"` to the two `<img>` tags that render a
+private, policy-gated image: the QR preview in `BookingDetailPage.jsx`'s
+`PaymentSection` (client-facing) and in `provider/payment-methods/
+PaymentMethodsPage.jsx` (the provider's own QR preview - same bug, same
+fix, found by grepping every `<img>` tag in the frontend for this pattern
+rather than only fixing the one the user reported). If a future upload
+type is ever rendered as an `<img>` behind a non-public file route, it
+needs this same attribute - it is not automatic. Frontend only: no backend
+change. Lint/tests(26/26)/build clean. Not yet manually verified live -
+same caveat as the entries above.
