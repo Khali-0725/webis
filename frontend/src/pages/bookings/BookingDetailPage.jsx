@@ -38,6 +38,7 @@ function PaymentSection({ booking, isClient, isProvider }) {
   const { data: payment, isPending } = useQuery({
     queryKey: queryKeys.payments.forBooking(booking.id),
     queryFn: () => paymentApi.getForBooking(booking.id),
+    refetchInterval: 5_000,
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.payments.forBooking(booking.id) });
@@ -497,9 +498,13 @@ export default function BookingDetailPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelForm, setShowCancelForm] = useState(false);
 
+  // Polled every 5s (same cadence as ConversationThreadPage) so the other
+  // party's action - client sends payment proof, provider starts/completes
+  // the job - shows up live instead of needing a manual page refresh.
   const { data: booking, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.bookings.detail(id),
     queryFn: () => bookingApi.get(id),
+    refetchInterval: 5_000,
   });
 
   // Shares its cache with PaymentSection's own useQuery below (same key) -
@@ -509,6 +514,7 @@ export default function BookingDetailPage() {
     queryKey: queryKeys.payments.forBooking(id),
     queryFn: () => paymentApi.getForBooking(id),
     enabled: Boolean(booking),
+    refetchInterval: 5_000,
   });
 
   const invalidate = () => {
