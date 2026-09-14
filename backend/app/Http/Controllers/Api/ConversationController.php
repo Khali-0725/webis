@@ -51,9 +51,14 @@ class ConversationController extends Controller
 
         $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
 
+        // reorder(), not orderByDesc(): the messages() relation already
+        // carries orderBy('id'), and stacking a second ORDER BY produces
+        // `ORDER BY id ASC, id DESC` - ascending wins, so page 1 was the
+        // OLDEST 15 messages and anything newer than that never rendered.
+        // Only visible once a thread passes per_page messages.
         $messages = $conversation->messages()
             ->with('sender')
-            ->orderByDesc('id')
+            ->reorder('id', 'desc')
             ->paginate($perPage);
 
         return ApiResponse::paginated($messages, MessageResource::class);

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Messaging;
 
 use App\Models\Conversation;
+use App\Models\Message;
 use App\Models\ProviderProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -95,5 +96,38 @@ class ConversationTest extends TestCase
             ->getJson('/api/conversations')
             ->assertOk()
             ->assertJsonCount(1, 'data');
+    }
+
+    /**
+     * Regression: the messages() relation carries its own orderBy('id'), so a
+     * naive orderByDesc() on top produced ORDER BY id ASC, id DESC and page 1
+     * was the OLDEST messages - anything past per_page never rendered.
+     */
+    public function test_the_first_page_of_a_long_thread_is_the_newest_messages(): void
+    {
+        $client = User::factory()->client()->create();
+        $providerUser = User::factory()->provider()->create();
+        $conversation = Conversation::factory()->create([
+            'client_id' => $client->id,
+            'provider_user_id' => $providerUser->id,
+        ]);
+
+        Message::factory()->count(20)->create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $client->id,
+        ]);
+        $newest = Message::factory()->create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $client->id,
+            'body' => 'the newest message',
+        ]);
+
+        $response = $this->actingAs($client)
+            ->getJson("/api/conversations/{$conversation->id}/messages?per_page=15")
+            ->assertOk()
+            ->assertJsonPath('meta.total', 21)
+            ->assertJsonPath('data.0.id', $newest->id);
+
+        $this->assertCount(15, $response->json('data'));
     }
 }
