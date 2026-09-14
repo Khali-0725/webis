@@ -82,19 +82,22 @@ class Booking extends Model
     // Relationships
     // -----------------------------------------------------------------
 
+    // withTrashed() on the three parents: a booking is a historical record
+    // and must keep rendering its client, provider and service even after
+    // any of them has been soft-deleted from the admin panel.
     public function client(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'client_id');
+        return $this->belongsTo(User::class, 'client_id')->withTrashed();
     }
 
     public function providerProfile(): BelongsTo
     {
-        return $this->belongsTo(ProviderProfile::class);
+        return $this->belongsTo(ProviderProfile::class)->withTrashed();
     }
 
     public function service(): BelongsTo
     {
-        return $this->belongsTo(Service::class);
+        return $this->belongsTo(Service::class)->withTrashed();
     }
 
     public function cancelledByUser(): BelongsTo

@@ -19,6 +19,7 @@ class ServiceCategoryResource extends JsonResource
             'max_price' => $this->max_price,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }

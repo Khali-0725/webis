@@ -32,6 +32,7 @@ class BookingResource extends JsonResource
             'completed_at' => $this->completed_at?->toIso8601String(),
             'cancelled_at' => $this->cancelled_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
             'service' => new ServiceResource($this->whenLoaded('service')),
             'provider' => new ProviderPublicProfileResource($this->whenLoaded('providerProfile')),
             'client' => $this->whenLoaded('client', fn () => [

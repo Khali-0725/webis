@@ -29,6 +29,20 @@ class ReviewService
                 throw DomainException::conflict('This booking has already been reviewed.');
             }
 
+            // UNIQUE(booking_id) still holds for a soft-deleted review, so a
+            // client re-reviewing after withdrawing one revives that row
+            // instead of colliding with it.
+            $trashed = $booking->review()->onlyTrashed()->first();
+
+            if ($trashed) {
+                $trashed->restore();
+                $trashed->forceFill(['rating' => $rating, 'comment' => $comment, 'is_visible' => true])->save();
+
+                $this->recomputeAggregates($booking->provider_profile_id);
+
+                return $trashed->fresh(['client', 'booking.service']);
+            }
+
             $review = Review::create([
                 'booking_id' => $booking->id,
                 'client_id' => $client->id,
@@ -43,12 +57,43 @@ class ReviewService
         });
     }
 
+    public function update(Review $review, int $rating, ?string $comment): Review
+    {
+        return DB::transaction(function () use ($review, $rating, $comment) {
+            $review->update(['rating' => $rating, 'comment' => $comment]);
+
+            $this->recomputeAggregates($review->provider_profile_id);
+
+            return $review->fresh();
+        });
+    }
+
+    /**
+     * Soft delete; the provider's cached aggregates drop it immediately,
+     * exactly as hiding does.
+     */
+    public function delete(Review $review): void
+    {
+        DB::transaction(function () use ($review) {
+            $review->delete();
+
+            $this->recomputeAggregates($review->provider_profile_id);
+        });
+    }
+
     public function reply(Review $review, string $replyText): Review
     {
         $review->forceFill([
             'provider_reply' => $replyText,
             'replied_at' => now(),
         ])->save();
+
+        return $review->fresh();
+    }
+
+    public function removeReply(Review $review): Review
+    {
+        $review->forceFill(['provider_reply' => null, 'replied_at' => null])->save();
 
         return $review->fresh();
     }

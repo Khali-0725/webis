@@ -37,6 +37,11 @@ export default function ReviewListPage() {
     onSuccess: invalidate,
   });
 
+  const removeReplyMutation = useMutation({
+    mutationFn: (id) => reviewApi.removeReply(id),
+    onSuccess: invalidate,
+  });
+
   return (
     <Card title="Reviews Received">
       {isPending && <LoadingState label="Loading reviews…" />}
@@ -77,6 +82,28 @@ export default function ReviewListPage() {
                   <Button size="sm" variant="outline" onClick={() => setOpenReplyFor(review.id)}>
                     Reply
                   </Button>
+                )}
+                {review.provider_reply && openReplyFor !== review.id && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setReplyDrafts((current) => ({ ...current, [review.id]: review.provider_reply }));
+                        setOpenReplyFor(review.id);
+                      }}
+                    >
+                      Edit reply
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="subtle"
+                      loading={removeReplyMutation.isPending && removeReplyMutation.variables === review.id}
+                      onClick={() => removeReplyMutation.mutate(review.id)}
+                    >
+                      Remove reply
+                    </Button>
+                  </>
                 )}
                 <Button
                   size="sm"

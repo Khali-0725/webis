@@ -78,7 +78,7 @@ class Service extends Model
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(ServiceCategory::class, 'service_category_id');
+        return $this->belongsTo(ServiceCategory::class, 'service_category_id')->withTrashed();
     }
 
     public function bookings(): HasMany

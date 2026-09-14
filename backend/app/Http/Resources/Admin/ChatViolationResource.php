@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Admin;
 
+use App\Models\ChatViolation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -10,7 +11,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * never the surrounding conversation. This resource is built entirely from
  * `attempted_body`, never from the Conversation/Message models.
  *
- * @mixin \App\Models\ChatViolation
+ * @mixin ChatViolation
  */
 class ChatViolationResource extends JsonResource
 {
@@ -33,6 +34,7 @@ class ChatViolationResource extends JsonResource
             'admin_status_label' => $this->admin_status->label(),
             'reviewed_at' => $this->reviewed_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }

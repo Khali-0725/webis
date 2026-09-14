@@ -30,4 +30,10 @@ export const availabilityApi = {
     const response = await api.delete(`/provider/availability/exceptions/${id}`);
     return unwrap(response);
   },
+
+  /** PATCH /api/provider/availability/exceptions/{id} */
+  async updateException(id, payload) {
+    const response = await api.patch(`/provider/availability/exceptions/${id}`, payload);
+    return unwrap(response);
+  },
 };

@@ -42,4 +42,22 @@ export const reviewApi = {
     const response = await api.patch(`/reviews/${reviewId}/visibility`, { is_visible: isVisible });
     return unwrap(response);
   },
+
+  /** PATCH /api/reviews/{id} - the author edits their review */
+  async update(reviewId, { rating, comment }) {
+    const response = await api.patch(`/reviews/${reviewId}`, { rating, comment });
+    return unwrap(response);
+  },
+
+  /** DELETE /api/reviews/{id} - the author withdraws it (soft delete) */
+  async remove(reviewId) {
+    const response = await api.delete(`/reviews/${reviewId}`);
+    return unwrap(response);
+  },
+
+  /** DELETE /api/reviews/{id}/reply - the provider removes their reply */
+  async removeReply(reviewId) {
+    const response = await api.delete(`/reviews/${reviewId}/reply`);
+    return unwrap(response);
+  },
 };

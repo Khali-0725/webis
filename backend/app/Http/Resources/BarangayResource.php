@@ -17,6 +17,7 @@ class BarangayResource extends JsonResource
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'is_active' => $this->is_active,
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }

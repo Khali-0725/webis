@@ -18,4 +18,16 @@ export const violationApi = {
     const response = await api.post(`/admin/chat-violations/${id}/${action}`);
     return unwrap(response);
   },
+
+  /** DELETE /api/admin/chat-violations/{id} (soft delete) */
+  async remove(id) {
+    const response = await api.delete(`/admin/chat-violations/${id}`);
+    return unwrap(response);
+  },
+
+  /** POST /api/admin/chat-violations/{id}/restore */
+  async restore(id) {
+    const response = await api.post(`/admin/chat-violations/${id}/restore`);
+    return unwrap(response);
+  },
 };

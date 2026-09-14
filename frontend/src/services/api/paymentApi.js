@@ -36,4 +36,16 @@ export const paymentApi = {
     const response = await api.get('/payments', { params });
     return { items: unwrap(response), meta: unwrapMeta(response) };
   },
+
+  /** DELETE /api/payments/{id} (admin, soft delete) */
+  async remove(paymentId) {
+    const response = await api.delete(`/payments/${paymentId}`);
+    return unwrap(response);
+  },
+
+  /** POST /api/payments/{id}/restore (admin) */
+  async restore(paymentId) {
+    const response = await api.post(`/payments/${paymentId}/restore`);
+    return unwrap(response);
+  },
 };

@@ -51,12 +51,12 @@ class Conversation extends Model
 
     public function clientUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'client_id');
+        return $this->belongsTo(User::class, 'client_id')->withTrashed();
     }
 
     public function providerUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'provider_user_id');
+        return $this->belongsTo(User::class, 'provider_user_id')->withTrashed();
     }
 
     public function booking(): BelongsTo

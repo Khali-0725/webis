@@ -12,4 +12,16 @@ export const adminReportApi = {
     const response = await api.post(`/admin/reports/${id}/resolve`, payload);
     return unwrap(response);
   },
+
+  /** DELETE /api/admin/reports/{id} (soft delete) */
+  async remove(id) {
+    const response = await api.delete(`/admin/reports/${id}`);
+    return unwrap(response);
+  },
+
+  /** POST /api/admin/reports/{id}/restore */
+  async restore(id) {
+    const response = await api.post(`/admin/reports/${id}/restore`);
+    return unwrap(response);
+  },
 };

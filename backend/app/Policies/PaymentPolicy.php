@@ -27,4 +27,18 @@ class PaymentPolicy
     {
         return $this->verify($user, $payment);
     }
+
+    /**
+     * A financial record is only ever soft-deleted, and only by an admin -
+     * neither party to the payment may make it disappear from the other.
+     */
+    public function delete(User $user, Payment $payment): bool
+    {
+        return $user->isAdmin();
+    }
+
+    public function restore(User $user, Payment $payment): bool
+    {
+        return $user->isAdmin();
+    }
 }

@@ -42,4 +42,10 @@ export const paymentMethodApi = {
     const response = await api.patch(`/provider/payment-methods/${id}/toggle`);
     return unwrap(response);
   },
+
+  /** DELETE /api/provider/payment-methods/{id} (soft delete) */
+  async remove(id) {
+    const response = await api.delete(`/provider/payment-methods/${id}`);
+    return unwrap(response);
+  },
 };

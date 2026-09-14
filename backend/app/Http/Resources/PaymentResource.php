@@ -3,11 +3,12 @@
 namespace App\Http\Resources;
 
 use App\Enums\BookingStatus;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Payment
+ * @mixin Payment
  */
 class PaymentResource extends JsonResource
 {
@@ -31,6 +32,8 @@ class PaymentResource extends JsonResource
             'settlement_method_label' => $this->settlement_method->label(),
             'rejection_reason' => $this->rejection_reason,
             'verified_at' => $this->verified_at?->toIso8601String(),
+            'created_at' => $this->created_at?->toIso8601String(),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
             'payment_method' => $showPaymentMethod
                 ? new ProviderPaymentMethodResource($this->whenLoaded('paymentMethod'))
                 : null,

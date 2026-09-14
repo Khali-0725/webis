@@ -3,12 +3,37 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { profileApi } from '@/services/api/profileApi';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/authStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { ROLES } from '@/constants';
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
+  const clearUser = useAuthStore((s) => s.clearUser);
+  const queryClient = useQueryClient();
   const [savingProfile, setSavingProfile] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
+  const handleDeleteAccount = async () => {
+    setDeleteError(null);
+    setDeletingAccount(true);
+    try {
+      await profileApi.deleteAccount(deletePassword);
+      // The server already ended the session - drop local state the same way
+      // useLogout() does, and the router sends us to the sign-in page.
+      clearUser();
+      queryClient.clear();
+    } catch (err) {
+      setDeleteError(err?.errors?.password?.[0] ?? err?.message ?? 'Could not delete your account.');
+      setDeletingAccount(false);
+    }
+  };
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [notice, setNotice] = useState(null);
   const [formData, setFormData] = useState({
@@ -104,6 +129,43 @@ export default function ProfilePage() {
           className="mt-2 block w-full text-sm text-ink-muted file:mr-4 file:rounded-lg file:border-0 file:bg-navy-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-navy-700 hover:file:bg-navy-100 disabled:cursor-not-allowed disabled:opacity-60"
         />
       </div>
+
+      {user?.role !== ROLES.ADMIN && (
+        <div className="mt-6 border-t border-line pt-5">
+          <p className="text-sm font-medium text-ink">Delete account</p>
+          <p className="mt-0.5 text-xs text-ink-muted">
+            Your account is deactivated and you are signed out. Bookings and payments you were part of stay on
+            record for the other party. An administrator can restore the account if you change your mind.
+          </p>
+          <Button variant="danger" size="sm" className="mt-3" onClick={() => setShowDeleteAccount(true)}>
+            Delete my account
+          </Button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={showDeleteAccount}
+        onClose={() => {
+          setShowDeleteAccount(false);
+          setDeletePassword('');
+          setDeleteError(null);
+        }}
+        onConfirm={handleDeleteAccount}
+        title="Delete your account?"
+        description="Enter your password to confirm."
+        confirmLabel="Delete my account"
+        tone="danger"
+        loading={deletingAccount}
+        error={deleteError}
+      >
+        <Input
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          value={deletePassword}
+          onChange={(e) => setDeletePassword(e.target.value)}
+        />
+      </ConfirmDialog>
     </Card>
   );
 }

@@ -12,4 +12,10 @@ export const profileApi = {
     const response = await api.post('/me/avatar', formData);
     return unwrap(response);
   },
+
+  /** DELETE /api/me/account - soft-deletes the signed-in account */
+  async deleteAccount(password) {
+    const response = await api.delete('/me/account', { data: { password } });
+    return unwrap(response);
+  },
 };

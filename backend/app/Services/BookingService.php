@@ -26,9 +26,7 @@ use Illuminate\Support\Str;
  */
 class BookingService
 {
-    public function __construct(private readonly SlotGenerator $slots)
-    {
-    }
+    public function __construct(private readonly SlotGenerator $slots) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -136,6 +134,71 @@ class BookingService
         Realtime::push([$booking->providerProfile->user_id], 'bookings', ['booking_id' => $booking->id]);
 
         return $booking;
+    }
+
+    /**
+     * A client editing their own pending request. A slot change re-runs
+     * exactly the same lead-time / conflict / availability checks as
+     * create(), excluding the booking's own row from the conflict scan.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function update(Booking $booking, array $data): Booking
+    {
+        $updated = DB::transaction(function () use ($booking, $data) {
+            $booking = Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
+
+            if ($booking->status !== BookingStatus::Pending) {
+                throw DomainException::conflict('Only a pending booking can be edited.');
+            }
+
+            $reschedule = array_key_exists('scheduled_date', $data) || array_key_exists('scheduled_start_time', $data);
+
+            if ($reschedule) {
+                $date = $data['scheduled_date'] ?? $booking->scheduled_date->toDateString();
+                $start = Carbon::parse($data['scheduled_start_time'] ?? $booking->scheduled_start_time);
+                $duration = $booking->service?->duration_minutes ?? 60;
+                $end = $start->copy()->addMinutes($duration);
+
+                $this->assertLeadTime($date, $start);
+
+                $conflict = Booking::query()
+                    ->where('provider_profile_id', $booking->provider_profile_id)
+                    ->whereKeyNot($booking->id)
+                    ->whereDate('scheduled_date', $date)
+                    ->slotBlocking()
+                    ->where('scheduled_start_time', '<', $end->format('H:i:s'))
+                    ->where('scheduled_end_time', '>', $start->format('H:i:s'))
+                    ->lockForUpdate()
+                    ->exists();
+
+                if ($conflict) {
+                    throw DomainException::conflict('This time slot is no longer available.');
+                }
+
+                if (! $this->slots->isWithinAvailability($booking->provider_profile_id, $date, $start->format('H:i:s'), $end->format('H:i:s'))) {
+                    throw DomainException::unprocessable('The provider is not available at the selected date and time.');
+                }
+
+                $booking->fill([
+                    'scheduled_date' => $date,
+                    'scheduled_start_time' => $start->format('H:i:s'),
+                    'scheduled_end_time' => $end->format('H:i:s'),
+                ]);
+            }
+
+            if (array_key_exists('client_notes', $data)) {
+                $booking->client_notes = $data['client_notes'];
+            }
+
+            $booking->save();
+
+            return $booking->fresh(['service.category', 'providerProfile.user', 'client']);
+        });
+
+        Realtime::push([$updated->providerProfile->user_id], 'bookings', ['booking_id' => $updated->id]);
+
+        return $updated;
     }
 
     private function assertLeadTime(string $date, Carbon $startTime): void

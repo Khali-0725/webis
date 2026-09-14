@@ -77,4 +77,35 @@ class BookingPolicy
     {
         return $user->id === $booking->client_id;
     }
+
+    /**
+     * A client may edit the notes/slot of their own request only while it
+     * is still Pending - once the provider has accepted, the agreed slot is
+     * a commitment on both sides and any change goes through cancel + rebook.
+     */
+    public function update(User $user, Booking $booking): bool
+    {
+        return $user->id === $booking->client_id && $booking->status === BookingStatus::Pending;
+    }
+
+    /**
+     * Soft delete. Admin always; the client only once the booking no longer
+     * occupies the provider's calendar (rejected/cancelled/completed/
+     * disputed) - it is then history they may tidy away, not an in-flight
+     * job they could vanish from under the provider.
+     */
+    public function delete(User $user, Booking $booking): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return $user->id === $booking->client_id
+            && ! in_array($booking->status, BookingStatus::slotBlocking(), true);
+    }
+
+    public function restore(User $user, Booking $booking): bool
+    {
+        return $user->isAdmin();
+    }
 }

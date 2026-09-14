@@ -68,7 +68,8 @@ class AvailabilityTest extends TestCase
             ->deleteJson("/api/provider/availability/exceptions/{$exceptionId}")
             ->assertOk();
 
-        $this->assertDatabaseMissing('provider_availability_exceptions', ['id' => $exceptionId]);
+        // Soft-deleted, not removed: the row stays with a deleted_at stamp.
+        $this->assertSoftDeleted('provider_availability_exceptions', ['id' => $exceptionId]);
     }
 
     public function test_provider_cannot_delete_another_providers_exception(): void

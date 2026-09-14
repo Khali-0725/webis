@@ -24,4 +24,28 @@ export const userApi = {
     const response = await api.patch(`/admin/users/${id}/activate`);
     return unwrap(response);
   },
+
+  /** POST /api/admin/users */
+  async create(payload) {
+    const response = await api.post('/admin/users', payload);
+    return unwrap(response);
+  },
+
+  /** PATCH /api/admin/users/{id} */
+  async update(id, payload) {
+    const response = await api.patch(`/admin/users/${id}`, payload);
+    return unwrap(response);
+  },
+
+  /** DELETE /api/admin/users/{id} (soft delete) */
+  async remove(id) {
+    const response = await api.delete(`/admin/users/${id}`);
+    return unwrap(response);
+  },
+
+  /** POST /api/admin/users/{id}/restore */
+  async restore(id) {
+    const response = await api.post(`/admin/users/${id}/restore`);
+    return unwrap(response);
+  },
 };

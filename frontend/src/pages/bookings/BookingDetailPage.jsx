@@ -5,6 +5,10 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Textarea } from '@/components/ui/Select';
 import { StarRating } from '@/components/ui/StarRating';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { LocationView } from '@/components/map/LocationView';
@@ -13,6 +17,7 @@ import { conversationApi } from '@/services/api/conversationApi';
 import { paymentApi } from '@/services/api/paymentApi';
 import { reportApi } from '@/services/api/reportApi';
 import { reviewApi } from '@/services/api/reviewApi';
+import { fieldError } from '@/services/api/client';
 import { queryKeys } from '@/services/api/queryClient';
 import { POLL_FAST } from '@/services/realtime/echo';
 import { useAuth } from '@/hooks/useAuth';
@@ -526,6 +531,8 @@ export default function BookingDetailPage() {
   const [notice, setNotice] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelForm, setShowCancelForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Polled every 5s (same cadence as ConversationThreadPage) so the other
   // party's action - client sends payment proof, provider starts/completes
@@ -551,7 +558,17 @@ export default function BookingDetailPage() {
     queryClient.invalidateQueries({ queryKey: ['bookings'] });
   };
 
-  const backPath = role === ROLES.PROVIDER ? '/provider/bookings' : '/client/bookings';
+  const backPath =
+    role === ROLES.PROVIDER ? '/provider/bookings' : role === ROLES.ADMIN ? '/admin/bookings' : '/client/bookings';
+
+  const deleteMutation = useMutation({
+    mutationFn: () => bookingApi.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'bookings'] });
+      navigate(backPath, { replace: true });
+    },
+  });
 
   const actionMutation = useMutation({
     mutationFn: ({ action, payload }) => {
@@ -603,7 +620,12 @@ export default function BookingDetailPage() {
   const canTransitionTo = (target) => (BOOKING_TRANSITIONS[booking.status] ?? []).includes(target);
   const isProvider = role === ROLES.PROVIDER;
   const isClient = role === ROLES.CLIENT;
+  const isAdmin = role === ROLES.ADMIN;
   const price = booking.final_price ?? booking.quoted_price;
+  // Mirrors BookingPolicy: a client may edit only while pending, and may
+  // delete only once the booking no longer occupies the provider's calendar.
+  const canEdit = isClient && booking.status === 'pending';
+  const canDelete = isAdmin || (isClient && !['pending', 'accepted', 'in_progress'].includes(booking.status));
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
@@ -722,9 +744,19 @@ export default function BookingDetailPage() {
               Mark completed
             </Button>
           )}
+          {canEdit && (
+            <Button variant="outline" onClick={() => setShowEditForm(true)}>
+              Edit request
+            </Button>
+          )}
           {(isClient || isProvider) && canTransitionTo('cancelled') && !showCancelForm && (
             <Button variant="outline" onClick={() => setShowCancelForm(true)}>
               Cancel booking
+            </Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => setShowDeleteConfirm(true)}>
+              Delete booking
             </Button>
           )}
           {(isClient || isProvider) && (
@@ -766,6 +798,94 @@ export default function BookingDetailPage() {
 
       <PaymentSection booking={booking} isClient={isClient} isProvider={isProvider} />
       <ReviewSection booking={booking} isClient={isClient} isProvider={isProvider} />
+
+      {showEditForm && (
+        <BookingEditor
+          booking={booking}
+          onClose={() => setShowEditForm(false)}
+          onSaved={() => {
+            setShowEditForm(false);
+            invalidate();
+            setNotice({ tone: 'success', message: 'Booking request updated.' });
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          deleteMutation.reset();
+        }}
+        onConfirm={() => deleteMutation.mutate()}
+        title="Delete this booking?"
+        description={`${booking.booking_code} - ${booking.service?.title ?? ''}`}
+        confirmLabel="Delete booking"
+        tone="danger"
+        loading={deleteMutation.isPending}
+        error={deleteMutation.error?.message}
+      >
+        <p className="text-sm text-ink-muted">
+          {isAdmin
+            ? 'It is moved to the trash and hidden from both parties. Its payment and history stay on record, and it can be restored from All Bookings.'
+            : 'It is removed from your booking history. Your payment record and any review you wrote stay on file with the platform.'}
+        </p>
+      </ConfirmDialog>
     </div>
+  );
+}
+
+/**
+ * A client editing their own pending request - the slot and the notes.
+ * The backend re-runs the same lead-time / availability / conflict checks
+ * as when the booking was first made, so a bad slot comes back as a
+ * field error here instead of silently double-booking the provider.
+ */
+function BookingEditor({ booking, onClose, onSaved }) {
+  const [date, setDate] = useState(booking.scheduled_date ?? '');
+  const [start, setStart] = useState(booking.scheduled_start_time?.slice(0, 5) ?? '');
+  const [notes, setNotes] = useState(booking.client_notes ?? '');
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      const payload = { client_notes: notes || null };
+      if (date !== booking.scheduled_date || start !== booking.scheduled_start_time?.slice(0, 5)) {
+        payload.scheduled_date = date;
+        payload.scheduled_start_time = start;
+      }
+      return bookingApi.update(booking.id, payload);
+    },
+    onSuccess: onSaved,
+  });
+
+  const err = mutation.error;
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Edit booking request"
+      description="You can change the schedule and your notes while the provider has not yet accepted."
+      size="sm"
+      footer={
+        <>
+          <Button variant="subtle" onClick={onClose} disabled={mutation.isPending}>
+            Cancel
+          </Button>
+          <Button onClick={() => mutation.mutate()} loading={mutation.isPending}>
+            Save changes
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4">
+        {err && !Object.keys(err.errors ?? {}).length && <Alert tone="error">{err.message}</Alert>}
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} error={fieldError(err, 'scheduled_date')} />
+          <Input label="Start time" type="time" required value={start} onChange={(e) => setStart(e.target.value)} error={fieldError(err, 'scheduled_start_time')} />
+        </div>
+        <Textarea label="Notes for the provider" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} error={fieldError(err, 'client_notes')} />
+      </div>
+    </Modal>
   );
 }

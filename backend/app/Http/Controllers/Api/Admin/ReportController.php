@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\ReportStatus;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ResolveReportRequest;
 use App\Http\Resources\Admin\ReportResource;
 use App\Models\Report;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
+use App\Support\TrashFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,9 +23,12 @@ class ReportController extends Controller
             'status' => ['sometimes', Rule::in(ReportStatus::values())],
         ])['status'] ?? null;
 
-        $reports = Report::query()
+        $reports = TrashFilter::apply(Report::query(), $request)
             ->with('reporter', 'handledByUser')
-            ->when($status, fn ($query) => $query->where('status', $status), fn ($query) => $query->open())
+            // Default to the open queue - except in the trash, which should
+            // show everything that was deleted regardless of its status.
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->when(! $status && $request->string('trashed')->toString() !== 'only', fn ($query) => $query->open())
             ->latest()
             ->paginate($request->integer('per_page', 15));
 
@@ -44,5 +49,32 @@ class ReportController extends Controller
         ], $request);
 
         return ApiResponse::ok(new ReportResource($report->fresh(['reporter', 'handledByUser'])), 'Report updated.');
+    }
+
+    public function show(Report $report): JsonResponse
+    {
+        return ApiResponse::ok(new ReportResource($report->load(['reporter', 'handledByUser'])));
+    }
+
+    public function destroy(Request $request, Report $report): JsonResponse
+    {
+        $report->delete();
+
+        AuditLogger::record($request->user(), 'report.deleted', $report, [], $request);
+
+        return ApiResponse::noContent('Report moved to trash.');
+    }
+
+    public function restore(Request $request, Report $report): JsonResponse
+    {
+        if (! $report->trashed()) {
+            throw DomainException::conflict('This report is not deleted.');
+        }
+
+        $report->restore();
+
+        AuditLogger::record($request->user(), 'report.restored', $report, [], $request);
+
+        return ApiResponse::ok(new ReportResource($report->fresh(['reporter', 'handledByUser'])), 'Report restored.');
     }
 }

@@ -19,6 +19,7 @@ const NAV = {
     { to: '/client/bookings', label: 'My Bookings', icon: 'bookings' },
     { to: '/client/messages', label: 'Messages', icon: 'message' },
     { to: '/client/reviews', label: 'Reviews', icon: 'star' },
+    { to: '/client/reports', label: 'My Reports', icon: 'flag' },
     { to: '/profile', label: 'Profile', icon: 'user', disabled: false },
     { to: '/', label: 'Home', icon: 'home', end: true },
   ],
@@ -33,6 +34,7 @@ const NAV = {
     { to: '/provider/messages', label: 'Messages', icon: 'message' },
     { to: '/provider/earnings', label: 'Earnings', icon: 'wallet' },
     { to: '/provider/reviews', label: 'Reviews', icon: 'star' },
+    { to: '/provider/reports', label: 'My Reports', icon: 'flag' },
     { to: '/profile', label: 'Profile', icon: 'user', disabled: false },
   ],
   [ROLES.ADMIN]: [

@@ -60,6 +60,7 @@ const EarningsPage = lazy(() => import('@/pages/provider/earnings/EarningsPage')
 
 const ClientReviewListPage = lazy(() => import('@/pages/client/reviews/ReviewListPage'));
 const ProviderReviewListPage = lazy(() => import('@/pages/provider/reviews/ReviewListPage'));
+const MyReportsPage = lazy(() => import('@/pages/reports/MyReportsPage'));
 
 function RouteFallback() {
   return (
@@ -114,6 +115,9 @@ export function AppRoutes() {
           <Route path="client/reviews" element={<DashboardLayout title="My Reviews" />}>
             <Route index element={<ClientReviewListPage />} />
           </Route>
+          <Route path="client/reports" element={<DashboardLayout title="My Reports" />}>
+            <Route index element={<MyReportsPage />} />
+          </Route>
         </Route>
 
         {/* Provider portal */}
@@ -156,6 +160,9 @@ export function AppRoutes() {
           </Route>
           <Route path="provider/reviews" element={<DashboardLayout title="Reviews" />}>
             <Route index element={<ProviderReviewListPage />} />
+          </Route>
+          <Route path="provider/reports" element={<DashboardLayout title="My Reports" />}>
+            <Route index element={<MyReportsPage />} />
           </Route>
         </Route>
 

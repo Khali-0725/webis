@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources\Admin;
 
+use App\Models\Report;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Report
+ * @mixin Report
  */
 class ReportResource extends JsonResource
 {
@@ -30,6 +31,7 @@ class ReportResource extends JsonResource
             'handled_at' => $this->handled_at?->toIso8601String(),
             'handling_notes' => $this->handling_notes,
             'created_at' => $this->created_at?->toIso8601String(),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }
