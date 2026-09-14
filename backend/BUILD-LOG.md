@@ -1365,3 +1365,20 @@ and the revive-on-recreate paths; `AvailabilityTest` updated from
 **Production deploy note:** two new migrations must run on TiDB
 (`php artisan migrate --force` runs on Render boot per the Dockerfile -
 verify the boot log says `DONE` for both, not `Nothing to migrate`).
+
+**Same day, follow-up — "hindi ako makapag-send ng message" on production.**
+Reproduced in Chrome on the live site: `POST .../messages` returned 201
+and the refetch 200, yet the new message never rendered. The GET's page 1
+was ids 1, 2, 3... - **ascending**. Root cause (pre-existing, not from the
+CRUD work): `Conversation::messages()` bakes in `orderBy('id')`, and
+`ConversationController::messages()` stacked `->orderByDesc('id')` on top,
+producing `ORDER BY id ASC, id DESC` - the first clause wins, so page 1 was
+the *oldest* 15 messages and anything newer than the 15th message of a
+thread never appeared on either side. Invisible until a thread passed
+`per_page` (15) messages, which the user's real conversation had just done
+(27) and no seeded/local thread ever had. Fixed with `->reorder('id',
+'desc')` (clears the relation's ORDER BY instead of appending), plus a
+regression test in `ConversationTest` with a 21-message thread that
+asserts page 1 starts at the newest id - verified failing on the old code.
+**Rule: when querying through a relation that has its own `orderBy`,
+use `reorder()`, never a second `orderBy*()`.**
