@@ -6,6 +6,7 @@ use App\Enums\ModerationStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Chat messages inside a conversation.
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Message extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'conversation_id',
@@ -29,6 +30,7 @@ class Message extends Model
         return [
             'moderation_status' => ModerationStatus::class,
             'read_at' => 'datetime',
+            'edited_at' => 'datetime',
         ];
     }
 
@@ -52,6 +54,6 @@ class Message extends Model
 
     public function sender(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'sender_id');
+        return $this->belongsTo(User::class, 'sender_id')->withTrashed();
     }
 }

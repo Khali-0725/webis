@@ -67,17 +67,19 @@ class Payment extends Model
 
     public function client(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'client_id');
+        return $this->belongsTo(User::class, 'client_id')->withTrashed();
     }
 
     public function providerProfile(): BelongsTo
     {
-        return $this->belongsTo(ProviderProfile::class);
+        return $this->belongsTo(ProviderProfile::class)->withTrashed();
     }
 
     public function paymentMethod(): BelongsTo
     {
-        return $this->belongsTo(ProviderPaymentMethod::class, 'provider_payment_method_id');
+        // withTrashed(): a provider deleting a payment method must not blank out
+        // the method on payments that already settled through it.
+        return $this->belongsTo(ProviderPaymentMethod::class, 'provider_payment_method_id')->withTrashed();
     }
 
     public function verifiedByUser(): BelongsTo

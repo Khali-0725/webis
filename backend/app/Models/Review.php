@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A rating + review pair — ONE table. UNIQUE(booking_id) prevents
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Review extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'booking_id',
@@ -51,11 +52,11 @@ class Review extends Model
 
     public function client(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'client_id');
+        return $this->belongsTo(User::class, 'client_id')->withTrashed();
     }
 
     public function providerProfile(): BelongsTo
     {
-        return $this->belongsTo(ProviderProfile::class);
+        return $this->belongsTo(ProviderProfile::class)->withTrashed();
     }
 }

@@ -60,4 +60,16 @@ export const providerApi = {
     const response = await api.patch(`/provider/services/${id}/deactivate`);
     return unwrap(response);
   },
+
+  /** DELETE /api/provider/services/{id} (soft delete) */
+  async deleteService(id) {
+    const response = await api.delete(`/provider/services/${id}`);
+    return unwrap(response);
+  },
+
+  /** POST /api/provider/services/{id}/restore */
+  async restoreService(id) {
+    const response = await api.post(`/provider/services/${id}/restore`);
+    return unwrap(response);
+  },
 };

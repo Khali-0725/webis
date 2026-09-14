@@ -17,9 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 class MessagingService
 {
-    public function __construct(private readonly ChatModerationService $moderation)
-    {
-    }
+    public function __construct(private readonly ChatModerationService $moderation) {}
 
     /**
      * Resolves the *other* participant server-side - the caller never gets
@@ -128,6 +126,88 @@ class MessagingService
         }
 
         return $outcome;
+    }
+
+    /**
+     * Editing re-runs the same moderation as sending: a blocked edit is
+     * refused (and logged) exactly like a blocked send, and a warn-tier
+     * edit needs the same explicit confirmation. Nothing about the unread
+     * counters changes - the message already exists on both sides.
+     *
+     * @return array{status: 'sent'|'requires_confirmation', message?: Message}
+     */
+    public function edit(Message $message, User $editor, string $body, bool $confirmOverride = false): array
+    {
+        $result = $this->moderation->evaluate($body);
+        $conversation = $message->conversation;
+
+        if ($result['tier'] === 'blocked') {
+            $this->logViolation($conversation, $editor, $body, $result, ViolationAction::Blocked);
+
+            throw DomainException::unprocessable(
+                "This edit wasn't saved because it looks like it contains contact information. "
+                .'WEBIS keeps bookings and payments on the platform for your protection.',
+            );
+        }
+
+        $tier = $this->isEscalated($editor) ? 'flagged' : $result['tier'];
+
+        if ($tier === 'warned' && ! $confirmOverride) {
+            return ['status' => 'requires_confirmation'];
+        }
+
+        DB::transaction(function () use ($message, $editor, $body, $tier, $result, $conversation) {
+            $message->forceFill(['body' => $body, 'moderation_status' => $tier, 'edited_at' => now()])->save();
+
+            if ($tier === 'warned' || $tier === 'flagged') {
+                $this->logViolation(
+                    $conversation,
+                    $editor,
+                    $body,
+                    $result,
+                    $tier === 'flagged' ? ViolationAction::Flagged : ViolationAction::Warned,
+                    $message,
+                );
+            }
+        });
+
+        Realtime::push(
+            [$this->otherParticipantId($conversation, $editor)],
+            'messages',
+            ['conversation_id' => $conversation->id],
+        );
+
+        return ['status' => 'sent', 'message' => $message->fresh()];
+    }
+
+    /**
+     * Unsend (soft delete). If the recipient hadn't read it yet their
+     * unread counter is decremented so the badge doesn't point at a
+     * message that no longer shows.
+     */
+    public function unsend(Message $message, User $sender): void
+    {
+        $conversation = $message->conversation;
+
+        DB::transaction(function () use ($message, $sender, $conversation) {
+            $wasUnread = $message->read_at === null;
+
+            $message->delete();
+
+            if ($wasUnread) {
+                $column = $conversation->client_id === $sender->id ? 'provider_unread_count' : 'client_unread_count';
+                $conversation->where('id', $conversation->id)->where($column, '>', 0)->decrement($column);
+            }
+
+            $latest = $conversation->messages()->latest('id')->first();
+            $conversation->forceFill(['last_message_at' => $latest?->created_at])->save();
+        });
+
+        Realtime::push(
+            [$this->otherParticipantId($conversation, $sender)],
+            'messages',
+            ['conversation_id' => $conversation->id],
+        );
     }
 
     public function markRead(Conversation $conversation, User $reader): void

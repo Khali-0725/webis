@@ -1214,3 +1214,154 @@ between client and provider updates instantly ("super bilis"). Pusher
 Sandbox limits for reference: 200k messages/day (one per event per
 subscriber - our pushes are 1-2 each), 100 concurrent connections; past
 either, the affected clients just fall back to polling.
+
+### 2026-09-14 — Full CRUD + soft delete across the system (user-requested)
+
+User asked for "CRUD sa buong system" with soft delete - a capstone
+panel expectation, and it **supersedes** the 2026-09-13 decision to add
+`SoftDeletes` to `Payment` only. Every managed record now has an explicit
+Create / Read / Update / Delete surface, delete is always a soft delete,
+and admin-managed resources expose a trash view with restore.
+
+**Backend.** Migration `2026_09_14_000001_add_soft_deletes_across_system`
+adds `deleted_at` to `barangays`, `reviews`, `messages`, `reports`,
+`chat_violations`, `provider_payment_methods`,
+`provider_availability_exceptions` (the other six already had it);
+`2026_09_14_000002` adds `messages.edited_at`. Deliberately **not**
+soft-deletable: `audit_logs`, `booking_status_histories`, `payment_proofs`,
+`system_settings`, `provider_verification_documents`, availability rules
+(replaced in bulk by `PUT`), skills/service areas (same) - pure history or
+bulk-replaced value lists.
+
+Conventions introduced (reuse them, don't reinvent):
+- `App\Support\TrashFilter::apply($query, $request)` - the one `?trashed=
+  only|with` list filter, applied in every admin index plus
+  `Provider\ServiceController::index`, `BookingController::index` and
+  `PaymentController::index` (**admin-only** on the shared ones - a
+  client/provider never sees a row deleted from under them).
+- Restore routes are `POST /{resource}/{id}/restore` and carry
+  `->withTrashed()` on the *route* (Laravel's route-binding flag) - without
+  it the binding 404s on a trashed row. `show` routes on admin resources
+  carry it too so a trashed record can still be inspected. Restoring a
+  live row is a 409.
+- Every `belongsTo` that points at a soft-deletable parent from a
+  *historical* record uses `->withTrashed()` (`Booking::client/
+  providerProfile/service`, `Service::category`, `Payment::client/
+  providerProfile/paymentMethod`, `Review::client/providerProfile`,
+  `Conversation::clientUser/providerUser`, `Message::sender`,
+  `Report::reporter`, `ChatViolation::user/message`,
+  `ProviderProfile::user`). Without this, deleting a service/user blanks it
+  out of every booking that references it. The `payment-qr` file route is
+  `->withTrashed()` for the same reason (a settled payment's QR must keep
+  loading). `hasMany`/`hasOne` children stay scoped - a deleted review must
+  *not* keep appearing on its booking.
+- Every resource emits `deleted_at`; the SPA keys its row state on it.
+- Unique constraints survive a soft delete, so every "re-create after
+  delete" path revives the trashed row instead of colliding:
+  `ReviewService::create()` (UNIQUE booking_id) restores + overwrites a
+  trashed review; `AvailabilityController::storeException()` looks up
+  `withTrashed()` and restores. `users.email`/barangay name simply 422 as
+  "already taken" - restore from the trash is the intended path.
+- Deletes that would strand live data are refused with a 409, not
+  silently allowed: a category with services, a barangay any user/
+  provider/service-area/booking-location still references, a payment
+  method with an online payment still pending on a live booking (which
+  also promotes the next active method to default on success).
+
+Policy additions: `BookingPolicy::update` (client, Pending only),
+`::delete` (admin, or the client once the booking is out of every
+slot-blocking status - `slotBlocking()`, not `isTerminal()`, since
+Completed still transitions to Disputed), `::restore` (admin);
+`ReviewPolicy::update/delete` (author); new `MessagePolicy` (sender only
+- the `messages/{message}` routes are `->scopeBindings()` so a foreign
+message id 404s); new `ReportPolicy` (reporter, and only while `Open` -
+once admin picks it up it is part of the moderation trail);
+`PaymentPolicy::delete/restore` (admin only, never a party);
+`ServicePolicy::restore`; `ProviderAvailabilityExceptionPolicy::update`.
+Admin controllers keep relying on route middleware alone, as in Phase 9.
+
+New endpoints worth knowing: admin `POST/PATCH/DELETE /admin/users`
+(admin-created accounts are pre-verified; an admin can't delete or
+de-admin themselves), `PATCH/DELETE /admin/services`, `PATCH/DELETE
+/admin/providers` (profile only - the login is a separate User delete),
+`DELETE` + restore on categories/barangays/reports/chat-violations/
+bookings/payments; provider `DELETE`+restore services, `DELETE`
+payment-methods, `PATCH` availability exceptions, `DELETE
+/reviews/{id}/reply`; client `PATCH /bookings/{id}` (notes and/or
+reschedule - `BookingService::update()` re-runs the exact lead-time/
+conflict/availability checks from `create()` minus the booking's own
+row), `PATCH/DELETE /reviews/{id}` (aggregates recomputed), `PATCH/DELETE
+/conversations/{id}/messages/{mid}` (`MessagingService::edit()` re-runs
+moderation exactly like send - a blocked edit is refused and logged, a
+warn-tier edit needs `confirm_override`; `unsend()` decrements the
+recipient's unread counter if the message was still unread and re-derives
+`last_message_at`), `GET/PATCH/DELETE /reports` (reporter's own), `DELETE
+/me/account` (password-confirmed self soft-delete, admin refused; the
+session is ended server-side). The admin reports/violations indexes keep
+their "open queue" default **except** when `?trashed=only` - the trash
+shows every deleted row regardless of status.
+
+**Frontend.** New reusable primitives in `components/ui/`: `Modal`
+(portal, Escape/backdrop close, focus hand-back, scroll lock),
+`ConfirmDialog` (named confirm label, inline error, never a generic OK -
+also replaced the old `window.confirm()` on user suspend), `Select`/
+`Textarea` (styled like `Input`), `TrashToggle` + `DeletedBadge`
+(Active|Trash segmented control that emits the `?trashed=` value),
+`RowActions` (Edit/Toggle/Delete for a live row, Restore for a trashed
+one). Every admin list page (users, categories, barangays, services,
+providers, bookings, payments, reports, violations) got the toggle +
+actions; users/categories/barangays/services/providers got edit modals
+(users also a create modal - the old page had no create/edit at all,
+and categories never had an edit UI despite the backend supporting it).
+Provider: services trash/restore, payment-method edit+delete,
+availability-exception edit, review reply edit/remove. Client: booking
+detail "Edit request" (pending) / "Delete booking" (finished; admin also
+sees it), review edit/delete, message Edit/Unsend (the composer doubles as
+the editor - Send becomes Save), new shared `pages/reports/MyReportsPage`
+at `/client/reports` and `/provider/reports` (sidebar "My Reports"),
+Profile page "Delete my account". Admin `UserResource` now also returns
+`first_name`/`last_name`/`barangay_id` (the edit form needs them) and
+`ProviderProfileResource` returns `bio`.
+
+Bugs found while verifying live in Chrome (both would have shipped
+otherwise):
+- The admin trash view first showed deleted users as "Active" with live
+  actions - `deleted_at` was missing from `Admin\UserResource` because
+  the shell heredoc that was supposed to add it had failed to parse
+  earlier and silently written nothing. Lesson for this environment: the
+  Bash tool here mangles backslashes inside heredocs, so PHP namespaces
+  in inline Python break - write patch scripts to a file with the Write
+  tool and run them instead.
+- `MessageResource` first derived "edited" from `updated_at > created_at`,
+  which flagged **every read message** as edited, because
+  `markRead()`'s `->update(['read_at' => ...])` goes through the Eloquent
+  builder and bumps `updated_at`. Replaced with an explicit `edited_at`
+  column. General rule: never infer a user-visible state from
+  `updated_at` in this codebase - too many side paths touch it.
+- Also fixed: `BookingController::show()` 500'd on a booking with no
+  `BookingLocation` row (`address_line` on null) - impossible for real
+  bookings, but the factory makes them, and it is now null-safe.
+- The local Laragon DB was two migrations behind production
+  (`settlement_method`, payments soft delete) - `migrate` brought it up;
+  don't assume local = prod schema.
+
+Verified live in the browser against the local dev stack (Laragon
+MySQL started from the CLI, `artisan serve` + `npm run dev`): admin
+created → edited → deleted → saw in Trash → restored a user; deleting
+"Plumbing" (has services) was refused with the 409 copy inline in the
+dialog; provider deleted → trashed → restored a service and edited a
+payment method (multipart `_method=PATCH` path confirmed in the DB);
+client edited the notes on a pending booking (no delete offered while
+pending - policy mirrored in the UI), edited then unsent a message
+(`edited_at` stamped, row soft-deleted, thread reloaded without it), saw
+My Reports and the Delete-account section. Backend: 235 → **273/273**
+green (38 new: `tests/Feature/Admin/AdminCrudSoftDeleteTest.php`,
+`tests/Feature/OwnerCrudSoftDeleteTest.php`, each delete asserting
+`assertSoftDeleted`, the trash listing, restore, the negative role case,
+and the revive-on-recreate paths; `AvailabilityTest` updated from
+`assertDatabaseMissing` to `assertSoftDeleted`). Frontend: lint clean,
+26/26 tests, build clean.
+
+**Production deploy note:** two new migrations must run on TiDB
+(`php artisan migrate --force` runs on Render boot per the Dockerfile -
+verify the boot log says `DONE` for both, not `Nothing to migrate`).

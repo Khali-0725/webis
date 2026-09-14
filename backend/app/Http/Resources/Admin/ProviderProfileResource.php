@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Admin;
 
+use App\Models\ProviderProfile;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -10,7 +11,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * fields the provider's own self-view resource already exposes, since an
  * admin (unlike a public visitor) needs to know who the account belongs to.
  *
- * @mixin \App\Models\ProviderProfile
+ * @mixin ProviderProfile
  */
 class ProviderProfileResource extends JsonResource
 {
@@ -19,6 +20,7 @@ class ProviderProfileResource extends JsonResource
         return [
             'id' => $this->id,
             'business_name' => $this->business_name,
+            'bio' => $this->bio,
             'owner' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'full_name' => $this->user->full_name,
@@ -32,6 +34,7 @@ class ProviderProfileResource extends JsonResource
             'is_accepting_bookings' => $this->is_accepting_bookings,
             'base_barangay' => $this->whenLoaded('baseBarangay', fn () => $this->baseBarangay?->name),
             'created_at' => $this->created_at?->toIso8601String(),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }

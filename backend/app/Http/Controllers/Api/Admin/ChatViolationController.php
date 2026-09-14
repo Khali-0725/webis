@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\ViolationAdminStatus;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\ChatViolationResource;
 use App\Models\ChatViolation;
 use App\Services\ChatViolationService;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
+use App\Support\TrashFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -19,11 +21,17 @@ class ChatViolationController extends Controller
     {
         $status = $request->validate([
             'admin_status' => ['sometimes', Rule::in(ViolationAdminStatus::values())],
-        ])['admin_status'] ?? ViolationAdminStatus::Open->value;
+        ])['admin_status'] ?? null;
 
-        $violations = ChatViolation::query()
+        // Default to the open queue - except in the trash, which shows every
+        // deleted row regardless of its moderation status.
+        if ($status === null && $request->string('trashed')->toString() !== 'only') {
+            $status = ViolationAdminStatus::Open->value;
+        }
+
+        $violations = TrashFilter::apply(ChatViolation::query(), $request)
             ->with('user')
-            ->where('admin_status', $status)
+            ->when($status, fn ($query) => $query->where('admin_status', $status))
             ->latest()
             ->paginate($request->integer('per_page', 15));
 
@@ -65,5 +73,31 @@ class ChatViolationController extends Controller
         AuditLogger::record($request->user(), "chat_violation.{$action}", $violation, [], $request);
 
         return ApiResponse::ok(new ChatViolationResource($violation->load('user')), "Violation {$action}ed.");
+    }
+
+    /**
+     * Soft delete - the row stays for the audit trail; it only leaves the
+     * moderation queue. Restorable from the trash filter.
+     */
+    public function destroy(Request $request, ChatViolation $violation): JsonResponse
+    {
+        $violation->delete();
+
+        AuditLogger::record($request->user(), 'chat_violation.deleted', $violation, [], $request);
+
+        return ApiResponse::noContent('Violation moved to trash.');
+    }
+
+    public function restore(Request $request, ChatViolation $violation): JsonResponse
+    {
+        if (! $violation->trashed()) {
+            throw DomainException::conflict('This violation is not deleted.');
+        }
+
+        $violation->restore();
+
+        AuditLogger::record($request->user(), 'chat_violation.restored', $violation, [], $request);
+
+        return ApiResponse::ok(new ChatViolationResource($violation->fresh('user')), 'Violation restored.');
     }
 }

@@ -20,9 +20,7 @@ use Illuminate\Http\Request;
  */
 class ReviewController extends Controller
 {
-    public function __construct(private readonly ReviewService $reviews)
-    {
-    }
+    public function __construct(private readonly ReviewService $reviews) {}
 
     /**
      * GET /bookings/{booking}/review - null if not yet reviewed, so the
@@ -89,6 +87,42 @@ class ReviewController extends Controller
         $updated = $this->reviews->reply($review, $request->validated('provider_reply'));
 
         return ApiResponse::ok(new ReviewResource($updated->load(['client', 'booking.service'])), 'Reply posted.');
+    }
+
+    /**
+     * PATCH /reviews/{review} - the author edits their rating/comment.
+     */
+    public function update(StoreReviewRequest $request, Review $review): JsonResponse
+    {
+        $this->authorize('update', $review);
+
+        $updated = $this->reviews->update($review, $request->validated('rating'), $request->validated('comment'));
+
+        return ApiResponse::ok(new ReviewResource($updated->load(['client', 'booking.service'])), 'Review updated.');
+    }
+
+    /**
+     * DELETE /reviews/{review} - the author withdraws it (soft delete).
+     */
+    public function destroy(Request $request, Review $review): JsonResponse
+    {
+        $this->authorize('delete', $review);
+
+        $this->reviews->delete($review);
+
+        return ApiResponse::noContent('Review deleted.');
+    }
+
+    /**
+     * DELETE /reviews/{review}/reply - the provider removes their reply.
+     */
+    public function removeReply(Request $request, Review $review): JsonResponse
+    {
+        $this->authorize('reply', $review);
+
+        $updated = $this->reviews->removeReply($review);
+
+        return ApiResponse::ok(new ReviewResource($updated->load(['client', 'booking.service'])), 'Reply removed.');
     }
 
     public function setVisibility(Request $request, Review $review): JsonResponse

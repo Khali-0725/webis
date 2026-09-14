@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Provider;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Provider\StoreAvailabilityExceptionRequest;
+use App\Http\Requests\Provider\UpdateAvailabilityExceptionRequest;
 use App\Http\Requests\Provider\UpdateAvailabilityRulesRequest;
 use App\Http\Resources\AvailabilityExceptionResource;
 use App\Http\Resources\AvailabilityRuleResource;
@@ -60,11 +61,19 @@ class AvailabilityController extends Controller
     {
         $profile = $request->user()->providerProfile()->firstOrFail();
 
+        // withTrashed(): UNIQUE(provider_profile_id, date) still holds for a
+        // soft-deleted row, so re-adding the same day revives it instead of
+        // colliding with it.
         $exception = $profile->availabilityExceptions()
+            ->withTrashed()
             ->whereDate('date', $request->validated('date'))
             ->first();
 
         if ($exception) {
+            if ($exception->trashed()) {
+                $exception->restore();
+            }
+
             $exception->update($request->validated());
         } else {
             $exception = $profile->availabilityExceptions()->create($request->validated());
@@ -73,6 +82,19 @@ class AvailabilityController extends Controller
         return ApiResponse::created(new AvailabilityExceptionResource($exception), 'Exception saved.');
     }
 
+    public function updateException(UpdateAvailabilityExceptionRequest $request, ProviderAvailabilityException $exception): JsonResponse
+    {
+        $this->authorize('update', $exception);
+
+        $exception->update($request->validated());
+
+        return ApiResponse::ok(new AvailabilityExceptionResource($exception->fresh()), 'Exception updated.');
+    }
+
+    /**
+     * Soft delete (the model uses SoftDeletes) - re-adding the same date
+     * later revives the row, see storeException().
+     */
     public function destroyException(Request $request, ProviderAvailabilityException $exception): JsonResponse
     {
         $this->authorize('delete', $exception);

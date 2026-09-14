@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payment\SubmitPaymentProofRequest;
 use App\Http\Resources\PaymentResource;
@@ -9,6 +10,8 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Services\PaymentService;
 use App\Support\Api\ApiResponse;
+use App\Support\AuditLogger;
+use App\Support\TrashFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,9 +22,7 @@ use Illuminate\Http\Request;
  */
 class PaymentController extends Controller
 {
-    public function __construct(private readonly PaymentService $payments)
-    {
-    }
+    public function __construct(private readonly PaymentService $payments) {}
 
     public function show(Request $request, Booking $booking): JsonResponse
     {
@@ -74,6 +75,10 @@ class PaymentController extends Controller
 
         $query = Payment::query()->with(['booking.service', 'paymentMethod']);
 
+        if ($user->isAdmin()) {
+            TrashFilter::apply($query, $request);
+        }
+
         if ($user->isProvider()) {
             $profile = $user->providerProfile()->firstOrFail();
             $query->where('provider_profile_id', $profile->id);
@@ -84,5 +89,36 @@ class PaymentController extends Controller
         $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
 
         return ApiResponse::paginated($query->orderByDesc('created_at')->paginate($perPage), PaymentResource::class);
+    }
+
+    /**
+     * Admin-only soft delete (PaymentPolicy::delete). The row, its proofs
+     * and the booking it belongs to all stay - it just leaves the ledger
+     * until restored, and both actions are audit-logged.
+     */
+    public function destroy(Request $request, Payment $payment): JsonResponse
+    {
+        $this->authorize('delete', $payment);
+
+        $payment->delete();
+
+        AuditLogger::record($request->user(), 'payment.deleted', $payment, [], $request);
+
+        return ApiResponse::noContent('Payment moved to trash.');
+    }
+
+    public function restore(Request $request, Payment $payment): JsonResponse
+    {
+        $this->authorize('restore', $payment);
+
+        if (! $payment->trashed()) {
+            throw DomainException::conflict('This payment is not deleted.');
+        }
+
+        $payment->restore();
+
+        AuditLogger::record($request->user(), 'payment.restored', $payment, [], $request);
+
+        return ApiResponse::ok(new PaymentResource($payment->fresh(['booking', 'paymentMethod', 'proofs'])), 'Payment restored.');
     }
 }

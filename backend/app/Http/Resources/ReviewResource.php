@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Review
+ * @mixin Review
  */
 class ReviewResource extends JsonResource
 {
@@ -21,6 +22,8 @@ class ReviewResource extends JsonResource
             'provider_reply' => $this->provider_reply,
             'replied_at' => $this->replied_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
             'client' => $this->whenLoaded('client', fn () => [
                 'id' => $this->client->id,
                 'full_name' => $this->client->full_name,

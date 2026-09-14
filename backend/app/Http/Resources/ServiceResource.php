@@ -23,6 +23,7 @@ class ServiceResource extends JsonResource
             'is_published' => $this->isPublished(),
             'published_at' => $this->published_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
             'category' => new ServiceCategoryResource($this->whenLoaded('category')),
             'provider' => new ProviderPublicProfileResource($this->whenLoaded('providerProfile')),
         ];

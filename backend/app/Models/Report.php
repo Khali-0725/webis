@@ -7,6 +7,7 @@ use App\Enums\ReportStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * User-submitted complaints, polymorphic: about a user, a service, or a
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class Report extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'reporter_id',
         'reportable_type',
@@ -46,7 +49,7 @@ class Report extends Model
 
     public function reporter(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reporter_id');
+        return $this->belongsTo(User::class, 'reporter_id')->withTrashed();
     }
 
     public function reportable(): MorphTo

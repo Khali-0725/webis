@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Admin;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,7 +12,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * allowed to see email/phone/status for oversight, so this is a deliberate
  * separate resource rather than a rule violation.
  *
- * @mixin \App\Models\User
+ * @mixin User
  */
 class UserResource extends JsonResource
 {
@@ -19,9 +20,12 @@ class UserResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
             'full_name' => $this->full_name,
             'email' => $this->email,
             'phone' => $this->phone,
+            'barangay_id' => $this->barangay_id,
             'role' => $this->role->value,
             'role_label' => $this->role->label(),
             'status' => $this->status->value,
@@ -29,6 +33,7 @@ class UserResource extends JsonResource
             'email_verified' => $this->email_verified_at !== null,
             'last_login_at' => $this->last_login_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }

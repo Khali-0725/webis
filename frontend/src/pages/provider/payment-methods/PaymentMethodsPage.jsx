@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Textarea } from '@/components/ui/Select';
 import { LoadingState, EmptyState } from '@/components/ui/States';
+import { fieldError } from '@/services/api/client';
 import { paymentMethodApi } from '@/services/api/paymentMethodApi';
 import { queryKeys } from '@/services/api/queryClient';
 import { PAYMENT_METHOD_TYPE_META } from '@/constants';
@@ -23,6 +27,8 @@ export default function PaymentMethodsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [qrImage, setQrImage] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const { data: methods = [], isPending } = useQuery({
     queryKey: queryKeys.provider.paymentMethods,
@@ -45,6 +51,16 @@ export default function PaymentMethodsPage() {
   const toggleMutation = useMutation({
     mutationFn: paymentMethodApi.toggle,
     onSuccess: invalidate,
+    onError: (error) => setNotice({ tone: 'error', message: error?.message ?? 'Failed to update the payment method.' }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: paymentMethodApi.remove,
+    onSuccess: () => {
+      invalidate();
+      setPendingDelete(null);
+      setNotice({ tone: 'success', message: 'Payment method deleted.' });
+    },
   });
 
   const usesQrImage = PAYMENT_METHOD_TYPE_META[form.type]?.usesQrImage;
@@ -183,19 +199,136 @@ export default function PaymentMethodsPage() {
                   </p>
                 </div>
 
-                <Button
-                  size="sm"
-                  variant={method.is_active ? 'subtle' : 'outline'}
-                  onClick={() => toggleMutation.mutate(method.id)}
-                  loading={toggleMutation.isPending && toggleMutation.variables === method.id}
-                >
-                  {method.is_active ? 'Deactivate' : 'Activate'}
-                </Button>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button size="sm" variant="subtle" onClick={() => setEditing(method)}>
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={method.is_active ? 'subtle' : 'outline'}
+                    onClick={() => toggleMutation.mutate(method.id)}
+                    loading={toggleMutation.isPending && toggleMutation.variables === method.id}
+                  >
+                    {method.is_active ? 'Deactivate' : 'Activate'}
+                  </Button>
+                  <Button size="sm" variant="danger" onClick={() => setPendingDelete(method)}>
+                    Delete
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </Card>
+
+      {editing && (
+        <PaymentMethodEditor
+          method={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            invalidate();
+            setNotice({ tone: 'success', message: 'Payment method updated.' });
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onClose={() => {
+          setPendingDelete(null);
+          deleteMutation.reset();
+        }}
+        onConfirm={() => deleteMutation.mutate(pendingDelete.id)}
+        title="Delete this payment method?"
+        description={pendingDelete ? `${pendingDelete.type_label} · ${pendingDelete.account_name}` : undefined}
+        confirmLabel="Delete payment method"
+        tone="danger"
+        loading={deleteMutation.isPending}
+        error={deleteMutation.error?.message}
+      >
+        <p className="text-sm text-ink-muted">
+          Clients will no longer be offered it for new bookings. Payments already settled through it keep
+          their record. If a booking is still waiting to be paid through it, deactivate it instead.
+        </p>
+      </ConfirmDialog>
     </div>
+  );
+}
+
+function PaymentMethodEditor({ method, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    account_name: method.account_name ?? '',
+    account_ref_masked: method.account_ref_masked ?? '',
+    instructions: method.instructions ?? '',
+    is_default: Boolean(method.is_default),
+  });
+  const [qrImage, setQrImage] = useState(null);
+  const usesQrImage = PAYMENT_METHOD_TYPE_META[method.type]?.usesQrImage;
+
+  const mutation = useMutation({
+    mutationFn: (payload) => paymentMethodApi.update(method.id, payload),
+    onSuccess: onSaved,
+  });
+
+  const err = mutation.error;
+  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`Edit ${method.type_label}`}
+      size="sm"
+      footer={
+        <>
+          <Button variant="subtle" onClick={onClose} disabled={mutation.isPending}>
+            Cancel
+          </Button>
+          <Button type="submit" form="payment-method-editor-form" loading={mutation.isPending}>
+            Save changes
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="payment-method-editor-form"
+        className="grid gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          mutation.mutate({ ...form, qr_image: qrImage ?? undefined });
+        }}
+      >
+        {err && !Object.keys(err.errors ?? {}).length && <Alert tone="error">{err.message}</Alert>}
+        <Input label="Account name" required value={form.account_name} onChange={set('account_name')} error={fieldError(err, 'account_name')} />
+        <Input
+          label="Account number (masked)"
+          value={form.account_ref_masked}
+          onChange={set('account_ref_masked')}
+          placeholder="e.g. 0917•••4567"
+          error={fieldError(err, 'account_ref_masked')}
+        />
+        <Textarea label="Instructions for clients" rows={2} value={form.instructions} onChange={set('instructions')} error={fieldError(err, 'instructions')} />
+        {usesQrImage && (
+          <Input
+            label="Replace QR image"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setQrImage(e.target.files?.[0] ?? null)}
+            hint="Leave empty to keep the current QR."
+            error={fieldError(err, 'qr_image')}
+          />
+        )}
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={form.is_default}
+            onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
+            className="h-4 w-4 rounded border-line"
+          />
+          Use as my default method
+        </label>
+      </form>
+    </Modal>
   );
 }

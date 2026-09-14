@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Api\Provider;
 
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Provider\StoreServiceRequest;
 use App\Http\Requests\Provider\UpdateServiceRequest;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
 use App\Support\Api\ApiResponse;
-use App\Exceptions\DomainException;
+use App\Support\TrashFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,7 +19,7 @@ class ServiceController extends Controller
     {
         $profile = $request->user()->providerProfile()->firstOrFail();
 
-        $services = $profile->services()
+        $services = TrashFilter::apply($profile->services()->getQuery(), $request)
             ->with('category')
             ->latest()
             ->paginate(config('webis.pagination.default'));
@@ -85,5 +86,32 @@ class ServiceController extends Controller
         $service->update(['is_active' => false]);
 
         return ApiResponse::ok(new ServiceResource($service->fresh('category')), 'Service deactivated successfully.');
+    }
+
+    /**
+     * Soft delete - the listing leaves search and the provider's own list
+     * (until restored via ?trashed=only), while any bookings made against
+     * it keep resolving through Booking::service()->withTrashed().
+     */
+    public function destroy(Request $request, Service $service): JsonResponse
+    {
+        $this->authorize('delete', $service);
+
+        $service->delete();
+
+        return ApiResponse::noContent('Service moved to trash.');
+    }
+
+    public function restore(Request $request, Service $service): JsonResponse
+    {
+        $this->authorize('restore', $service);
+
+        if (! $service->trashed()) {
+            throw DomainException::conflict('This service is not deleted.');
+        }
+
+        $service->restore();
+
+        return ApiResponse::ok(new ServiceResource($service->fresh('category')), 'Service restored.');
     }
 }

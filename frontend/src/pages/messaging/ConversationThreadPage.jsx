@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { Avatar } from '@/components/ui/Avatar';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { conversationApi } from '@/services/api/conversationApi';
 import { queryKeys } from '@/services/api/queryClient';
@@ -63,8 +64,21 @@ export default function ConversationThreadPage() {
     });
   }, [id, queryClient]);
 
+  // The composer doubles as the editor: `editing` holds the message being
+  // edited, and Send becomes Save until it is cleared.
+  const [editing, setEditing] = useState(null);
+  const [pendingUnsend, setPendingUnsend] = useState(null);
+
+  const refreshThread = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.conversations.messages(id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.conversations.list });
+  };
+
   const sendMutation = useMutation({
-    mutationFn: ({ text, confirmOverride }) => conversationApi.sendMessage(id, { body: text, confirm_override: confirmOverride }),
+    mutationFn: ({ text, confirmOverride }) =>
+      editing
+        ? conversationApi.updateMessage(id, editing.id, { body: text, confirm_override: confirmOverride })
+        : conversationApi.sendMessage(id, { body: text, confirm_override: confirmOverride }),
     onSuccess: (result) => {
       if (result?.requires_confirmation) {
         setConfirmPrompt(body);
@@ -72,12 +86,33 @@ export default function ConversationThreadPage() {
       }
 
       setBody('');
+      setEditing(null);
       setConfirmPrompt(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.messages(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.list });
+      refreshThread();
     },
     onError: (error) => setFormError(error?.message ?? 'Failed to send the message.'),
   });
+
+  const unsendMutation = useMutation({
+    mutationFn: (messageId) => conversationApi.deleteMessage(id, messageId),
+    onSuccess: () => {
+      setPendingUnsend(null);
+      refreshThread();
+    },
+  });
+
+  const startEditing = (message) => {
+    setEditing(message);
+    setBody(message.body);
+    setConfirmPrompt(null);
+    setFormError(null);
+  };
+
+  const cancelEditing = () => {
+    setEditing(null);
+    setBody('');
+    setConfirmPrompt(null);
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -149,6 +184,19 @@ export default function ConversationThreadPage() {
                   <p className="mt-1 text-[11px] italic opacity-80">Flagged for review</p>
                 )}
               </div>
+              <div className="mt-0.5 flex items-center gap-2 px-1 text-[11px] text-ink-muted">
+                {message.edited_at && <span>edited</span>}
+                {message.is_mine && (
+                  <>
+                    <button type="button" className="hover:text-ink hover:underline" onClick={() => startEditing(message)}>
+                      Edit
+                    </button>
+                    <button type="button" className="hover:text-red-600 hover:underline" onClick={() => setPendingUnsend(message)}>
+                      Unsend
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
             {message.is_mine && (
               <Avatar
@@ -169,12 +217,23 @@ export default function ConversationThreadPage() {
         </Alert>
       )}
 
+      {editing && (
+        <Alert tone="info" className="mt-3">
+          <div className="flex items-center justify-between gap-3">
+            <p>Editing your message.</p>
+            <Button size="sm" variant="outline" onClick={cancelEditing}>
+              Cancel edit
+            </Button>
+          </div>
+        </Alert>
+      )}
+
       {confirmPrompt && (
         <Alert tone="warning" className="mt-3">
-          <p>This looks like it may contain contact information — edit or send anyway?</p>
+          <p>This looks like it may contain contact information — edit or {editing ? 'save' : 'send'} anyway?</p>
           <div className="mt-2 flex gap-2">
             <Button size="sm" variant="danger" onClick={handleSendAnyway} loading={sendMutation.isPending}>
-              Send anyway
+              {editing ? 'Save anyway' : 'Send anyway'}
             </Button>
             <Button size="sm" variant="outline" onClick={() => setConfirmPrompt(null)}>
               Edit message
@@ -214,9 +273,26 @@ export default function ConversationThreadPage() {
           className="h-11 flex-1 rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"
         />
         <Button type="submit" loading={sendMutation.isPending && !confirmPrompt}>
-          Send
+          {editing ? 'Save' : 'Send'}
         </Button>
       </form>
+
+      <ConfirmDialog
+        open={Boolean(pendingUnsend)}
+        onClose={() => {
+          setPendingUnsend(null);
+          unsendMutation.reset();
+        }}
+        onConfirm={() => unsendMutation.mutate(pendingUnsend.id)}
+        title="Unsend this message?"
+        confirmLabel="Unsend"
+        tone="danger"
+        loading={unsendMutation.isPending}
+        error={unsendMutation.error?.message}
+      >
+        <p className="rounded-lg bg-slate-50 p-2 text-sm text-ink">{pendingUnsend?.body}</p>
+        <p className="mt-2 text-sm text-ink-muted">It disappears from the conversation for both of you.</p>
+      </ConfirmDialog>
 
       <Button variant="subtle" className="mt-3" onClick={() => navigate(-1)}>
         Back

@@ -4,7 +4,9 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
+import { Modal } from '@/components/ui/Modal';
 import { LoadingState, EmptyState } from '@/components/ui/States';
+import { fieldError } from '@/services/api/client';
 import { availabilityApi } from '@/services/api/availabilityApi';
 import { queryKeys } from '@/services/api/queryClient';
 
@@ -46,6 +48,7 @@ export default function AvailabilityPage() {
   const [exceptionStart, setExceptionStart] = useState('08:00');
   const [exceptionEnd, setExceptionEnd] = useState('17:00');
   const [exceptionReason, setExceptionReason] = useState('');
+  const [editingException, setEditingException] = useState(null);
 
   const rulesQuery = useQuery({
     queryKey: queryKeys.provider.availabilityRules,
@@ -251,19 +254,107 @@ export default function AvailabilityPage() {
                   </p>
                   {exception.reason && <p className="text-xs text-ink-muted">{exception.reason}</p>}
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => deleteExceptionMutation.mutate(exception.id)}
-                  loading={deleteExceptionMutation.isPending && deleteExceptionMutation.variables === exception.id}
-                >
-                  Remove
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="subtle" onClick={() => setEditingException(exception)}>
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => deleteExceptionMutation.mutate(exception.id)}
+                    loading={deleteExceptionMutation.isPending && deleteExceptionMutation.variables === exception.id}
+                  >
+                    Remove
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </Card>
+
+      {editingException && (
+        <ExceptionEditor
+          exception={editingException}
+          onClose={() => setEditingException(null)}
+          onSaved={() => {
+            setEditingException(null);
+            queryClient.invalidateQueries({ queryKey: queryKeys.provider.availabilityExceptions });
+            setNotice({ tone: 'success', message: 'Exception updated.' });
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function ExceptionEditor({ exception, onClose, onSaved }) {
+  const [closed, setClosed] = useState(Boolean(exception.is_closed));
+  const [start, setStart] = useState(exception.start_time?.slice(0, 5) ?? '08:00');
+  const [end, setEnd] = useState(exception.end_time?.slice(0, 5) ?? '17:00');
+  const [reason, setReason] = useState(exception.reason ?? '');
+
+  const mutation = useMutation({
+    mutationFn: (payload) => availabilityApi.updateException(exception.id, payload),
+    onSuccess: onSaved,
+  });
+
+  const err = mutation.error;
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`Edit ${exception.date}`}
+      description="The date stays fixed - remove the exception and add another to move it."
+      size="sm"
+      footer={
+        <>
+          <Button variant="subtle" onClick={onClose} disabled={mutation.isPending}>
+            Cancel
+          </Button>
+          <Button type="submit" form="exception-editor-form" loading={mutation.isPending}>
+            Save changes
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="exception-editor-form"
+        className="grid gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          mutation.mutate({
+            is_closed: closed,
+            start_time: closed ? null : start,
+            end_time: closed ? null : end,
+            reason: reason || null,
+          });
+        }}
+      >
+        {err && !Object.keys(err.errors ?? {}).length && <Alert tone="error">{err.message}</Alert>}
+        <div>
+          <label htmlFor="exception-editor-type" className="mb-1.5 block text-sm font-medium text-ink">
+            Availability on this day
+          </label>
+          <select
+            id="exception-editor-type"
+            className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"
+            value={closed ? 'closed' : 'partial'}
+            onChange={(event) => setClosed(event.target.value === 'closed')}
+          >
+            <option value="closed">Closed all day</option>
+            <option value="partial">Special hours</option>
+          </select>
+        </div>
+        {!closed && (
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="From" type="time" value={start} onChange={(e) => setStart(e.target.value)} error={fieldError(err, 'start_time')} />
+            <Input label="To" type="time" value={end} onChange={(e) => setEnd(e.target.value)} error={fieldError(err, 'end_time')} />
+          </div>
+        )}
+        <Input label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional" error={fieldError(err, 'reason')} />
+      </form>
+    </Modal>
   );
 }

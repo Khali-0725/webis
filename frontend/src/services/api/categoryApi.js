@@ -2,8 +2,8 @@ import { api, unwrap } from '@/services/api/client';
 
 export const categoryApi = {
   /** GET /api/admin/categories */
-  async list() {
-    const response = await api.get('/admin/categories');
+  async list(params = {}) {
+    const response = await api.get('/admin/categories', { params });
     return unwrap(response);
   },
 
@@ -22,6 +22,18 @@ export const categoryApi = {
   /** PATCH /api/admin/categories/{id}/toggle */
   async toggle(id) {
     const response = await api.patch(`/admin/categories/${id}/toggle`);
+    return unwrap(response);
+  },
+
+  /** DELETE /api/admin/categories/{id} (soft delete) */
+  async remove(id) {
+    const response = await api.delete(`/admin/categories/${id}`);
+    return unwrap(response);
+  },
+
+  /** POST /api/admin/categories/{id}/restore */
+  async restore(id) {
+    const response = await api.post(`/admin/categories/${id}/restore`);
     return unwrap(response);
   },
 };

@@ -8,6 +8,7 @@ use App\Http\Requests\Conversation\StoreConversationRequest;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
 use App\Models\Conversation;
+use App\Models\Message;
 use App\Services\MessagingService;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -20,9 +21,7 @@ use Illuminate\Http\Request;
  */
 class ConversationController extends Controller
 {
-    public function __construct(private readonly MessagingService $messaging)
-    {
-    }
+    public function __construct(private readonly MessagingService $messaging) {}
 
     public function store(StoreConversationRequest $request): JsonResponse
     {
@@ -79,6 +78,46 @@ class ConversationController extends Controller
         }
 
         return ApiResponse::created(new MessageResource($result['message']->load('sender')), 'Message sent.');
+    }
+
+    /**
+     * PATCH /conversations/{conversation}/messages/{message} - sender edits.
+     * The nested binding is scoped (`scopeBindings()` on the route), so a
+     * message id from another thread 404s instead of leaking.
+     */
+    public function updateMessage(SendMessageRequest $request, Conversation $conversation, Message $message): JsonResponse
+    {
+        $this->authorize('view', $conversation);
+        $this->authorize('update', $message);
+
+        $result = $this->messaging->edit(
+            $message,
+            $request->user(),
+            $request->validated('body'),
+            (bool) $request->validated('confirm_override', false),
+        );
+
+        if ($result['status'] === 'requires_confirmation') {
+            return ApiResponse::ok([
+                'requires_confirmation' => true,
+                'message' => 'This looks like it may contain contact information — edit or save anyway?',
+            ]);
+        }
+
+        return ApiResponse::ok(new MessageResource($result['message']->load('sender')), 'Message updated.');
+    }
+
+    /**
+     * DELETE /conversations/{conversation}/messages/{message} - sender unsends.
+     */
+    public function destroyMessage(Request $request, Conversation $conversation, Message $message): JsonResponse
+    {
+        $this->authorize('view', $conversation);
+        $this->authorize('delete', $message);
+
+        $this->messaging->unsend($message, $request->user());
+
+        return ApiResponse::noContent('Message deleted.');
     }
 
     public function markRead(Request $request, Conversation $conversation): JsonResponse

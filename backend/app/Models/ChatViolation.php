@@ -9,6 +9,7 @@ use App\Enums\ViolationSeverity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Moderation record for every suspicious chat attempt.
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ChatViolation extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -58,7 +59,7 @@ class ChatViolation extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function conversation(): BelongsTo
@@ -68,7 +69,7 @@ class ChatViolation extends Model
 
     public function message(): BelongsTo
     {
-        return $this->belongsTo(Message::class);
+        return $this->belongsTo(Message::class)->withTrashed();
     }
 
     public function reviewedByUser(): BelongsTo

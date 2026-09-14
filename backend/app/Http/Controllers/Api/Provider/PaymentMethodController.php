@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Provider;
 
+use App\Enums\PaymentStatus;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Provider\StorePaymentMethodRequest;
 use App\Http\Requests\Provider\UpdatePaymentMethodRequest;
@@ -73,5 +75,44 @@ class PaymentMethodController extends Controller
         $method->update(['is_active' => ! $method->is_active]);
 
         return ApiResponse::ok(new ProviderPaymentMethodResource($method->fresh()), 'Payment method updated.');
+    }
+
+    public function show(Request $request, ProviderPaymentMethod $method): JsonResponse
+    {
+        $this->authorize('update', $method);
+
+        return ApiResponse::ok(new ProviderPaymentMethodResource($method));
+    }
+
+    /**
+     * Soft delete. Refused while an online payment is still pending against
+     * it - the client would lose the QR they're about to pay to. Settled
+     * payments keep resolving it through Payment::paymentMethod()
+     * ->withTrashed().
+     */
+    public function destroy(Request $request, ProviderPaymentMethod $method): JsonResponse
+    {
+        $this->authorize('delete', $method);
+
+        $inFlight = $method->payments()
+            ->whereIn('status', [PaymentStatus::Pending->value, PaymentStatus::ProofSubmitted->value])
+            ->whereHas('booking', fn ($q) => $q->slotBlocking())
+            ->exists();
+
+        if ($inFlight) {
+            throw DomainException::conflict('This payment method still has bookings waiting to be paid through it. Deactivate it instead until they settle.');
+        }
+
+        DB::transaction(function () use ($method) {
+            $wasDefault = $method->is_default;
+            $method->delete();
+
+            // Promote another active method so online bookings keep working.
+            if ($wasDefault) {
+                $method->providerProfile->paymentMethods()->active()->orderBy('id')->first()?->update(['is_default' => true]);
+            }
+        });
+
+        return ApiResponse::noContent('Payment method deleted.');
     }
 }

@@ -36,4 +36,16 @@ export const conversationApi = {
     const response = await api.get('/messages/unread-count');
     return unwrap(response);
   },
+
+  /** PATCH /api/conversations/{id}/messages/{messageId} */
+  async updateMessage(id, messageId, { body, confirm_override } = {}) {
+    const response = await api.patch(`/conversations/${id}/messages/${messageId}`, { body, confirm_override });
+    return unwrap(response);
+  },
+
+  /** DELETE /api/conversations/{id}/messages/{messageId} (unsend) */
+  async deleteMessage(id, messageId) {
+    const response = await api.delete(`/conversations/${id}/messages/${messageId}`);
+    return unwrap(response);
+  },
 };
