@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\GoogleAuthRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
+use App\Services\GoogleAuthService;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -68,6 +70,28 @@ class AuthController extends Controller
             new UserResource($user),
             'Signed in successfully.'
         );
+    }
+
+    /**
+     * POST /api/auth/google
+     *
+     * "Continue with Google" - verifies the ID token from Google Identity
+     * Services, then signs in (linking onto a matching email if needed) or,
+     * when `role` was sent, creates the account first.
+     */
+    public function google(GoogleAuthRequest $request, GoogleAuthService $googleAuth): JsonResponse
+    {
+        $claims = $googleAuth->verify($request->validated('credential'));
+
+        ['user' => $user, 'created' => $created] = $this->auth->loginWithGoogle(
+            $request,
+            $claims,
+            $request->validated('role'),
+        );
+
+        return $created
+            ? ApiResponse::created(new UserResource($user->fresh()), 'Welcome to WEBIS, '.$user->first_name.'.')
+            : ApiResponse::ok(new UserResource($user), 'Signed in successfully.');
     }
 
     /**

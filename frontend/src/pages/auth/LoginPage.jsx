@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Icon } from '@/components/ui/Icon';
-import { useLogin } from '@/hooks/useAuth';
+import { Divider } from '@/components/ui/Divider';
+import { GoogleButton } from '@/components/ui/GoogleButton';
+import { useLogin, useGoogleAuth } from '@/hooks/useAuth';
+import { googleSignInEnabled } from '@/services/auth/googleIdentity';
 import { ROLE_HOME } from '@/constants';
 
 const schema = z.object({
@@ -20,6 +23,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useLogin();
+  const googleAuth = useGoogleAuth();
   const [formError, setFormError] = useState(null);
   const resetNotice = Boolean(location.state?.resetSuccess);
 
@@ -56,6 +60,22 @@ export default function LoginPage() {
       if (!attached) setFormError(error?.message ?? 'Unable to sign in right now.');
     }
   };
+
+  const handleGoogleCredential = useCallback(
+    async (credential) => {
+      setFormError(null);
+
+      try {
+        const user = await googleAuth.mutateAsync({ credential });
+        const intended = location.state?.from;
+
+        navigate(intended || ROLE_HOME[user.role] || '/', { replace: true });
+      } catch (error) {
+        setFormError(error?.message ?? 'Unable to continue with Google right now.');
+      }
+    },
+    [googleAuth, location.state, navigate],
+  );
 
   return (
     <>
@@ -123,6 +143,13 @@ export default function LoginPage() {
         <Button type="submit" fullWidth loading={isSubmitting || login.isPending}>
           Login
         </Button>
+
+        {googleSignInEnabled && (
+          <>
+            <Divider>Or</Divider>
+            <GoogleButton onCredential={handleGoogleCredential} disabled={googleAuth.isPending || isSubmitting} />
+          </>
+        )}
       </form>
 
       <p className="mt-6 text-center text-sm text-ink-muted">

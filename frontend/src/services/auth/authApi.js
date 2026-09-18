@@ -15,6 +15,19 @@ export const authApi = {
     return unwrap(response);
   },
 
+  /**
+   * POST /api/auth/google
+   *
+   * `role` is only meaningful the first time this Google identity signs in -
+   * it decides the role of the account *if one has to be created*. Omit it
+   * (LoginPage) to only ever sign in to an existing account.
+   */
+  async google({ credential, role }) {
+    const response = await api.post('/auth/google', { credential, role });
+
+    return unwrap(response);
+  },
+
   /** POST /api/auth/logout */
   async logout() {
     await api.post('/auth/logout');

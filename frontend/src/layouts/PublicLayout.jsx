@@ -80,7 +80,12 @@ export function PublicLayout() {
       <footer className="border-t border-line bg-canvas">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-ink-muted sm:flex-row sm:px-6">
           <p>WEBIS — Web-Based Platform for Independent Service Providers</p>
-          <p>Tanza, Cavite</p>
+          <div className="flex items-center gap-4">
+            <Link to="/privacy" className="hover:text-navy-700">
+              Privacy Policy
+            </Link>
+            <p>Tanza, Cavite</p>
+          </div>
         </div>
       </footer>
     </div>

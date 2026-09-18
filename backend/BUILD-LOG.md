@@ -1382,3 +1382,86 @@ regression test in `ConversationTest` with a 21-message thread that
 asserts page 1 starts at the newest id - verified failing on the old code.
 **Rule: when querying through a relation that has its own `orderBy`,
 use `reorder()`, never a second `orderBy*()`.**
+
+### 2026-09-18 — "Continue with Google" on Register/Login (user-requested)
+
+User asked for a Google sign-in option on account creation for client or
+provider, styling left up to this session. Uses Google Identity Services'
+own rendered button (ID-token flow), not an OAuth redirect/Socialite - a
+redirect flow needs a client secret and an exact server-side redirect URI,
+which sits awkwardly across this app's Vercel/Render split; an ID token
+only needs the (non-secret) Client ID on both ends and no new redirect
+surface at all.
+
+**Backend.** `App\Services\GoogleAuthService::verify()` posts the credential
+to Google's `oauth2.googleapis.com/tokeninfo` endpoint (no new Composer
+dependency - deliberately not a JWKS/signature library, since Google already
+validates signature/issuer/expiry and just 400s otherwise) and checks `aud`
+(must equal `config('services.google.client_id')`) and `email_verified`
+itself. `AuthService::loginWithGoogle()` - find by `google_id` or by email;
+no match + a valid `role` creates the account (`registerWithGoogle()`,
+mirrors `register()`: random unguessable `Str::random(40)` password since
+the column is still NOT NULL, `email_verified_at` set immediately since
+Google already vouched for it, provider gets an empty `providerProfile`
+same as normal registration); no match + no `role` (the Login page never
+sends one) throws a 422 telling the visitor to register first, exactly like
+`login()`'s existing "don't invent state for a stranger" posture; a match
+with `google_id` still null links it onto the existing password account
+silently - safe specifically because Google already verified the same
+email a second, stronger way. Extracted the suspension-check +
+session-regenerate + last-login-stamp tail both `login()` and
+`loginWithGoogle()` need into a shared private `establishSession()`.
+Migration `2026_09_18_000001_add_google_id_to_users_table` - nullable,
+unique. `POST /auth/google` (public, `throttle:auth`, in the same route
+group as `login`/`register`).
+`tests/Feature/Auth/GoogleAuthTest.php` (12 new, `Http::fake()` against the
+tokeninfo endpoint): new client/provider account creation, login-page
+sign-in with no role, login-page refusal with no account yet, linking onto
+a pre-existing password account, suspended-account refusal, wrong `aud`,
+unverified email, Google itself rejecting the token, missing credential,
+self-registering as admin refused, already-signed-in caller refused.
+286/286 backend green.
+
+**Known, deliberately unfixed gap:** `AccountController::destroy` (self
+delete-account) re-checks the caller's password, which a Google-only
+account's random one makes impossible to satisfy. Not in scope for what was
+asked; the existing "Forgot password" flow is the escape hatch if it ever
+matters (sets a real, known password on the account).
+
+**Frontend.** `components/ui/GoogleButton.jsx` renders Google's own
+button (`google.accounts.id.renderButton`, `theme: outline`, `shape: pill`,
+`text: continue_with` - literally "Continue with Google") rather than a
+hand-built one: a custom button driving `prompt()` is subject to Google's
+One Tap cooldown suppression and can silently stop showing anything, so the
+rendered button is the only reliable option, and it is already
+brand-compliant with zero custom CSS needed. `services/auth/
+googleIdentity.js` lazy-loads the GSI script once (`ensureGoogleIdentity()`,
+same shared-in-flight-promise shape as `ensureCsrfCookie()` in
+`services/api/client.js`) and exports `googleSignInEnabled = Boolean(
+VITE_GOOGLE_CLIENT_ID)` - the same "leave the key empty, the feature just
+doesn't render" pattern already used for `VITE_PUSHER_APP_KEY`. New
+`components/ui/Divider.jsx`. Wired into `RegisterPage.jsx` (button sends
+the currently-selected role from the existing client/provider toggle;
+placed between that toggle and the manual fields, above a "Or create with
+email" divider) and `LoginPage.jsx` (no role sent; below the manual Login
+button, above a plain "Or" divider). `npm run lint` clean (one real fix:
+`react-hooks/refs` flagged mutating a ref during render for the original
+"stash the latest onCredential in a ref" approach - replaced with just
+depending on `onCredential` directly, since both pages already pass a
+`useCallback`-stabilized handler). 26/26 tests, build clean.
+
+**Left for the user** (per this project's established pattern of never
+typing credentials into a form on the user's behalf): create a Web OAuth
+client in Google Cloud Console (APIs & Services > Credentials), Authorized
+JavaScript origins = `http://localhost:5173` and the production frontend
+origin, no redirect URI needed for this flow. The Client ID (not a secret)
+goes in both `backend/.env`'s `GOOGLE_CLIENT_ID` and `frontend/.env`'s
+`VITE_GOOGLE_CLIENT_ID` - **must be identical** - plus the same two keys on
+Render/Vercel for production. Manually verified in Chrome with a
+placeholder Client ID that the button renders correctly (Google's real
+"G" mark, pill shape, fits the form width, "OR"/"Or create with email"
+dividers read cleanly) on both pages with zero console errors, and that
+both pages render exactly as before (no button, no divider, no layout
+shift) with the key left empty - the actual end-to-end sign-in (real
+Google account -> account created/linked -> dashboard) has **not** been
+verified live, since that needs the user's real Client ID first.

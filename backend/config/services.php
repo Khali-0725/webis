@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'google' => [
+        // The OAuth Web Client ID from Google Cloud Console. Not a secret -
+        // it is also embedded in the frontend bundle (VITE_GOOGLE_CLIENT_ID)
+        // and travels as the `aud` claim inside every Google ID token, which
+        // is exactly what GoogleAuthService checks it against.
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+    ],
+
 ];

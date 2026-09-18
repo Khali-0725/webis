@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -94,6 +95,106 @@ class AuthService
         /** @var User $user */
         $user = Auth::guard('web')->user();
 
+        return $this->establishSession($request, $user);
+    }
+
+    /**
+     * Sign in with an already-verified Google identity, creating the account
+     * first if this email has never signed up.
+     *
+     * Google having verified the email is what makes it safe to silently
+     * link `$google['sub']` onto a pre-existing password account that shares
+     * it, rather than erroring with "email already taken" - it is the same
+     * person proving ownership a second, stronger way.
+     *
+     * @param  array{sub: string, email: string, given_name: string, family_name: string}  $google
+     * @param  string|null  $role  Required only to create a *new* account (the
+     *                             Register page passes it; the Login page
+     *                             does not, since login must never invent a
+     *                             role for a stranger).
+     * @return array{user: User, created: bool}
+     *
+     * @throws DomainException on a suspended account, or a login-page attempt
+     *                         with no matching account yet
+     */
+    public function loginWithGoogle(Request $request, array $google, ?string $role = null): array
+    {
+        $user = User::where('google_id', $google['sub'])
+            ->orWhere('email', $google['email'])
+            ->first();
+
+        $created = $user === null;
+
+        if ($user === null) {
+            if (! in_array($role, UserRole::selfRegisterable(), true)) {
+                throw new DomainException(
+                    'No WEBIS account is linked to this Google account yet. Create one from the Register page.',
+                    422,
+                    ['email' => ['No WEBIS account is linked to this Google account yet. Create one from the Register page.']]
+                );
+            }
+
+            $user = $this->registerWithGoogle($google, UserRole::from($role));
+        } elseif ($user->google_id === null) {
+            // First "Continue with Google" on a pre-existing password
+            // account - link it rather than blocking on "email taken".
+            $user->forceFill(['google_id' => $google['sub']])->saveQuietly();
+        }
+
+        // Unlike login(), nothing has authenticated the guard yet - there was
+        // no password to Auth::attempt() against.
+        Auth::guard('web')->login($user);
+
+        return ['user' => $this->establishSession($request, $user), 'created' => $created];
+    }
+
+    /**
+     * @param  array{sub: string, email: string, given_name: string, family_name: string}  $google
+     */
+    private function registerWithGoogle(array $google, UserRole $role): User
+    {
+        $user = DB::transaction(function () use ($google, $role) {
+            $user = new User;
+
+            $user->fill([
+                'first_name' => $google['given_name'],
+                'last_name' => $google['family_name'],
+                'email' => $google['email'],
+                // Unknown, unguessable, never shown or emailed - this account
+                // only ever signs in through Google unless the owner later
+                // sets a real one via "Forgot password".
+                'password' => Str::random(40),
+            ]);
+
+            $user->google_id = $google['sub'];
+            $user->role = $role;
+            $user->status = UserStatus::Active;
+            // Google already verified this address; asking WEBIS to re-verify
+            // an email Google just vouched for would only add friction.
+            $user->email_verified_at = now();
+
+            $user->save();
+
+            if ($role === UserRole::Provider) {
+                $user->providerProfile()->create([]);
+            }
+
+            return $user;
+        });
+
+        event(new Registered($user));
+
+        return $user;
+    }
+
+    /**
+     * Shared tail of every sign-in path: suspension check, session-fixation
+     * guard, and the last-login stamp.
+     *
+     * @throws DomainException when the account is suspended
+     */
+    private function establishSession(Request $request, User $user): User
+    {
         if (! $user->status->canSignIn()) {
             $this->logout($request);
 

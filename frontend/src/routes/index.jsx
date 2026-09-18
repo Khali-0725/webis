@@ -27,6 +27,7 @@ const PublicProviderProfilePage = lazy(() => import('@/pages/public/ProviderProf
 const ProvidersPage = lazy(() => import('@/pages/public/ProvidersPage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/public/ContactPage'));
+const PrivacyPolicyPage = lazy(() => import('@/pages/public/PrivacyPolicyPage'));
 
 const ProviderProfilePage = lazy(() => import('@/pages/provider/profile/ProviderProfilePage'));
 const ServiceListPage = lazy(() => import('@/pages/provider/services/ServiceListPage'));
@@ -83,6 +84,7 @@ export function AppRoutes() {
           <Route path="providers/:id" element={<PublicProviderProfilePage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
+          <Route path="privacy" element={<PrivacyPolicyPage />} />
         </Route>
 
         {/* Guest-only */}

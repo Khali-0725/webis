@@ -106,6 +106,10 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
         ->middleware('throttle:auth')
         ->name('login');
 
+    Route::post('/google', [AuthController::class, 'google'])
+        ->middleware('throttle:auth')
+        ->name('google');
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('/me', [AuthController::class, 'me'])->name('me');

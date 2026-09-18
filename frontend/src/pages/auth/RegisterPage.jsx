@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,8 +6,11 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
+import { Divider } from '@/components/ui/Divider';
+import { GoogleButton } from '@/components/ui/GoogleButton';
 import { cn } from '@/utils/cn';
-import { useRegister } from '@/hooks/useAuth';
+import { useRegister, useGoogleAuth } from '@/hooks/useAuth';
+import { googleSignInEnabled } from '@/services/auth/googleIdentity';
 import { ROLES, ROLE_HOME } from '@/constants';
 
 const schema = z
@@ -44,6 +47,7 @@ const ROLE_OPTIONS = [
 export default function RegisterPage() {
   const navigate = useNavigate();
   const registerMutation = useRegister();
+  const googleAuth = useGoogleAuth();
   const [formError, setFormError] = useState(null);
 
   const {
@@ -95,6 +99,21 @@ export default function RegisterPage() {
     }
   };
 
+  const handleGoogleCredential = useCallback(
+    async (credential) => {
+      setFormError(null);
+
+      try {
+        const user = await googleAuth.mutateAsync({ credential, role: selectedRole });
+
+        navigate(ROLE_HOME[user.role] ?? '/', { replace: true });
+      } catch (error) {
+        setFormError(error?.message ?? 'Unable to continue with Google right now.');
+      }
+    },
+    [googleAuth, selectedRole, navigate],
+  );
+
   return (
     <>
       <div className="mb-6 text-center">
@@ -140,6 +159,13 @@ export default function RegisterPage() {
             </p>
           )}
         </fieldset>
+
+        {googleSignInEnabled && (
+          <>
+            <GoogleButton onCredential={handleGoogleCredential} disabled={googleAuth.isPending || isSubmitting} />
+            <Divider>Or create with email</Divider>
+          </>
+        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
@@ -205,7 +231,13 @@ export default function RegisterPage() {
               className="mt-0.5 h-4 w-4 rounded border-line text-navy-700 focus:ring-brand"
               {...register('accepted_terms')}
             />
-            <span>I agree to the WEBIS terms of use and privacy notice.</span>
+            <span>
+              I agree to the WEBIS terms of use and{' '}
+              <Link to="/privacy" target="_blank" className="font-medium text-brand hover:text-brand-600">
+                privacy notice
+              </Link>
+              .
+            </span>
           </label>
           {errors.accepted_terms && (
             <p role="alert" className="mt-1 text-xs font-medium text-red-600">

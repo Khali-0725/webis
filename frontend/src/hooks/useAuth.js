@@ -87,6 +87,15 @@ export function useRegister() {
   });
 }
 
+export function useGoogleAuth() {
+  const setUser = useAuthStore((s) => s.setUser);
+
+  return useMutation({
+    mutationFn: authApi.google,
+    onSuccess: (user) => setUser(user),
+  });
+}
+
 export function useForgotPassword() {
   return useMutation({ mutationFn: authApi.forgotPassword });
 }
