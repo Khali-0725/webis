@@ -129,6 +129,24 @@ class GoogleAuthTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_a_deleted_accounts_email_is_refused_cleanly_instead_of_500ing(): void
+    {
+        // Soft-deleted rows still hold the UNIQUE email/google_id, so creating
+        // a fresh account over them would hit the DB constraint.
+        User::factory()->create([
+            'email' => 'juan@example.com',
+            'google_id' => '110169484474386276334',
+        ])->delete();
+        $this->fakeGoogleToken();
+
+        $this->postJson('/api/auth/google', ['credential' => 'fake-jwt', 'role' => 'client'])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false);
+
+        $this->assertGuest();
+        $this->assertSame(1, User::withTrashed()->where('email', 'juan@example.com')->count());
+    }
+
     public function test_a_token_minted_for_a_different_google_client_is_rejected(): void
     {
         $this->fakeGoogleToken(['aud' => 'someone-elses-client-id.apps.googleusercontent.com']);

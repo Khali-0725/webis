@@ -9,6 +9,7 @@ import { LoadingState, EmptyState } from '@/components/ui/States';
 import { fieldError } from '@/services/api/client';
 import { availabilityApi } from '@/services/api/availabilityApi';
 import { queryKeys } from '@/services/api/queryClient';
+import { todayLocal } from '@/utils/date';
 
 const DAYS = [
   { value: 0, label: 'Sunday' },
@@ -191,7 +192,7 @@ export default function AvailabilityPage() {
             label="Date"
             type="date"
             required
-            min={new Date().toISOString().slice(0, 10)}
+            min={todayLocal()}
             value={exceptionDate}
             onChange={(event) => setExceptionDate(event.target.value)}
           />

@@ -1,11 +1,9 @@
-# WEBIS backend — project conventions
+# WEBIS backend — project conventions & build log
 
 Laravel 13 API for the WEBIS capstone. PHP 8.3–8.5, MySQL 8. The user interface
 is the React SPA in `../frontend`; this application serves JSON only.
 
-> This file replaces the Laravel skeleton's default `BUILD-LOG.md`, which contained
-> bootstrap instructions for installing `laravel/boost`. WEBIS does not use
-> Boost — do not install it.
+> WEBIS does not use `laravel/boost` — do not install it.
 
 ## Architecture
 
@@ -1517,3 +1515,19 @@ hidden until opted in"). 294/294 backend, 26/26 frontend, lint clean, prod
 build clean. **Not yet migrated on the local dev DB** - Laragon's MySQL
 wasn't running when this was built; user still needs to run
 `php artisan migrate` locally and on production before this is live.
+
+### 2026-09-23 — Bug pass: Google sign-up over a deleted account, UTC date pickers
+
+- **Google sign-up with a soft-deleted account's email/Google ID 500'd.**
+  `AuthService::loginWithGoogle()` only searched live users, so it tried to
+  insert a new row over the trashed one's UNIQUE `email`/`google_id`. It now
+  checks `onlyTrashed()` first and returns a 422 ("account has been deleted,
+  contact the administrator") - same outcome as password registration,
+  restore stays an admin action. Regression test in `GoogleAuthTest`.
+- **Date inputs used UTC "today".** `new Date().toISOString().slice(0, 10)`
+  is still yesterday in the Philippines until 8 AM, so the booking form and
+  availability exceptions allowed a past date and the profile/work-experience
+  forms refused today. Replaced with `todayLocal()` in
+  `frontend/src/utils/date.js`.
+
+Backend 295/295, frontend lint/tests(26/26)/build clean.

@@ -12,6 +12,7 @@ import { fieldError } from '@/services/api/client';
 import { providerApi } from '@/services/api/providerApi';
 import { publicApi } from '@/services/api/publicApi';
 import { queryKeys } from '@/services/api/queryClient';
+import { todayLocal } from '@/utils/date';
 
 const EMPTY_WORK_EXPERIENCE_FORM = {
   role_title: '',
@@ -237,7 +238,7 @@ export default function ProviderProfilePage() {
               label="Birthdate"
               type="date"
               value={form.birthdate}
-              max={new Date().toISOString().slice(0, 10)}
+              max={todayLocal()}
               onChange={(event) => setForm({ ...form, birthdate: event.target.value })}
             />
 
@@ -327,7 +328,7 @@ export default function ProviderProfilePage() {
             label="Started"
             type="date"
             required
-            max={new Date().toISOString().slice(0, 10)}
+            max={todayLocal()}
             value={weForm.started_on}
             onChange={(event) => setWeForm({ ...weForm, started_on: event.target.value })}
           />
@@ -335,7 +336,7 @@ export default function ProviderProfilePage() {
             <Input
               label="Ended"
               type="date"
-              max={new Date().toISOString().slice(0, 10)}
+              max={todayLocal()}
               value={weForm.ended_on}
               disabled={weForm.is_current}
               onChange={(event) => setWeForm({ ...weForm, ended_on: event.target.value })}
@@ -496,7 +497,7 @@ function WorkExperienceEditor({ experience, onClose, onSaved }) {
           label="Started"
           type="date"
           required
-          max={new Date().toISOString().slice(0, 10)}
+          max={todayLocal()}
           value={form.started_on}
           onChange={set('started_on')}
           error={fieldError(err, 'started_on')}
@@ -505,7 +506,7 @@ function WorkExperienceEditor({ experience, onClose, onSaved }) {
           <Input
             label="Ended"
             type="date"
-            max={new Date().toISOString().slice(0, 10)}
+            max={todayLocal()}
             value={form.ended_on}
             disabled={form.is_current}
             onChange={set('ended_on')}

@@ -13,6 +13,7 @@ import { conversationApi } from '@/services/api/conversationApi';
 import { queryKeys } from '@/services/api/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { PRICING_TYPE_META, ROLES, SETTLEMENT_METHOD_META } from '@/constants';
+import { todayLocal } from '@/utils/date';
 
 function priceLabelFor(service) {
   return service.pricing_type === 'quote'
@@ -57,7 +58,7 @@ function BookingRequestForm({ service, onClose }) {
     onError: (error) => setFormError(error?.message ?? 'Failed to create the booking.'),
   });
 
-  const minDate = new Date().toISOString().slice(0, 10);
+  const minDate = todayLocal();
   const hasPin = pin.latitude != null && pin.longitude != null;
 
   const handleSubmit = (event) => {

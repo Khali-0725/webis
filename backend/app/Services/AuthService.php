@@ -126,6 +126,21 @@ class AuthService
         $created = $user === null;
 
         if ($user === null) {
+            // A soft-deleted account still owns the UNIQUE email/google_id,
+            // so creating over it would 500 on the constraint. Same outcome
+            // as password registration: refuse, restore is an admin action.
+            $trashedExists = User::onlyTrashed()
+                ->where(fn ($q) => $q->where('google_id', $google['sub'])->orWhere('email', $google['email']))
+                ->exists();
+
+            if ($trashedExists) {
+                throw new DomainException(
+                    'This account has been deleted. Please contact the WEBIS administrator to restore it.',
+                    422,
+                    ['email' => ['This account has been deleted. Please contact the WEBIS administrator to restore it.']]
+                );
+            }
+
             if (! in_array($role, UserRole::selfRegisterable(), true)) {
                 throw new DomainException(
                     'No WEBIS account is linked to this Google account yet. Create one from the Register page.',
