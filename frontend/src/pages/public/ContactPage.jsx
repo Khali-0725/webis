@@ -4,8 +4,8 @@ const CHANNELS = [
   {
     icon: 'message',
     label: 'Email',
-    value: 'joshuaapilado0725@gmail.com',
-    href: 'mailto:joshuaapilado0725@gmail.com',
+    value: 'webis@gmail.com',
+    href: 'mailto:webis@gmail.com',
   },
   {
     icon: 'user',

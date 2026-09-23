@@ -71,8 +71,8 @@ export default function PrivacyPolicyPage() {
 
       <p className="mt-8 text-sm text-ink-muted">
         Questions about this policy? Email{' '}
-        <a href="mailto:joshuaapilado0725@gmail.com" className="font-medium text-brand hover:text-brand-600">
-          joshuaapilado0725@gmail.com
+        <a href="mailto:webis@gmail.com" className="font-medium text-brand hover:text-brand-600">
+          webis@gmail.com
         </a>
         .
       </p>
