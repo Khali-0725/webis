@@ -25,6 +25,30 @@ export const providerApi = {
     return unwrap(response);
   },
 
+  /** GET /api/provider/work-experiences */
+  async listMyWorkExperiences() {
+    const response = await api.get('/provider/work-experiences');
+    return unwrap(response);
+  },
+
+  /** POST /api/provider/work-experiences */
+  async createWorkExperience(payload) {
+    const response = await api.post('/provider/work-experiences', payload);
+    return unwrap(response);
+  },
+
+  /** PATCH /api/provider/work-experiences/{id} */
+  async updateWorkExperience(id, payload) {
+    const response = await api.patch(`/provider/work-experiences/${id}`, payload);
+    return unwrap(response);
+  },
+
+  /** DELETE /api/provider/work-experiences/{id} */
+  async deleteWorkExperience(id) {
+    const response = await api.delete(`/provider/work-experiences/${id}`);
+    return unwrap(response);
+  },
+
   /** GET /api/provider/services */
   async listMyServices(params = {}) {
     const response = await api.get('/provider/services', { params });

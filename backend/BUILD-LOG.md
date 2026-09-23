@@ -1465,3 +1465,55 @@ both pages render exactly as before (no button, no divider, no layout
 shift) with the key left empty - the actual end-to-end sign-in (real
 Google account -> account created/linked -> dashboard) has **not** been
 verified live, since that needs the user's real Client ID first.
+
+### 2026-09-23 — Provider public age (opt-in) + work experience list (user-requested)
+
+User wanted clients to see more on a provider's public profile ("age",
+"work experience"), described as being able to "stalk" a provider. Flagged
+the tension with this project's deliberate location-privacy design before
+building anything (see `BookingLocation`/`viewLocation` policy check,
+Phase 5) - user confirmed: **keep exact location private as-is** (no
+change there), age is opt-in per provider, never expose raw `birthdate`.
+
+**Age.** Migration `2026_09_23_000001_add_birthdate_to_provider_profiles_table`
+adds `birthdate` (date, nullable) and `show_age_publicly` (bool, default
+false) to `provider_profiles`. `UpdateProviderProfileRequest` validates
+18+ (`before_or_equal` today-minus-18y). `ProviderProfileResource` (self
+view) exposes both raw fields for editing. `ProviderPublicProfileResource`
+exposes a computed `age` (`ProviderProfile::age()`, gated with
+`when($show_age_publicly && $birthdate)`) - `birthdate` itself never
+appears in the public resource, even when age is shown. Frontend:
+`ProviderProfilePage.jsx` (provider) gets a Birthdate date input + "Show my
+age on my public profile" checkbox with an explicit note that only the
+computed age is ever public; `ProviderProfilePage.jsx` (public) renders
+"NN years old" next to the barangay only when `age` is present in the
+response.
+
+**Work experience.** New table `provider_work_experiences` (migration
+`2026_09_23_000002`) - `role_title`, `employer_name` (nullable),
+`description` (nullable), `started_on`, `ended_on` (nullable = ongoing).
+Deliberately separate from `experience_years` (a single number) and from
+published services (current work) - this is past-history entries, full
+CRUD not a replace-all list like skills/service-areas, because each entry
+carries more fields than a single string. `ProviderWorkExperiencePolicy`
+(ownership check, same shape as `ProviderPaymentMethodPolicy`) - ownership
+enforced per record, not just per profile, per this project's IDOR hard
+rule. Routes: `GET/POST /provider/work-experiences`,
+`PATCH/DELETE /provider/work-experiences/{experience}`. Public: eager-loaded
+in `Public\ProviderController::show()` and embedded in
+`ProviderPublicProfileResource.work_experiences`; **not** added to the
+directory `index()` (list) response, matching how `skills`/`serviceAreas`
+are already detail-only. Frontend: new "Add work experience" +
+"Your work experience" cards on the provider's own profile page (inline
+add form, `Modal`-based editor and `ConfirmDialog`-based delete, mirroring
+`PaymentMethodsPage.jsx`'s pattern) and a new "Work Experience" section on
+the public profile page, both formatting dates as "Mon YYYY – Present/Mon
+YYYY".
+
+7 new backend tests (18+ validation, ownership/403 on edit+delete by a
+different provider, end-before-start rejected, public visibility of both
+features including "birthdate never in the public payload" and "age
+hidden until opted in"). 294/294 backend, 26/26 frontend, lint clean, prod
+build clean. **Not yet migrated on the local dev DB** - Laragon's MySQL
+wasn't running when this was built; user still needs to run
+`php artisan migrate` locally and on production before this is live.

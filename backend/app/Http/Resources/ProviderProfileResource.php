@@ -18,6 +18,8 @@ class ProviderProfileResource extends JsonResource
             'business_name' => $this->business_name,
             'bio' => $this->bio,
             'experience_years' => $this->experience_years,
+            'birthdate' => $this->birthdate?->toDateString(),
+            'show_age_publicly' => $this->show_age_publicly,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'verification_status' => $this->verification_status->value,

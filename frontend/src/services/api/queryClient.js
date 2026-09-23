@@ -64,6 +64,7 @@ export const queryKeys = {
   },
   provider: {
     profile: ['provider', 'profile'],
+    workExperiences: ['provider', 'work-experiences'],
     services: ['provider', 'services'],
     availabilityRules: ['provider', 'availability', 'rules'],
     availabilityExceptions: ['provider', 'availability', 'exceptions'],

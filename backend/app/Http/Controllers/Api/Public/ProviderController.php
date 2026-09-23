@@ -50,7 +50,7 @@ class ProviderController extends Controller
             return ApiResponse::error('This provider is not available.', [], 404);
         }
 
-        $providerProfile->load(['user', 'baseBarangay', 'skills', 'serviceAreas.barangay']);
+        $providerProfile->load(['user', 'baseBarangay', 'skills', 'serviceAreas.barangay', 'workExperiences']);
 
         $services = $providerProfile->services()
             ->published()

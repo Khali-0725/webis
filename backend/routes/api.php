@@ -159,6 +159,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::put('/skills', [App\Http\Controllers\Api\Provider\ProfileController::class, 'updateSkills'])->name('skills.update');
         Route::put('/service-areas', [App\Http\Controllers\Api\Provider\ProfileController::class, 'updateServiceAreas'])->name('service-areas.update');
 
+        Route::get('/work-experiences', [App\Http\Controllers\Api\Provider\WorkExperienceController::class, 'index'])->name('work-experiences.index');
+        Route::post('/work-experiences', [App\Http\Controllers\Api\Provider\WorkExperienceController::class, 'store'])->name('work-experiences.store');
+        Route::patch('/work-experiences/{experience}', [App\Http\Controllers\Api\Provider\WorkExperienceController::class, 'update'])->name('work-experiences.update');
+        Route::delete('/work-experiences/{experience}', [App\Http\Controllers\Api\Provider\WorkExperienceController::class, 'destroy'])->name('work-experiences.destroy');
+
         Route::get('/services', [App\Http\Controllers\Api\Provider\ServiceController::class, 'index'])->name('services.index');
         Route::get('/services/{service}', [App\Http\Controllers\Api\Provider\ServiceController::class, 'show'])->name('services.show');
         Route::post('/services', [App\Http\Controllers\Api\Provider\ServiceController::class, 'store'])->name('services.store');

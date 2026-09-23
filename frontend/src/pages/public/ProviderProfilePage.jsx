@@ -9,6 +9,11 @@ import { publicApi } from '@/services/api/publicApi';
 import { reviewApi } from '@/services/api/reviewApi';
 import { queryKeys } from '@/services/api/queryClient';
 
+function formatMonthYear(dateString) {
+  if (!dateString) return '';
+  return new Date(`${dateString}T00:00:00`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
 function RatingDistribution({ distribution, total }) {
   return (
     <div className="space-y-1">
@@ -73,8 +78,12 @@ export default function ProviderProfilePage() {
             <h1 className="font-display text-2xl font-bold text-navy-800">
               {provider.business_name}
             </h1>
-            {provider.base_barangay && (
-              <p className="mt-1 text-sm text-ink-muted">{provider.base_barangay.name}</p>
+            {(provider.base_barangay || provider.age != null) && (
+              <p className="mt-1 text-sm text-ink-muted">
+                {[provider.base_barangay?.name, provider.age != null ? `${provider.age} years old` : null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
             )}
           </div>
           {provider.rating_count > 0 && (
@@ -121,6 +130,29 @@ export default function ProviderProfilePage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {provider.work_experiences?.length > 0 && (
+        <>
+          <h2 className="mt-8 font-display text-xl font-bold text-navy-800">Work Experience</h2>
+          <ul className="mt-4 space-y-3">
+            {provider.work_experiences.map((experience) => (
+              <li key={experience.id} className="webis-card p-4">
+                <p className="font-semibold text-navy-800">
+                  {experience.role_title}
+                  {experience.employer_name ? ` · ${experience.employer_name}` : ''}
+                </p>
+                <p className="text-sm text-ink-muted">
+                  {formatMonthYear(experience.started_on)} –{' '}
+                  {experience.is_current ? 'Present' : formatMonthYear(experience.ended_on)}
+                </p>
+                {experience.description && (
+                  <p className="mt-1 text-sm text-ink-muted">{experience.description}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <h2 className="mt-8 font-display text-xl font-bold text-navy-800">Reviews</h2>

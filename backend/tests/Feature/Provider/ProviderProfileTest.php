@@ -29,6 +29,34 @@ class ProviderProfileTest extends TestCase
             ->assertJsonPath('data.business_name', 'Josh Plumbing Services');
     }
 
+    public function test_provider_can_set_birthdate_and_opt_into_public_age(): void
+    {
+        $user = User::factory()->provider()->create();
+        ProviderProfile::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)
+            ->patchJson('/api/provider/profile', [
+                'birthdate' => now()->subYears(25)->toDateString(),
+                'show_age_publicly' => true,
+            ])
+            ->assertOk();
+
+        $this->assertTrue($response->json('data.show_age_publicly'));
+        $this->assertNotNull($response->json('data.birthdate'));
+    }
+
+    public function test_provider_birthdate_must_be_at_least_18_years_old(): void
+    {
+        $user = User::factory()->provider()->create();
+        ProviderProfile::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->patchJson('/api/provider/profile', [
+                'birthdate' => now()->subYears(17)->toDateString(),
+            ])
+            ->assertStatus(422);
+    }
+
     public function test_client_cannot_access_provider_profile_routes(): void
     {
         $client = User::factory()->client()->create();

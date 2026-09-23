@@ -24,6 +24,8 @@ class ProviderProfile extends Model
         'business_name',
         'bio',
         'experience_years',
+        'birthdate',
+        'show_age_publicly',
         'base_barangay_id',
         'latitude',
         'longitude',
@@ -34,6 +36,8 @@ class ProviderProfile extends Model
     {
         return [
             'experience_years' => 'integer',
+            'birthdate' => 'date',
+            'show_age_publicly' => 'boolean',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'verification_status' => VerificationStatus::class,
@@ -68,6 +72,11 @@ class ProviderProfile extends Model
         return $this->verification_status === VerificationStatus::Approved;
     }
 
+    public function age(): ?int
+    {
+        return $this->birthdate?->age;
+    }
+
     // -----------------------------------------------------------------
     // Relationships
     // -----------------------------------------------------------------
@@ -90,6 +99,11 @@ class ProviderProfile extends Model
     public function skills(): HasMany
     {
         return $this->hasMany(ProviderSkill::class);
+    }
+
+    public function workExperiences(): HasMany
+    {
+        return $this->hasMany(ProviderWorkExperience::class)->orderByDesc('started_on');
     }
 
     public function verificationDocuments(): HasMany
