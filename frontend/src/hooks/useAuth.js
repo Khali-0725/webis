@@ -22,6 +22,7 @@ import { useAuthStore } from '@/store/authStore';
 export function useAuthBootstrap() {
   const setUser = useAuthStore((s) => s.setUser);
   const clearUser = useAuthStore((s) => s.clearUser);
+  const setSessionEndedMessage = useAuthStore((s) => s.setSessionEndedMessage);
   const setStatus = useAuthStore((s) => s.setStatus);
   const status = useAuthStore((s) => s.status);
   const startedRef = useRef(false);
@@ -38,8 +39,11 @@ export function useAuthBootstrap() {
     authApi
       .me()
       .then((user) => (user ? setUser(user) : clearUser()))
-      .catch(() => clearUser());
-  }, [setUser, clearUser, setStatus]);
+      .catch((error) => {
+        clearUser();
+        if (error?.errors?.session) setSessionEndedMessage(error.message);
+      });
+  }, [setUser, clearUser, setSessionEndedMessage, setStatus]);
 
   return status;
 }

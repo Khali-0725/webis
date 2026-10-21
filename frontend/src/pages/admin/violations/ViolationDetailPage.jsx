@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { violationApi } from '@/services/api/admin/violationApi';
 import { queryKeys } from '@/services/api/queryClient';
@@ -18,6 +19,10 @@ export default function ViolationDetailPage() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const [notice, setNotice] = useState(null);
+  const [showSuspendConfirm, setShowSuspendConfirm] = useState(false);
+  const [suspensionReason, setSuspensionReason] = useState('');
+  const [suspensionBasis, setSuspensionBasis] = useState('');
+  const [suspensionDays, setSuspensionDays] = useState(1);
 
   const { data: violation, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.admin.violation(id),
@@ -25,11 +30,12 @@ export default function ViolationDetailPage() {
   });
 
   const actionMutation = useMutation({
-    mutationFn: (action) => violationApi.act(id, action),
+    mutationFn: ({ action, payload }) => violationApi.act(id, action, payload),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.admin.violation(id), data);
       queryClient.invalidateQueries({ queryKey: ['admin', 'violations'] });
-      setNotice({ tone: 'success', message: `Violation ${data.admin_status_label.toLowerCase()}.` });
+      setShowSuspendConfirm(false);
+      setNotice({ tone: 'success', message: `Moderation case ${data.admin_status_label.toLowerCase()}.` });
     },
     onError: (err) => setNotice({ tone: 'error', message: err?.message ?? 'Action failed.' }),
   });
@@ -40,7 +46,7 @@ export default function ViolationDetailPage() {
   const closed = violation.admin_status !== 'open' && violation.admin_status !== 'reviewed';
 
   return (
-    <Card title="Flagged Message">
+    <Card title="Flagged Message Review">
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}
@@ -66,7 +72,7 @@ export default function ViolationDetailPage() {
           </dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-ink-muted">Severity / Action taken</dt>
+          <dt className="text-xs uppercase tracking-wide text-ink-muted">Flag severity / Automatic filter action</dt>
           <dd className="text-ink">
             {violation.severity} / {violation.action_taken}
           </dd>
@@ -82,29 +88,57 @@ export default function ViolationDetailPage() {
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
-            onClick={() => actionMutation.mutate('dismiss')}
-            loading={actionMutation.isPending && actionMutation.variables === 'dismiss'}
+            onClick={() => actionMutation.mutate({ action: 'dismiss' })}
+            loading={actionMutation.isPending && actionMutation.variables?.action === 'dismiss'}
           >
             Dismiss
           </Button>
           <Button
             variant="subtle"
-            onClick={() => actionMutation.mutate('warn')}
-            loading={actionMutation.isPending && actionMutation.variables === 'warn'}
+            onClick={() => actionMutation.mutate({ action: 'warn' })}
+            loading={actionMutation.isPending && actionMutation.variables?.action === 'warn'}
           >
             Warn
           </Button>
           <Button
             variant="danger"
             onClick={() => {
-              if (confirm('This will suspend the user account. Continue?')) actionMutation.mutate('suspend');
+              actionMutation.reset();
+              setShowSuspendConfirm(true);
             }}
-            loading={actionMutation.isPending && actionMutation.variables === 'suspend'}
+            loading={actionMutation.isPending && actionMutation.variables?.action === 'suspend'}
           >
             Suspend user
           </Button>
         </div>
       )}
+      <ConfirmDialog
+        open={showSuspendConfirm}
+        onClose={() => setShowSuspendConfirm(false)}
+        onConfirm={() => {
+          if (!actionMutation.isPending) actionMutation.mutate({ action: 'suspend', payload: {
+            reason: suspensionReason, basis: suspensionBasis, days: Number(suspensionDays),
+          } });
+        }}
+        title={`Suspend ${violation.user?.full_name ?? 'this account'}?`}
+        description="Record the reason and policy basis. This action revokes the current session and expires automatically."
+        confirmLabel="Suspend account"
+        tone="danger"
+        loading={actionMutation.isPending}
+        error={actionMutation.error?.message}
+      >
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-ink">Violation basis
+            <input value={suspensionBasis} onChange={(event) => setSuspensionBasis(event.target.value)} maxLength={120} className="mt-1 h-10 w-full rounded-lg border border-line bg-white px-3" placeholder="Policy or evidence reference" />
+          </label>
+          <label className="block text-sm font-medium text-ink">Reason
+            <textarea value={suspensionReason} onChange={(event) => setSuspensionReason(event.target.value)} rows={3} maxLength={1000} className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2" placeholder="Explain the decision" />
+          </label>
+          <label className="block text-sm font-medium text-ink">Duration in days (maximum 15)
+            <input type="number" min={1} max={15} value={suspensionDays} onChange={(event) => setSuspensionDays(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-line bg-white px-3" />
+          </label>
+        </div>
+      </ConfirmDialog>
     </Card>
   );
 }

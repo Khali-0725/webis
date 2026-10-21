@@ -1,6 +1,10 @@
 import { api, unwrap, unwrapMeta } from '@/services/api/client';
 
 export const reviewApi = {
+  async adminList(params = {}) { const response = await api.get('/admin/reviews', { params }); return { items: unwrap(response), meta: unwrapMeta(response) }; },
+  async adminVisibility(id, isVisible, reason) { const response = await api.patch(`/admin/reviews/${id}/visibility`, { is_visible: isVisible, reason }); return unwrap(response); },
+  async adminArchive(id, reason) { const response = await api.delete(`/admin/reviews/${id}`, { data: { reason } }); return unwrap(response); },
+  async adminRestore(id) { const response = await api.post(`/admin/reviews/${id}/restore`); return unwrap(response); },
   /** GET /api/bookings/{id}/review */
   async forBooking(bookingId) {
     const response = await api.get(`/bookings/${bookingId}/review`);
@@ -34,24 +38,6 @@ export const reviewApi = {
   /** POST /api/reviews/{id}/reply */
   async reply(reviewId, providerReply) {
     const response = await api.post(`/reviews/${reviewId}/reply`, { provider_reply: providerReply });
-    return unwrap(response);
-  },
-
-  /** PATCH /api/reviews/{id}/visibility */
-  async setVisibility(reviewId, isVisible) {
-    const response = await api.patch(`/reviews/${reviewId}/visibility`, { is_visible: isVisible });
-    return unwrap(response);
-  },
-
-  /** PATCH /api/reviews/{id} - the author edits their review */
-  async update(reviewId, { rating, comment }) {
-    const response = await api.patch(`/reviews/${reviewId}`, { rating, comment });
-    return unwrap(response);
-  },
-
-  /** DELETE /api/reviews/{id} - the author withdraws it (soft delete) */
-  async remove(reviewId) {
-    const response = await api.delete(`/reviews/${reviewId}`);
     return unwrap(response);
   },
 

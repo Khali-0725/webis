@@ -8,6 +8,7 @@ use App\Http\Requests\Payment\SubmitPaymentProofRequest;
 use App\Http\Resources\PaymentResource;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Support\AdminRecordFilters;
 use App\Services\PaymentService;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
@@ -33,6 +34,29 @@ class PaymentController extends Controller
         return ApiResponse::ok(new PaymentResource($payment));
     }
 
+    public function receipt(Request $request, Booking $booking): JsonResponse
+    {
+        $payment = $booking->payment()->with(['proofs', 'paymentMethod', 'booking.service', 'booking.client', 'booking.providerProfile.user'])->firstOrFail();
+        $this->authorize('viewReceipt', $payment);
+        $current = $payment->proofs->firstWhere('superseded_at', null);
+
+        return ApiResponse::ok([
+            'receipt_id' => 'WBR-'.str_pad((string) $payment->id, 8, '0', STR_PAD_LEFT),
+            'booking_code' => $booking->booking_code,
+            'service' => $booking->service?->title,
+            'provider' => $booking->providerProfile?->business_name ?: $booking->providerProfile?->user?->full_name,
+            'client' => $booking->client?->full_name,
+            'amount_due' => $payment->amount,
+            'amount_declared_paid' => $current?->declared_amount,
+            'reference_number' => $current?->reference_number ?? $payment->reference_number,
+            'payment_date' => $current?->paid_at?->toIso8601String(),
+            'submitted_at' => $current?->created_at?->toIso8601String(),
+            'payment_method' => $payment->settlement_method->value,
+            'status' => $payment->status->value,
+            'verified_at' => $payment->verified_at?->toIso8601String(),
+        ]);
+    }
+
     public function submitProof(SubmitPaymentProofRequest $request, Booking $booking): JsonResponse
     {
         $this->authorize('submitProof', $booking);
@@ -44,6 +68,8 @@ class PaymentController extends Controller
             $request->user(),
             $request->file('proof'),
             $request->validated('reference_number'),
+            $request->validated('declared_amount'),
+            $request->validated('paid_at'),
         );
 
         return ApiResponse::ok(new PaymentResource($updated->load(['booking', 'paymentMethod', 'proofs'])), 'Payment proof submitted.');
@@ -77,6 +103,7 @@ class PaymentController extends Controller
 
         if ($user->isAdmin()) {
             TrashFilter::apply($query, $request);
+            AdminRecordFilters::apply($query, $request);
         }
 
         if ($user->isProvider()) {
@@ -88,7 +115,11 @@ class PaymentController extends Controller
 
         $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
 
-        return ApiResponse::paginated($query->orderByDesc('created_at')->paginate($perPage), PaymentResource::class);
+        if (! $user->isAdmin()) {
+            $query->orderByDesc('created_at');
+        }
+
+        return ApiResponse::paginated($query->paginate($perPage), PaymentResource::class);
     }
 
     /**

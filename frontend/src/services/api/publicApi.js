@@ -1,6 +1,10 @@
 import { api, unwrap, unwrapMeta } from '@/services/api/client';
 
 export const publicApi = {
+  async announcement() {
+    const response = await api.get('/announcement');
+    return unwrap(response);
+  },
   /** GET /api/barangays */
   async listBarangays() {
     const response = await api.get('/barangays');
@@ -35,5 +39,9 @@ export const publicApi = {
   async listProviders(params = {}) {
     const response = await api.get('/providers', { params });
     return { items: unwrap(response), meta: unwrapMeta(response) };
+  },
+  async providerMap(params = {}) {
+    const response = await api.get('/providers-map', { params });
+    return unwrap(response) ?? [];
   },
 };

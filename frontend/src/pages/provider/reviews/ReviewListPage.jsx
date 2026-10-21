@@ -32,11 +32,6 @@ export default function ReviewListPage() {
     },
   });
 
-  const visibilityMutation = useMutation({
-    mutationFn: ({ id, isVisible }) => reviewApi.setVisibility(id, isVisible),
-    onSuccess: invalidate,
-  });
-
   const removeReplyMutation = useMutation({
     mutationFn: (id) => reviewApi.removeReply(id),
     onSuccess: invalidate,
@@ -105,14 +100,6 @@ export default function ReviewListPage() {
                     </Button>
                   </>
                 )}
-                <Button
-                  size="sm"
-                  variant="subtle"
-                  loading={visibilityMutation.isPending && visibilityMutation.variables?.id === review.id}
-                  onClick={() => visibilityMutation.mutate({ id: review.id, isVisible: !review.is_visible })}
-                >
-                  {review.is_visible ? 'Hide' : 'Unhide'}
-                </Button>
               </div>
 
               {openReplyFor === review.id && (

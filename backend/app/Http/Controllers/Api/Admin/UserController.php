@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Http\Resources\Admin\UserResource;
 use App\Models\User;
+use App\Support\AdminRecordFilters;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
 use App\Support\TrashFilter;
@@ -24,7 +25,7 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'role' => ['nullable', Rule::in(UserRole::values())],
-            'status' => ['nullable', Rule::in(UserStatus::values())],
+            'status' => ['nullable', Rule::in([...UserStatus::values(), 'terminated'])],
             'search' => ['nullable', 'string', 'max:150'],
             'trashed' => ['nullable', Rule::in(['only', 'with'])],
         ]);
@@ -35,8 +36,11 @@ class UserController extends Controller
             $query->where('role', $validated['role']);
         }
 
-        if (! empty($validated['status'])) {
+        if (($validated['status'] ?? null) === 'terminated') {
+            $query->whereNotNull('terminated_at');
+        } elseif (! empty($validated['status'])) {
             $query->where('status', $validated['status']);
+            $query->whereNull('terminated_at');
         }
 
         if (! empty($validated['search'])) {
@@ -48,7 +52,7 @@ class UserController extends Controller
 
         $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
 
-        return ApiResponse::paginated($query->orderByDesc('created_at')->paginate($perPage), UserResource::class);
+        return ApiResponse::paginated(AdminRecordFilters::apply($query, $request)->paginate($perPage), UserResource::class);
     }
 
     public function show(User $user): JsonResponse
@@ -143,22 +147,73 @@ class UserController extends Controller
         return ApiResponse::ok(new UserResource($user->fresh()), 'User updated successfully.');
     }
 
-    public function suspend(Request $request, User $user): JsonResponse
+    public function suspend(Request $request, User $user, \App\Services\AccountSuspensionService $suspensions): JsonResponse
     {
-        $user->forceFill(['status' => UserStatus::Suspended])->save();
+        if ($user->id === $request->user()->id || $user->terminated_at !== null) {
+            throw DomainException::forbidden('This account cannot be suspended.');
+        }
 
-        AuditLogger::record($request->user(), 'user.suspended', $user, [], $request);
+        $maximumDays = \App\Services\AccountSuspensionService::maximumDays();
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:1000'],
+            'basis' => ['required', 'string', 'max:120'],
+            'days' => ['required', 'integer', 'between:1,'.$maximumDays],
+        ]);
+
+        $suspensions->suspend($user, $request->user(), $data, $request, 'admin_user_management');
 
         return ApiResponse::ok(null, 'User suspended successfully.');
     }
 
     public function activate(Request $request, User $user): JsonResponse
     {
-        $user->forceFill(['status' => UserStatus::Active])->save();
+        if ($user->terminated_at !== null) {
+            throw DomainException::conflict('A terminated account requires a separate restoration decision.');
+        }
+        $user->forceFill(['status' => UserStatus::Active, 'suspended_until' => null])->save();
 
         AuditLogger::record($request->user(), 'user.activated', $user, [], $request);
 
         return ApiResponse::ok(null, 'User activated successfully.');
+    }
+
+    public function terminate(Request $request, User $user): JsonResponse
+    {
+        if ($user->id === $request->user()->id || $user->terminated_at !== null) {
+            throw DomainException::forbidden('This account cannot be terminated.');
+        }
+        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:1000']]);
+
+        $user->forceFill([
+            'terminated_at' => now(),
+            'termination_reason' => $data['reason'],
+            'terminated_by' => $request->user()->id,
+            'active_session_id' => null,
+            'remember_token' => null,
+        ])->save();
+
+        AuditLogger::record($request->user(), 'user.terminated', $user, $data, $request);
+
+        return ApiResponse::noContent('Account terminated.');
+    }
+
+    public function restoreTerminated(Request $request, User $user): JsonResponse
+    {
+        if ($user->terminated_at === null) {
+            throw DomainException::conflict('This account is not terminated.');
+        }
+        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:1000']]);
+        $user->forceFill([
+            'terminated_at' => null,
+            'termination_reason' => null,
+            'terminated_by' => null,
+            'status' => UserStatus::Active,
+            'suspended_until' => null,
+            'active_session_id' => null,
+        ])->save();
+        AuditLogger::record($request->user(), 'user.termination_restored', $user, $data, $request);
+
+        return ApiResponse::ok(new UserResource($user->fresh()), 'Account restored.');
     }
 
     /**

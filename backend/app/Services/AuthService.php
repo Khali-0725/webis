@@ -84,7 +84,8 @@ class AuthService
      */
     public function login(Request $request, string $email, string $password, bool $remember = false): User
     {
-        if (! Auth::guard('web')->attempt(['email' => $email, 'password' => $password], $remember)) {
+        // Persistent remember-me cookies could silently recreate an idle session.
+        if (! Auth::guard('web')->attempt(['email' => $email, 'password' => $password], false)) {
             // Deliberately identical message for "no such user" and "wrong password"
             // so the endpoint cannot be used to enumerate registered emails.
             throw new DomainException('These credentials do not match our records.', 422, [
@@ -150,6 +151,8 @@ class AuthService
             }
 
             $user = $this->registerWithGoogle($google, UserRole::from($role));
+        } elseif (! $user->canAccessAccount()) {
+            throw DomainException::forbidden('This account cannot sign in. Please contact the WEBIS administrator.');
         } elseif ($user->google_id === null) {
             // First "Continue with Google" on a pre-existing password
             // account - link it rather than blocking on "email taken".
@@ -210,11 +213,13 @@ class AuthService
      */
     private function establishSession(Request $request, User $user): User
     {
-        if (! $user->status->canSignIn()) {
+        if (! $user->canAccessAccount()) {
             $this->logout($request);
 
             throw DomainException::forbidden(
-                'This account has been suspended. Please contact the WEBIS administrator.'
+                $user->getRawOriginal('terminated_at') !== null
+                    ? 'This account has been terminated. Please contact the WEBIS administrator.'
+                    : 'This account has been suspended. Please contact the WEBIS administrator.'
             );
         }
 
@@ -222,11 +227,13 @@ class AuthService
         // Token-based (non-stateful) callers have no session to rotate.
         if ($request->hasSession()) {
             $request->session()->regenerate();
+            $request->session()->put('webis.last_user_activity', now()->timestamp);
         }
 
         $user->forceFill([
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
+            'active_session_id' => $request->hasSession() ? $request->session()->getId() : null,
         ])->saveQuietly();
 
         return $user;
@@ -237,6 +244,10 @@ class AuthService
      */
     public function logout(Request $request): void
     {
+        $user = Auth::guard('web')->user();
+        if ($user && $request->hasSession() && $user->getRawOriginal('active_session_id') === $request->session()->getId()) {
+            $user->forceFill(['active_session_id' => null])->saveQuietly();
+        }
         Auth::guard('web')->logout();
 
         if ($request->hasSession()) {

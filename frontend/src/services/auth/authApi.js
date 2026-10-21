@@ -60,7 +60,7 @@ export const authApi = {
 
       return unwrap(response);
     } catch (error) {
-      if (error?.status === 401) return null;
+      if (error?.status === 401 && !error?.errors?.session) return null;
 
       throw error;
     }

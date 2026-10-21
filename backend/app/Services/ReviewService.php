@@ -21,26 +21,13 @@ class ReviewService
     public function create(Booking $booking, User $client, int $rating, ?string $comment): Review
     {
         return DB::transaction(function () use ($booking, $client, $rating, $comment) {
+            $booking = Booking::whereKey($booking->id)->lockForUpdate()->firstOrFail();
             if ($booking->status !== BookingStatus::Completed) {
                 throw DomainException::forbidden('You can only review a booking after it has been completed.');
             }
 
-            if ($booking->review()->exists()) {
+            if ($booking->review()->withTrashed()->exists()) {
                 throw DomainException::conflict('This booking has already been reviewed.');
-            }
-
-            // UNIQUE(booking_id) still holds for a soft-deleted review, so a
-            // client re-reviewing after withdrawing one revives that row
-            // instead of colliding with it.
-            $trashed = $booking->review()->onlyTrashed()->first();
-
-            if ($trashed) {
-                $trashed->restore();
-                $trashed->forceFill(['rating' => $rating, 'comment' => $comment, 'is_visible' => true])->save();
-
-                $this->recomputeAggregates($booking->provider_profile_id);
-
-                return $trashed->fresh(['client', 'booking.service']);
             }
 
             $review = Review::create([
@@ -54,30 +41,6 @@ class ReviewService
             $this->recomputeAggregates($booking->provider_profile_id);
 
             return $review->fresh(['client', 'booking.service']);
-        });
-    }
-
-    public function update(Review $review, int $rating, ?string $comment): Review
-    {
-        return DB::transaction(function () use ($review, $rating, $comment) {
-            $review->update(['rating' => $rating, 'comment' => $comment]);
-
-            $this->recomputeAggregates($review->provider_profile_id);
-
-            return $review->fresh();
-        });
-    }
-
-    /**
-     * Soft delete; the provider's cached aggregates drop it immediately,
-     * exactly as hiding does.
-     */
-    public function delete(Review $review): void
-    {
-        DB::transaction(function () use ($review) {
-            $review->delete();
-
-            $this->recomputeAggregates($review->provider_profile_id);
         });
     }
 

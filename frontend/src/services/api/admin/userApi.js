@@ -14,8 +14,18 @@ export const userApi = {
   },
 
   /** PATCH /api/admin/users/{id}/suspend */
-  async suspend(id) {
-    const response = await api.patch(`/admin/users/${id}/suspend`);
+  async suspend(id, payload) {
+    const response = await api.patch(`/admin/users/${id}/suspend`, payload);
+    return unwrap(response);
+  },
+
+  async terminate(id, reason) {
+    const response = await api.patch(`/admin/users/${id}/terminate`, { reason });
+    return unwrap(response);
+  },
+
+  async restoreTerminated(id, reason) {
+    const response = await api.patch(`/admin/users/${id}/restore-terminated`, { reason });
     return unwrap(response);
   },
 

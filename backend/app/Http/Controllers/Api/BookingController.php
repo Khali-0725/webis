@@ -61,16 +61,41 @@ class BookingController extends Controller
 
         $validated = $request->validate([
             'status' => ['nullable', Rule::in(BookingStatus::values())],
+            'provider_id' => ['nullable', 'integer', 'exists:provider_profiles,id'],
+            'category_id' => ['nullable', 'integer', 'exists:service_categories,id'],
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'sort' => ['nullable', Rule::in(['newest', 'oldest'])],
         ]);
 
         if (! empty($validated['status'])) {
             $query->withStatus(BookingStatus::from($validated['status']));
         }
 
+        if ($user->isAdmin() && ! empty($validated['provider_id'])) {
+            $query->where('provider_profile_id', $validated['provider_id']);
+        }
+        if (! empty($validated['category_id'])) {
+            $query->whereHas('service', fn ($service) => $service->where('service_category_id', $validated['category_id']));
+        }
+        if (! empty($validated['start_date'])) {
+            $query->whereDate('scheduled_date', '>=', $validated['start_date']);
+        }
+        if (! empty($validated['end_date'])) {
+            $query->whereDate('scheduled_date', '<=', $validated['end_date']);
+        }
+
         $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
 
+        $direction = ($validated['sort'] ?? 'newest') === 'oldest' ? 'asc' : 'desc';
+        if ($user->isAdmin() && $request->string('trashed')->toString() === 'only') {
+            $query->orderBy('deleted_at', $direction)->orderBy('id', $direction);
+        } else {
+            $query->orderBy('scheduled_date', $direction)->orderBy('scheduled_start_time', $direction);
+        }
+
         return ApiResponse::paginated(
-            $query->orderByDesc('scheduled_date')->orderByDesc('scheduled_start_time')->paginate($perPage),
+            $query->paginate($perPage),
             BookingResource::class
         );
     }

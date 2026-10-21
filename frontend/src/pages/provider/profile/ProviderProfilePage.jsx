@@ -63,6 +63,7 @@ export default function ProviderProfilePage() {
       show_age_publicly: profileQuery.data.show_age_publicly ?? false,
       base_barangay_id: profileQuery.data.base_barangay?.id ?? '',
       is_accepting_bookings: profileQuery.data.is_accepting_bookings,
+      welcome_message: profileQuery.data.welcome_message ?? '',
     });
     setSkillsText((profileQuery.data.skills ?? []).join(', '));
     setServiceAreaIds((profileQuery.data.service_areas ?? []).map(String));
@@ -264,6 +265,10 @@ export default function ProviderProfilePage() {
               className="h-4 w-4 rounded border-line text-navy-700 focus:ring-brand"
             />
             Currently accepting bookings
+          </label>
+          <label className="block text-sm font-medium text-ink">Automatic welcome message (optional)
+            <textarea maxLength={500} rows={3} value={form.welcome_message} onChange={(event) => setForm({ ...form, welcome_message: event.target.value })} className="mt-1 block w-full rounded-lg border border-line bg-white p-3 text-sm" placeholder="A short greeting for new client conversations" />
+            <span className="mt-1 block text-xs font-normal text-ink-muted">Sent once when a new conversation starts and clearly marked as automatic.</span>
           </label>
 
           <Button type="submit" loading={profileMutation.isPending}>

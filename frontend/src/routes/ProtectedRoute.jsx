@@ -32,6 +32,11 @@ export function ProtectedRoute({ allow }) {
     return <Navigate to={user.home_path} replace />;
   }
 
+  if (role === 'provider' && user.provider_verification_status !== 'approved'
+      && !['/provider/verification', '/provider/profile', '/profile'].includes(location.pathname)) {
+    return <Navigate to="/provider/verification" replace />;
+  }
+
   return <Outlet />;
 }
 

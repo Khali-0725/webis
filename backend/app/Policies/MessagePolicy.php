@@ -14,7 +14,7 @@ class MessagePolicy
      */
     public function update(User $user, Message $message): bool
     {
-        return $user->id === $message->sender_id;
+        return ! $message->is_automated && $user->id === $message->sender_id;
     }
 
     public function delete(User $user, Message $message): bool

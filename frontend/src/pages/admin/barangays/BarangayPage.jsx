@@ -9,6 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RowActions } from '@/components/ui/RowActions';
 import { TrashToggle, DeletedBadge } from '@/components/ui/TrashToggle';
+import { AdminRecordFilters } from '@/components/ui/AdminRecordFilters';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { adminBarangayApi } from '@/services/api/admin/barangayApi';
 import { fieldError } from '@/services/api/client';
@@ -20,11 +21,12 @@ export default function BarangayPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState(EMPTY);
   const [trashed, setTrashed] = useState('');
+  const [recordFilters, setRecordFilters] = useState({ sort: 'newest', start_date: '', end_date: '' });
   const [notice, setNotice] = useState(null);
   const [editing, setEditing] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
-  const params = trashed ? { trashed } : {};
+  const params = { ...(trashed ? { trashed } : {}), ...Object.fromEntries(Object.entries(recordFilters).filter(([, v]) => v)) };
 
   const { data: barangays = [], isPending, isError, error, refetch } = useQuery({
     queryKey: [...queryKeys.admin.barangays, params],
@@ -101,6 +103,7 @@ export default function BarangayPage() {
       </Card>
 
       <Card title="Barangays" action={<TrashToggle value={trashed} onChange={setTrashed} />}>
+        <AdminRecordFilters value={recordFilters} inTrash={trashed === 'only'} onChange={(patch) => setRecordFilters({ ...recordFilters, ...patch })} />
         {isPending && <LoadingState label="Loading barangays…" />}
         {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}
 

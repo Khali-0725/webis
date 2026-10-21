@@ -3,7 +3,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { Alert } from '@/components/ui/Alert';
+import { ReportAction } from '@/components/ui/ReportAction';
 import { Input } from '@/components/ui/Input';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { LocationPicker } from '@/components/map/LocationPicker';
@@ -33,9 +35,12 @@ function BookingRequestForm({ service, onClose }) {
 
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('');
+  const [province, setProvince] = useState('');
+  const [municipality, setMunicipality] = useState('');
   const [barangayId, setBarangayId] = useState('');
   const [addressLine, setAddressLine] = useState('');
   const [pin, setPin] = useState({ latitude: null, longitude: null });
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
   const [landmarkNotes, setLandmarkNotes] = useState('');
   const [clientNotes, setClientNotes] = useState('');
   const [settlementMethod, setSettlementMethod] = useState('');
@@ -60,6 +65,17 @@ function BookingRequestForm({ service, onClose }) {
 
   const minDate = todayLocal();
   const hasPin = pin.latitude != null && pin.longitude != null;
+  const provinces = [...new Set(barangays.map((item) => item.province).filter(Boolean))].sort();
+  const municipalities = [...new Set(barangays.filter((item) => item.province === province)
+    .map((item) => item.municipality).filter(Boolean))].sort();
+  const availableBarangays = barangays.filter((item) => item.province === province && item.municipality === municipality);
+  const selectedBarangay = availableBarangays.find((item) => String(item.id) === barangayId);
+  const areaWithCoordinates = selectedBarangay?.latitude != null && selectedBarangay?.longitude != null
+    ? selectedBarangay
+    : availableBarangays.find((item) => item.latitude != null && item.longitude != null);
+  const suggestedCenter = areaWithCoordinates
+    ? { latitude: Number(areaWithCoordinates.latitude), longitude: Number(areaWithCoordinates.longitude) }
+    : null;
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -71,6 +87,10 @@ function BookingRequestForm({ service, onClose }) {
     }
     if (!hasPin) {
       setFormError('Please drop a pin on the map for the service location.');
+      return;
+    }
+    if (!locationConfirmed) {
+      setFormError('Please confirm the selected address and map pin.');
       return;
     }
     if (!settlementMethod) {
@@ -126,6 +146,7 @@ function BookingRequestForm({ service, onClose }) {
             <div className="flex-1 px-4 py-3">
               <p className="text-xs text-ink-muted">Provider</p>
               <p className="font-semibold text-navy-800">{provider?.business_name}</p>
+              <VerifiedBadge verified={provider?.is_verified} />
               {provider?.base_barangay && (
                 <p className="text-xs text-ink-muted">{provider.base_barangay.name}</p>
               )}
@@ -137,7 +158,11 @@ function BookingRequestForm({ service, onClose }) {
             <LocationPicker
               latitude={pin.latitude}
               longitude={pin.longitude}
-              onChange={(lat, lng) => setPin({ latitude: lat, longitude: lng })}
+              suggestedCenter={suggestedCenter}
+              onChange={(lat, lng) => {
+                setPin({ latitude: lat, longitude: lng });
+                setLocationConfirmed(false);
+              }}
               height={320}
             />
           </div>
@@ -217,6 +242,37 @@ function BookingRequestForm({ service, onClose }) {
           )}
 
           <div>
+            <label htmlFor="booking-province" className="mb-1.5 block text-sm font-medium text-ink">
+              Province<span className="ml-0.5 text-red-600">*</span>
+            </label>
+            <select id="booking-province" required value={province} onChange={(event) => {
+              setProvince(event.target.value);
+              setMunicipality('');
+              setBarangayId('');
+              setPin({ latitude: null, longitude: null });
+              setLocationConfirmed(false);
+            }} className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none">
+              <option value="">Select a province</option>
+              {provinces.map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="booking-municipality" className="mb-1.5 block text-sm font-medium text-ink">
+              Municipality/city<span className="ml-0.5 text-red-600">*</span>
+            </label>
+            <select id="booking-municipality" required value={municipality} disabled={!province} onChange={(event) => {
+              setMunicipality(event.target.value);
+              setBarangayId('');
+              setPin({ latitude: null, longitude: null });
+              setLocationConfirmed(false);
+            }} className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none">
+              <option value="">Select a municipality or city</option>
+              {municipalities.map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
+          </div>
+
+          <div>
             <label htmlFor="booking-barangay" className="mb-1.5 block text-sm font-medium text-ink">
               Barangay<span className="ml-0.5 text-red-600">*</span>
             </label>
@@ -224,11 +280,16 @@ function BookingRequestForm({ service, onClose }) {
               id="booking-barangay"
               required
               value={barangayId}
-              onChange={(event) => setBarangayId(event.target.value)}
+              disabled={!municipality}
+              onChange={(event) => {
+                setBarangayId(event.target.value);
+                setPin({ latitude: null, longitude: null });
+                setLocationConfirmed(false);
+              }}
               className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"
             >
               <option value="">Select a barangay</option>
-              {barangays.map((barangay) => (
+              {availableBarangays.map((barangay) => (
                 <option key={barangay.id} value={barangay.id}>
                   {barangay.name}
                 </option>
@@ -240,7 +301,10 @@ function BookingRequestForm({ service, onClose }) {
             label="Address"
             required
             value={addressLine}
-            onChange={(event) => setAddressLine(event.target.value)}
+            onChange={(event) => {
+              setAddressLine(event.target.value);
+              setLocationConfirmed(false);
+            }}
             placeholder="House no., street"
           />
 
@@ -253,6 +317,12 @@ function BookingRequestForm({ service, onClose }) {
                 ? 'Only you and the provider (once they accept) can see this pin.'
                 : 'Drop a pin on the map to the left.'}
             </p>
+            {hasPin && selectedBarangay && addressLine.trim() && (
+              <label className="mt-3 flex items-start gap-2 rounded-lg border border-line bg-navy-50 p-3 text-sm text-ink">
+                <input type="checkbox" checked={locationConfirmed} onChange={(event) => setLocationConfirmed(event.target.checked)} className="mt-1" />
+                <span>Confirm service location: {addressLine}, {selectedBarangay.name}, {municipality}, {province}. The pin is at {pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}.</span>
+              </label>
+            )}
           </div>
 
           <div>
@@ -381,6 +451,7 @@ export default function ServiceDetailPage() {
             >
               {provider?.business_name}
             </Link>
+            <VerifiedBadge verified={provider?.is_verified} />
             {provider?.base_barangay && (
               <p className="mt-1 text-xs text-ink-muted">{provider.base_barangay.name}</p>
             )}
@@ -434,6 +505,7 @@ export default function ServiceDetailPage() {
           </div>
         </aside>
       </div>
+      <ReportAction type="service" id={service.id} label="service listing" />
     </div>
   );
 }

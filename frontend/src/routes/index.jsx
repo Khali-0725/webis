@@ -17,6 +17,7 @@ const ProviderDashboard = lazy(() => import('@/pages/provider/ProviderDashboard'
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 const ProfilePage = lazy(() => import('@/pages/settings/ProfilePage'));
+const NotificationPage = lazy(() => import('@/pages/notifications/NotificationPage'));
 
 const ProviderVerificationPage = lazy(() => import('@/pages/provider/verification/VerificationPage'));
 const AdminVerificationPage = lazy(() => import('@/pages/admin/verification/VerificationPage'));
@@ -25,6 +26,8 @@ const SearchResultsPage = lazy(() => import('@/pages/public/SearchResultsPage'))
 const ServiceDetailPage = lazy(() => import('@/pages/public/ServiceDetailPage'));
 const PublicProviderProfilePage = lazy(() => import('@/pages/public/ProviderProfilePage'));
 const ProvidersPage = lazy(() => import('@/pages/public/ProvidersPage'));
+const ProviderMapPage = lazy(() => import('@/pages/public/ProviderMapPage'));
+const AppealPage = lazy(() => import('@/pages/public/AppealPage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/public/ContactPage'));
 const PrivacyPolicyPage = lazy(() => import('@/pages/public/PrivacyPolicyPage'));
@@ -35,6 +38,8 @@ const ServiceFormPage = lazy(() => import('@/pages/provider/services/ServiceForm
 
 const CategoryPage = lazy(() => import('@/pages/admin/categories/CategoryPage'));
 const UserListPage = lazy(() => import('@/pages/admin/users/UserListPage'));
+const AppealListPage = lazy(() => import('@/pages/admin/appeals/AppealListPage'));
+const AdminReviewListPage = lazy(() => import('@/pages/admin/reviews/ReviewListPage'));
 const ProviderListPage = lazy(() => import('@/pages/admin/providers/ProviderListPage'));
 const ProviderDetailPage = lazy(() => import('@/pages/admin/providers/ProviderDetailPage'));
 const AdminServiceListPage = lazy(() => import('@/pages/admin/services/ServiceListPage'));
@@ -51,6 +56,7 @@ const AnalyticsPage = lazy(() => import('@/pages/admin/analytics/AnalyticsPage')
 const ClientBookingListPage = lazy(() => import('@/pages/client/bookings/BookingListPage'));
 const ProviderBookingListPage = lazy(() => import('@/pages/provider/bookings/BookingListPage'));
 const BookingDetailPage = lazy(() => import('@/pages/bookings/BookingDetailPage'));
+const ReceiptPage = lazy(() => import('@/pages/client/payments/ReceiptPage'));
 const AvailabilityPage = lazy(() => import('@/pages/provider/availability/AvailabilityPage'));
 
 const ConversationListPage = lazy(() => import('@/pages/messaging/ConversationListPage'));
@@ -81,6 +87,8 @@ export function AppRoutes() {
           <Route path="search" element={<SearchResultsPage />} />
           <Route path="services/:id" element={<ServiceDetailPage />} />
           <Route path="providers" element={<ProvidersPage />} />
+          <Route path="providers/map" element={<ProviderMapPage />} />
+          <Route path="appeal" element={<AppealPage />} />
           <Route path="providers/:id" element={<PublicProviderProfilePage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
@@ -108,6 +116,9 @@ export function AppRoutes() {
           <Route path="client/bookings/:id" element={<DashboardLayout title="Booking Details" />}>
             <Route index element={<BookingDetailPage />} />
           </Route>
+          <Route path="client/bookings/:id/receipt" element={<DashboardLayout title="Payment Receipt" />}>
+            <Route index element={<ReceiptPage />} />
+          </Route>
           <Route path="client/messages" element={<DashboardLayout title="Messages" />}>
             <Route index element={<ConversationListPage />} />
           </Route>
@@ -120,6 +131,7 @@ export function AppRoutes() {
           <Route path="client/reports" element={<DashboardLayout title="My Reports" />}>
             <Route index element={<MyReportsPage />} />
           </Route>
+          <Route path="client/notifications" element={<DashboardLayout title="Notifications" />}><Route index element={<NotificationPage />} /></Route>
         </Route>
 
         {/* Provider portal */}
@@ -166,6 +178,7 @@ export function AppRoutes() {
           <Route path="provider/reports" element={<DashboardLayout title="My Reports" />}>
             <Route index element={<MyReportsPage />} />
           </Route>
+          <Route path="provider/notifications" element={<DashboardLayout title="Notifications" />}><Route index element={<NotificationPage />} /></Route>
         </Route>
 
         {/* Admin portal */}
@@ -179,6 +192,8 @@ export function AppRoutes() {
           <Route path="admin/users" element={<DashboardLayout title="Users" />}>
             <Route index element={<UserListPage />} />
           </Route>
+          <Route path="admin/appeals" element={<DashboardLayout title="Suspension Appeals" />}><Route index element={<AppealListPage />} /></Route>
+          <Route path="admin/reviews" element={<DashboardLayout title="Review Records" />}><Route index element={<AdminReviewListPage />} /></Route>
           <Route path="admin/providers" element={<DashboardLayout title="Providers" />}>
             <Route index element={<ProviderListPage />} />
           </Route>
@@ -218,6 +233,7 @@ export function AppRoutes() {
           <Route path="admin/analytics" element={<DashboardLayout title="Analytics" />}>
             <Route index element={<AnalyticsPage />} />
           </Route>
+          <Route path="admin/notifications" element={<DashboardLayout title="Notifications" />}><Route index element={<NotificationPage />} /></Route>
         </Route>
 
         {/* Settings */}

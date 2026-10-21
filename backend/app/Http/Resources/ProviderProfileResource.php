@@ -30,6 +30,8 @@ class ProviderProfileResource extends JsonResource
             'rating_count' => $this->rating_count,
             'completed_bookings_count' => $this->completed_bookings_count,
             'is_accepting_bookings' => $this->is_accepting_bookings,
+            'welcome_message' => $this->welcome_message,
+            'exclude_all_holidays' => $this->exclude_all_holidays,
             'base_barangay' => new BarangayResource($this->whenLoaded('baseBarangay')),
             'skills' => $this->whenLoaded('skills', fn () => $this->skills->pluck('skill')),
             'service_areas' => $this->whenLoaded('serviceAreas', fn () => $this->serviceAreas->pluck('barangay_id')),

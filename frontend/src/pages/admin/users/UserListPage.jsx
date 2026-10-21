@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +11,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { TrashToggle, DeletedBadge } from '@/components/ui/TrashToggle';
+import { AdminRecordFilters } from '@/components/ui/AdminRecordFilters';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { userApi } from '@/services/api/admin/userApi';
 import { publicApi } from '@/services/api/publicApi';
@@ -19,7 +21,7 @@ import { ROLE_LABELS } from '@/constants';
 import { useAuth } from '@/hooks/useAuth';
 
 const ROLE_OPTIONS = ['', 'client', 'provider', 'admin'];
-const STATUS_OPTIONS = ['', 'active', 'suspended'];
+const STATUS_OPTIONS = ['', 'active', 'suspended', 'terminated'];
 
 const EMPTY_FORM = {
   first_name: '',
@@ -47,12 +49,19 @@ export default function UserListPage() {
   const queryClient = useQueryClient();
   const { user: me } = useAuth();
   const [filters, setFilters] = useState({ role: '', status: '', search: '', trashed: '' });
+  const [recordFilters, setRecordFilters] = useState({ sort: 'newest', start_date: '', end_date: '' });
   const [page, setPage] = useState(1);
   const [notice, setNotice] = useState(null);
   const [editor, setEditor] = useState(null); // { mode: 'create' } | { mode: 'edit', user }
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [pendingAccountAction, setPendingAccountAction] = useState(null);
+  const [accountReason, setAccountReason] = useState('');
+  const [accountBasis, setAccountBasis] = useState('');
+  const [suspensionDays, setSuspensionDays] = useState('1');
+  const [accountActionBusy, setAccountActionBusy] = useState(false);
+  const [accountActionError, setAccountActionError] = useState(null);
 
-  const params = { ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)), page };
+  const params = { ...Object.fromEntries(Object.entries({ ...filters, ...recordFilters }).filter(([, v]) => v)), page };
   const inTrash = filters.trashed === 'only';
 
   const { data, isPending, isError, error, refetch } = useQuery({
@@ -82,6 +91,31 @@ export default function UserListPage() {
       setNotice({ tone: 'success', message: successMessage });
     } catch (err) {
       setNotice({ tone: 'error', message: err?.message ?? fallback });
+    }
+  };
+
+  const submitAccountAction = async () => {
+    if (!pendingAccountAction) return;
+    const { user, kind } = pendingAccountAction;
+    setAccountActionBusy(true);
+    setAccountActionError(null);
+    try {
+      if (kind === 'suspend') {
+        await userApi.suspend(user.id, { reason: accountReason, basis: accountBasis, days: Number(suspensionDays) });
+      } else if (kind === 'terminate') {
+        await userApi.terminate(user.id, accountReason);
+      } else {
+        await userApi.restoreTerminated(user.id, accountReason);
+      }
+      await invalidate();
+      setPendingAccountAction(null);
+      setAccountReason('');
+      setAccountBasis('');
+      setNotice({ tone: 'success', message: `Account ${kind === 'restore' ? 'restored' : kind === 'suspend' ? 'suspended' : 'terminated'}.` });
+    } catch (error) {
+      setAccountActionError(error?.message ?? 'Could not update this account.');
+    } finally {
+      setAccountActionBusy(false);
     }
   };
 
@@ -136,11 +170,14 @@ export default function UserListPage() {
           ))}
         </select>
         <Input
+          aria-label="Search users by name or email"
           placeholder="Search name or email"
           value={filters.search}
           onChange={(e) => updateFilter({ search: e.target.value })}
         />
       </div>
+
+      <AdminRecordFilters value={recordFilters} inTrash={inTrash} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }} />
 
       {isPending && <LoadingState label="Loading users…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}
@@ -191,6 +228,9 @@ export default function UserListPage() {
                       </Button>
                     ) : (
                       <div className="flex flex-wrap gap-2">
+                        <Link to={`/admin/audit-logs?user_id=${u.id}`}>
+                          <Button size="sm" variant="outline">History</Button>
+                        </Link>
                         <Button size="sm" variant="subtle" onClick={() => setEditor({ mode: 'edit', user: u })}>
                           Edit
                         </Button>
@@ -198,17 +238,27 @@ export default function UserListPage() {
                           <Button
                             size="sm"
                             variant="subtle"
-                            onClick={() => act(() => userApi.suspend(u.id), 'User suspended.', 'Failed to suspend user.')}
+                            disabled={u.id === me?.id}
+                            onClick={() => setPendingAccountAction({ user: u, kind: 'suspend' })}
                           >
                             Suspend
                           </Button>
-                        ) : (
+                        ) : u.status === 'suspended' ? (
                           <Button
                             size="sm"
                             variant="success"
                             onClick={() => act(() => userApi.activate(u.id), 'User activated.', 'Failed to activate user.')}
                           >
                             Activate
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="success" onClick={() => setPendingAccountAction({ user: u, kind: 'restore' })}>
+                            Restore access
+                          </Button>
+                        )}
+                        {u.status !== 'terminated' && u.id !== me?.id && (
+                          <Button size="sm" variant="danger" onClick={() => setPendingAccountAction({ user: u, kind: 'terminate' })}>
+                            Terminate
                           </Button>
                         )}
                         <Button
@@ -265,6 +315,26 @@ export default function UserListPage() {
           The account is moved to the trash: it can no longer sign in and disappears from lists, but its
           bookings, payments and messages stay on record. You can restore it later.
         </p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={Boolean(pendingAccountAction)}
+        onClose={() => { setPendingAccountAction(null); setAccountActionError(null); }}
+        onConfirm={submitAccountAction}
+        title={`${pendingAccountAction?.kind === 'restore' ? 'Restore' : pendingAccountAction?.kind === 'suspend' ? 'Suspend' : 'Terminate'} ${pendingAccountAction?.user.full_name ?? 'account'}?`}
+        confirmLabel={pendingAccountAction?.kind === 'restore' ? 'Restore access' : pendingAccountAction?.kind === 'suspend' ? 'Suspend account' : 'Terminate account'}
+        tone={pendingAccountAction?.kind === 'restore' ? 'primary' : 'danger'}
+        loading={accountActionBusy}
+        error={accountActionError}
+      >
+        <div className="space-y-3">
+          {pendingAccountAction?.kind === 'suspend' && (
+            <>
+              <Input label="Violation basis" required value={accountBasis} onChange={(event) => setAccountBasis(event.target.value)} />
+              <Input label="Duration in days (1–15)" type="number" min="1" max="15" required value={suspensionDays} onChange={(event) => setSuspensionDays(event.target.value)} />
+            </>
+          )}
+          <Input label="Reason" required value={accountReason} onChange={(event) => setAccountReason(event.target.value)} />
+        </div>
       </ConfirmDialog>
     </Card>
   );

@@ -31,7 +31,7 @@ class ReviewListingTest extends TestCase
     public function test_a_provider_sees_their_own_hidden_reviews_via_their_own_endpoint(): void
     {
         $providerUser = User::factory()->provider()->create();
-        $profile = ProviderProfile::factory()->create(['user_id' => $providerUser->id]);
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
         Review::factory()->hidden()->create(['provider_profile_id' => $profile->id]);
 
         $this->actingAs($providerUser)

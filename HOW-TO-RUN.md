@@ -86,14 +86,14 @@ Wrong-folder errors:
 Backend (in `backend`):
 
 ```
-php artisan test                    run the test suite (expect 228 passed)
-php artisan migrate:fresh --seed    wipe and rebuild the database
+php artisan test                    run the backend test suite (325 passed on 2026-10-09)
+php artisan migrate                apply additive migrations to an existing database
 ```
 
 Frontend (in `frontend`):
 
 ```
-npm run test     run the frontend tests (expect 26 passed)
+npm run test     run the frontend tests (33 passed on 2026-10-09)
 npm run lint     check code style
 npm run build    production build
 ```

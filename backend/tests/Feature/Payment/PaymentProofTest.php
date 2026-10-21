@@ -23,7 +23,7 @@ class PaymentProofTest extends TestCase
         $client = User::factory()->client()->create();
         $providerUser = User::factory()->provider()->create();
         $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
-        $booking = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+        $booking = Booking::factory()->accepted()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
         $payment = Payment::factory()->create([
             'booking_id' => $booking->id,
             'client_id' => $client->id,
@@ -36,18 +36,24 @@ class PaymentProofTest extends TestCase
     public function test_client_can_submit_payment_proof(): void
     {
         Storage::fake('local');
-        [$client, , $booking] = $this->bookingWithPayment();
+        [$client, $provider, $booking, $payment] = $this->bookingWithPayment();
 
         $this->actingAs($client)
             ->post("/api/bookings/{$booking->id}/payment/proof", [
                 'proof' => UploadedFile::fake()->image('proof.jpg'),
                 'reference_number' => 'REF-12345',
+                'declared_amount' => $payment->amount,
             ])
             ->assertOk()
             ->assertJsonPath('data.status', 'proof_submitted')
             ->assertJsonPath('data.reference_number', 'REF-12345');
 
         $this->assertDatabaseCount('payment_proofs', 1);
+        $this->actingAs($provider)->getJson('/api/notifications')->assertOk()
+            ->assertJsonPath('meta.unread_count', 1)
+            ->assertJsonPath('data.0.data.event', 'payment.proof_submitted');
+        $this->actingAs($client)->getJson('/api/notifications')->assertOk()
+            ->assertJsonPath('meta.unread_count', 0);
     }
 
     public function test_a_php_file_disguised_as_an_image_is_rejected(): void
@@ -59,6 +65,7 @@ class PaymentProofTest extends TestCase
             ->post("/api/bookings/{$booking->id}/payment/proof", [
                 'proof' => UploadedFile::fake()->create('proof.php', 10, 'image/jpeg'),
                 'reference_number' => 'REF-12345',
+                'declared_amount' => \App\Models\Payment::where('booking_id', $booking->id)->value('amount'),
             ])
             ->assertStatus(422);
 
@@ -68,14 +75,26 @@ class PaymentProofTest extends TestCase
     public function test_resubmitting_a_proof_supersedes_the_previous_one(): void
     {
         Storage::fake('local');
-        [$client, , $booking] = $this->bookingWithPayment();
+        [$client, $provider, $booking, $payment] = $this->bookingWithPayment();
 
         $this->actingAs($client)->post("/api/bookings/{$booking->id}/payment/proof", [
             'proof' => UploadedFile::fake()->image('first.jpg'),
+            'reference_number' => 'FIRST-123',
+            'declared_amount' => $payment->amount,
         ])->assertOk();
 
         $this->actingAs($client)->post("/api/bookings/{$booking->id}/payment/proof", [
+            'proof' => UploadedFile::fake()->image('duplicate.jpg'),
+            'reference_number' => 'DUP-123',
+            'declared_amount' => $payment->amount,
+        ])->assertStatus(409);
+
+        $this->actingAs($provider)->postJson("/api/payments/{$payment->id}/reject", ['reason' => 'Unreadable image'])->assertOk();
+
+        $this->actingAs($client)->post("/api/bookings/{$booking->id}/payment/proof", [
             'proof' => UploadedFile::fake()->image('second.jpg'),
+            'reference_number' => 'SECOND-123',
+            'declared_amount' => $payment->amount,
         ])->assertOk();
 
         $this->assertDatabaseCount('payment_proofs', 2);
@@ -98,6 +117,8 @@ class PaymentProofTest extends TestCase
         $this->actingAs($client)
             ->post("/api/bookings/{$booking->id}/payment/proof", [
                 'proof' => UploadedFile::fake()->image('proof.jpg'),
+                'reference_number' => 'CASH-123',
+                'declared_amount' => '100.00',
             ])
             ->assertStatus(422);
 
@@ -113,6 +134,8 @@ class PaymentProofTest extends TestCase
         $this->actingAs($stranger)
             ->post("/api/bookings/{$booking->id}/payment/proof", [
                 'proof' => UploadedFile::fake()->image('proof.jpg'),
+                'reference_number' => 'REF-123',
+                'declared_amount' => \App\Models\Payment::where('booking_id', $booking->id)->value('amount'),
             ])
             ->assertStatus(403);
     }

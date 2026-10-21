@@ -44,7 +44,7 @@ describe('route protection', () => {
   });
 
   it('lets the correct role through', async () => {
-    setSession(makeUser({ role: ROLES.PROVIDER, home_path: '/provider/dashboard' }));
+    setSession(makeUser({ role: ROLES.PROVIDER, home_path: '/provider/dashboard', provider_verification_status: 'approved' }));
     renderWithProviders(<Harness />, { route: '/provider/services' });
 
     expect(await screen.findByText('Provider services')).toBeInTheDocument();

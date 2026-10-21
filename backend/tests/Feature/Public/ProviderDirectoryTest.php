@@ -5,6 +5,8 @@ namespace Tests\Feature\Public;
 use App\Models\Barangay;
 use App\Models\ProviderProfile;
 use App\Models\ProviderWorkExperience;
+use App\Models\ProviderServiceArea;
+use App\Models\Service;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,6 +46,25 @@ class ProviderDirectoryTest extends TestCase
         $response = $this->getJson("/api/providers?barangay_id={$barangay->id}")->assertOk();
 
         $this->assertCount(1, $response->json('data'));
+    }
+
+    public function test_public_map_uses_only_configured_service_area_centers(): void
+    {
+        $base = Barangay::factory()->create(['municipality' => 'Tanza', 'latitude' => 14.31, 'longitude' => 120.86]);
+        $area = Barangay::factory()->create(['municipality' => 'Naic', 'latitude' => 14.32, 'longitude' => 120.77]);
+        $provider = ProviderProfile::factory()->verified()->create([
+            'base_barangay_id' => $base->id, 'latitude' => 1.2345, 'longitude' => 2.3456,
+        ]);
+        ProviderServiceArea::create(['provider_profile_id' => $provider->id, 'barangay_id' => $area->id]);
+        Service::factory()->published()->create(['provider_profile_id' => $provider->id]);
+        $pending = ProviderProfile::factory()->create();
+        Service::factory()->published()->create(['provider_profile_id' => $pending->id]);
+
+        $this->getJson('/api/providers-map?municipality=Naic')->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.provider_id', $provider->id)
+            ->assertJsonPath('data.0.latitude', '14.3200000')
+            ->assertDontSee('1.2345');
     }
 
     public function test_age_is_hidden_by_default_and_birthdate_is_never_public(): void

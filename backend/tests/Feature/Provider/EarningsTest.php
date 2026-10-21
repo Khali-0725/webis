@@ -13,7 +13,7 @@ class EarningsTest extends TestCase
 
     public function test_provider_sees_only_their_own_verified_earnings(): void
     {
-        $mine = ProviderProfile::factory()->create();
+        $mine = ProviderProfile::factory()->verified()->create();
         $theirs = ProviderProfile::factory()->create();
 
         Payment::factory()->verified()->create(['provider_profile_id' => $mine->id, 'amount' => 1000]);
@@ -30,7 +30,7 @@ class EarningsTest extends TestCase
 
     public function test_earnings_over_time_is_scoped_to_the_caller(): void
     {
-        $mine = ProviderProfile::factory()->create();
+        $mine = ProviderProfile::factory()->verified()->create();
         $theirs = ProviderProfile::factory()->create();
 
         Payment::factory()->verified()->create(['provider_profile_id' => $mine->id, 'amount' => 300]);
@@ -43,6 +43,22 @@ class EarningsTest extends TestCase
         $rows = $response->json('data');
         $this->assertCount(1, $rows);
         $this->assertEquals(300, $rows[0]['total']);
+    }
+
+    public function test_transactions_and_breakdown_are_scoped_to_provider(): void
+    {
+        $mine = ProviderProfile::factory()->verified()->create();
+        $other = ProviderProfile::factory()->verified()->create();
+        Payment::factory()->verified()->create(['provider_profile_id' => $mine->id, 'amount' => 250]);
+        Payment::factory()->verified()->create(['provider_profile_id' => $other->id, 'amount' => 900]);
+        Payment::factory()->create(['provider_profile_id' => $mine->id, 'amount' => 100]);
+
+        $this->actingAs($mine->user)->getJson('/api/provider/earnings/summary')
+            ->assertOk()->assertJsonPath('data.total_earnings', 250)
+            ->assertJsonPath('data.pending_amount', 100);
+        $this->actingAs($mine->user)->getJson('/api/provider/earnings/transactions')
+            ->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.amount', '250.00');
     }
 
     public function test_a_client_is_forbidden(): void

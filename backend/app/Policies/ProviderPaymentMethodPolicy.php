@@ -33,7 +33,7 @@ class ProviderPaymentMethodPolicy
         return Payment::query()
             ->where('provider_payment_method_id', $method->id)
             ->where('client_id', $user->id)
-            ->whereHas('booking', fn ($q) => $q->where('status', '!=', BookingStatus::Pending))
+            ->whereHas('booking', fn ($q) => $q->whereIn('status', [BookingStatus::Accepted->value, BookingStatus::InProgress->value, BookingStatus::Completed->value]))
             ->exists();
     }
 }

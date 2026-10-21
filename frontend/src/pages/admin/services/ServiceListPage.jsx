@@ -10,6 +10,8 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RowActions } from '@/components/ui/RowActions';
 import { TrashToggle, DeletedBadge } from '@/components/ui/TrashToggle';
+import { AdminRecordFilters } from '@/components/ui/AdminRecordFilters';
+import { BulkArchiveControls } from '@/components/ui/BulkArchiveControls';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { adminServiceApi } from '@/services/api/admin/serviceApi';
@@ -21,11 +23,13 @@ export default function ServiceListPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [trashed, setTrashed] = useState('');
+  const [recordFilters, setRecordFilters] = useState({ sort: 'newest', start_date: '', end_date: '' });
   const [page, setPage] = useState(1);
   const [notice, setNotice] = useState(null);
   const [editing, setEditing] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
-  const params = { ...(search ? { search } : {}), ...(trashed ? { trashed } : {}), page };
+  const [selectedIds, setSelectedIds] = useState([]);
+  const params = { ...(search ? { search } : {}), ...(trashed ? { trashed } : {}), ...Object.fromEntries(Object.entries(recordFilters).filter(([, v]) => v)), page };
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.admin.services(params),
@@ -83,6 +87,8 @@ export default function ServiceListPage() {
         />
       </div>
 
+      <AdminRecordFilters value={recordFilters} inTrash={trashed === 'only'} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }} />
+
       {isPending && <LoadingState label="Loading services…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}
 
@@ -95,9 +101,11 @@ export default function ServiceListPage() {
 
       {!isPending && !isError && services.length > 0 && (
         <div className="overflow-x-auto">
+          <BulkArchiveControls resource="services" rows={services} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onArchived={(count) => { invalidate(); setNotice({ tone: 'success', message: `${count} service${count === 1 ? '' : 's'} archived.` }); }} />
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
+                <th className="py-2 pr-3"><span className="sr-only">Select</span></th>
                 <th className="py-2 pr-4 font-medium">Title</th>
                 <th className="py-2 pr-4 font-medium">Provider</th>
                 <th className="py-2 pr-4 font-medium">Category</th>
@@ -108,6 +116,7 @@ export default function ServiceListPage() {
             <tbody className="divide-y divide-line">
               {services.map((s) => (
                 <tr key={s.id}>
+                  <td className="py-3 pr-3">{!s.deleted_at && <input type="checkbox" aria-label={`Select ${s.title}`} checked={selectedIds.includes(s.id)} onChange={(event) => setSelectedIds(event.target.checked ? [...selectedIds, s.id] : selectedIds.filter((id) => id !== s.id))} />}</td>
                   <td className="py-3 pr-4 text-ink">{s.title}</td>
                   <td className="py-3 pr-4 text-ink-muted">{s.provider?.business_name ?? '—'}</td>
                   <td className="py-3 pr-4 text-ink-muted">{s.category?.name ?? '—'}</td>

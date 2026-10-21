@@ -10,6 +10,8 @@ import { TrashToggle, DeletedBadge } from '@/components/ui/TrashToggle';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { bookingApi } from '@/services/api/bookingApi';
+import { publicApi } from '@/services/api/publicApi';
+import { providerApi } from '@/services/api/admin/providerApi';
 import { BOOKING_STATUS } from '@/constants';
 
 const STATUS_OPTIONS = ['', ...Object.values(BOOKING_STATUS)];
@@ -17,15 +19,35 @@ const STATUS_OPTIONS = ['', ...Object.values(BOOKING_STATUS)];
 export default function AdminBookingListPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('');
+  const [providerId, setProviderId] = useState('');
+  const [providerSearch, setProviderSearch] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sort, setSort] = useState('newest');
   const [trashed, setTrashed] = useState('');
   const [page, setPage] = useState(1);
   const [notice, setNotice] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
-  const params = { ...(status ? { status } : {}), ...(trashed ? { trashed } : {}), page };
+  const params = {
+    ...(status ? { status } : {}), ...(trashed ? { trashed } : {}),
+    ...(providerId ? { provider_id: providerId } : {}),
+    ...(categoryId ? { category_id: categoryId } : {}),
+    ...(startDate ? { start_date: startDate } : {}),
+    ...(endDate ? { end_date: endDate } : {}), sort, page,
+  };
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'bookings', params],
     queryFn: () => bookingApi.list(params),
+  });
+  const { data: categories = [] } = useQuery({
+    queryKey: ['public', 'service-categories'],
+    queryFn: publicApi.listCategories,
+  });
+  const { data: providerMatches, isError: providerSearchError } = useQuery({
+    queryKey: ['admin', 'booking-provider-options', providerSearch],
+    queryFn: () => providerApi.list({ search: providerSearch, per_page: 20 }),
   });
 
   const bookings = data?.items ?? [];
@@ -57,7 +79,7 @@ export default function AdminBookingListPage() {
         </Alert>
       )}
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap gap-2">
         <select
           aria-label="Filter by status"
           className="h-10 rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"
@@ -73,6 +95,21 @@ export default function AdminBookingListPage() {
             </option>
           ))}
         </select>
+        <div className="flex min-w-48 flex-col gap-1">
+          <input aria-label="Search providers" placeholder="Search provider name" value={providerSearch} onChange={(e) => { setProviderSearch(e.target.value); setProviderId(''); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-3 text-sm" />
+          <select aria-label="Filter by provider" value={providerId} onChange={(e) => { setProviderId(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-3 text-sm">
+            <option value="">All providers</option>
+            {(providerMatches?.items ?? []).map((provider) => <option key={provider.id} value={provider.id}>{provider.business_name || provider.owner?.full_name || `Provider ${provider.id}`}</option>)}
+          </select>
+          {providerSearchError && <span className="text-xs text-red-700">Provider search failed. Try again.</span>}
+        </div>
+        <select aria-label="Filter by category" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-3 text-sm">
+          <option value="">All categories</option>
+          {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+        </select>
+        <label className="flex items-center gap-1 text-xs text-ink-muted">From <input type="date" value={startDate} max={endDate || undefined} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-2 text-sm" /></label>
+        <label className="flex items-center gap-1 text-xs text-ink-muted">To <input type="date" value={endDate} min={startDate || undefined} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-2 text-sm" /></label>
+        <select aria-label="Sort bookings" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-3 text-sm"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select>
       </div>
 
       {isPending && <LoadingState label="Loading bookings…" />}

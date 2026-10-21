@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\BookingLocation;
 use App\Models\BookingStatusHistory;
 use App\Models\Payment;
+use App\Models\ProviderProfile;
 use App\Models\ProviderPaymentMethod;
 use App\Models\Service;
 use App\Models\SystemSetting;
@@ -37,7 +38,9 @@ class BookingService
             $service = Service::query()
                 ->published()
                 ->active()
-                ->whereHas('providerProfile', fn ($q) => $q->verified())
+                ->whereHas('providerProfile', fn ($q) => $q->verified()->acceptingBookings()
+                    ->whereHas('user', fn ($u) => $u->where('status', 'active')
+                        ->whereNull('terminated_at')->whereNull('deleted_at')))
                 ->find($data['service_id']);
 
             if (! $service) {
@@ -45,6 +48,9 @@ class BookingService
             }
 
             $providerProfileId = $service->provider_profile_id;
+            // Serialize all booking writers on a row that always exists. A
+            // lock on an empty overlap query cannot protect an empty slot.
+            ProviderProfile::whereKey($providerProfileId)->lockForUpdate()->firstOrFail();
             $duration = $service->duration_minutes ?? 60;
 
             $start = Carbon::parse($data['scheduled_start_time']);
@@ -146,6 +152,7 @@ class BookingService
     public function update(Booking $booking, array $data): Booking
     {
         $updated = DB::transaction(function () use ($booking, $data) {
+            ProviderProfile::whereKey($booking->provider_profile_id)->lockForUpdate()->firstOrFail();
             $booking = Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
 
             if ($booking->status !== BookingStatus::Pending) {

@@ -7,7 +7,9 @@ use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\ChatViolationResource;
 use App\Models\ChatViolation;
+use App\Support\AdminRecordFilters;
 use App\Services\ChatViolationService;
+use App\Services\AccountSuspensionService;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
 use App\Support\TrashFilter;
@@ -31,9 +33,10 @@ class ChatViolationController extends Controller
 
         $violations = TrashFilter::apply(ChatViolation::query(), $request)
             ->with('user')
-            ->when($status, fn ($query) => $query->where('admin_status', $status))
-            ->latest()
-            ->paginate($request->integer('per_page', 15));
+            ->when($status, fn ($query) => $query->where('admin_status', $status));
+
+        $violations = AdminRecordFilters::apply($violations, $request)
+            ->paginate(min($request->integer('per_page', 15), config('webis.pagination.max')));
 
         return ApiResponse::paginated($violations, ChatViolationResource::class);
     }
@@ -68,9 +71,14 @@ class ChatViolationController extends Controller
 
     private function act(Request $request, ChatViolation $violation, ChatViolationService $service, string $action): JsonResponse
     {
-        $violation = $service->action($violation, $request->user(), $action);
+        $suspension = $action === 'suspend' ? $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:1000'],
+            'basis' => ['required', 'string', 'max:120'],
+            'days' => ['required', 'integer', 'between:1,'.AccountSuspensionService::maximumDays()],
+        ]) : [];
+        $violation = $service->action($violation, $request->user(), $action, $suspension, $request);
 
-        AuditLogger::record($request->user(), "chat_violation.{$action}", $violation, [], $request);
+        AuditLogger::record($request->user(), "chat_violation.{$action}", $violation, $suspension, $request);
 
         return ApiResponse::ok(new ChatViolationResource($violation->load('user')), "Violation {$action}ed.");
     }

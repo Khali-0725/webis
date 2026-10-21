@@ -36,6 +36,7 @@ class UserResource extends JsonResource
             'status' => $this->status->value,
             'email_verified' => $this->email_verified_at !== null,
             'home_path' => $this->role->homePath(),
+            'provider_verification_status' => $this->isProvider() ? $this->providerProfile?->verification_status?->value : null,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

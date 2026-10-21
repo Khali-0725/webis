@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Public;
 
+use App\Enums\UserStatus;
 use App\Models\Barangay;
 use App\Models\ProviderProfile;
 use App\Models\Service;
@@ -68,6 +69,23 @@ class ServiceSearchTest extends TestCase
         $unverified = ProviderProfile::factory()->create();
         $service = Service::factory()->published()->create(['provider_profile_id' => $unverified->id]);
 
+        $this->getJson("/api/services/{$service->id}")->assertNotFound();
+    }
+
+    public function test_suspended_or_unavailable_provider_services_are_not_public(): void
+    {
+        $provider = ProviderProfile::factory()->verified()->create();
+        $service = Service::factory()->published()->create(['provider_profile_id' => $provider->id, 'title' => 'Unavailable QA Service']);
+        $url = '/api/services?q=Unavailable%20QA%20Service';
+        $this->getJson($url)->assertOk()->assertJsonCount(1, 'data');
+        $provider->user->forceFill(['status' => UserStatus::Suspended])->save();
+
+        $this->getJson($url)->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson("/api/services/{$service->id}")->assertNotFound();
+
+        $provider->user->forceFill(['status' => UserStatus::Active])->save();
+        $provider->forceFill(['is_accepting_bookings' => false])->save();
+        $this->getJson($url)->assertOk()->assertJsonCount(0, 'data');
         $this->getJson("/api/services/{$service->id}")->assertNotFound();
     }
 

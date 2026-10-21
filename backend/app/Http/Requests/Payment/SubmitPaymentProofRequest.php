@@ -16,7 +16,9 @@ class SubmitPaymentProofRequest extends FormRequest
     {
         return [
             'proof' => ['required', File::types(config('webis.uploads.image_mimes'))->max(config('webis.uploads.image_max_kb'))],
-            'reference_number' => ['nullable', 'string', 'max:100'],
+            'reference_number' => ['required', 'string', 'max:100'],
+            'declared_amount' => ['required', 'regex:/^\d{1,8}(?:\.\d{1,2})?$/'],
+            'paid_at' => ['nullable', 'date', 'before_or_equal:now'],
         ];
     }
 }

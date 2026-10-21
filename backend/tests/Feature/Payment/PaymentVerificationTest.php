@@ -21,7 +21,7 @@ class PaymentVerificationTest extends TestCase
         $client = User::factory()->client()->create();
         $providerUser = User::factory()->provider()->create();
         $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
-        $booking = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+        $booking = Booking::factory()->accepted()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
         $payment = Payment::factory()->proofSubmitted()->create([
             'booking_id' => $booking->id,
             'client_id' => $client->id,
@@ -39,7 +39,7 @@ class PaymentVerificationTest extends TestCase
         $client = User::factory()->client()->create();
         $providerUser = User::factory()->provider()->create();
         $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
-        $booking = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+        $booking = Booking::factory()->accepted()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
         $payment = Payment::factory()->cash()->create([
             'booking_id' => $booking->id,
             'client_id' => $client->id,
@@ -51,12 +51,14 @@ class PaymentVerificationTest extends TestCase
 
     public function test_the_provider_can_verify_a_submitted_payment(): void
     {
-        [, $providerUser, $payment] = $this->proofSubmittedPayment();
+        [$client, $providerUser, $payment] = $this->proofSubmittedPayment();
 
         $this->actingAs($providerUser)
             ->postJson("/api/payments/{$payment->id}/verify")
             ->assertOk()
             ->assertJsonPath('data.status', 'verified');
+        $this->actingAs($client)->getJson('/api/notifications')->assertOk()
+            ->assertJsonPath('data.0.data.event', 'payment.verified');
     }
 
     public function test_the_provider_can_verify_a_pending_cash_payment_directly(): void
@@ -138,6 +140,8 @@ class PaymentVerificationTest extends TestCase
         $this->actingAs($client)
             ->post("/api/bookings/{$payment->booking_id}/payment/proof", [
                 'proof' => \Illuminate\Http\UploadedFile::fake()->image('new.jpg'),
+                'reference_number' => 'REF-NEW',
+                'declared_amount' => $payment->amount,
             ])
             ->assertStatus(409);
     }

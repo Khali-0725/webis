@@ -171,7 +171,7 @@ class OwnerCrudSoftDeleteTest extends TestCase
 
     // ------------------------------------------------------------ Client: reviews
 
-    public function test_client_updates_and_soft_deletes_their_own_review_and_aggregates_follow(): void
+    public function test_client_cannot_change_or_delete_a_submitted_review(): void
     {
         $client = User::factory()->client()->create();
         $profile = ProviderProfile::factory()->verified()->create();
@@ -179,17 +179,13 @@ class OwnerCrudSoftDeleteTest extends TestCase
 
         $this->actingAs($client)
             ->patchJson("/api/reviews/{$review->id}", ['rating' => 2, 'comment' => 'Changed my mind'])
-            ->assertOk()
-            ->assertJsonPath('data.rating', 2);
+            ->assertStatus(405);
 
-        $this->assertEquals(2.0, (float) $profile->fresh()->rating_avg);
-
-        $this->actingAs($client)->deleteJson("/api/reviews/{$review->id}")->assertOk();
-        $this->assertSoftDeleted('reviews', ['id' => $review->id]);
-        $this->assertSame(0, $profile->fresh()->rating_count);
+        $this->actingAs($client)->deleteJson("/api/reviews/{$review->id}")->assertStatus(405);
+        $this->assertDatabaseHas('reviews', ['id' => $review->id, 'rating' => 5, 'deleted_at' => null]);
     }
 
-    public function test_re_reviewing_after_deleting_revives_the_same_row(): void
+    public function test_archived_review_cannot_be_replaced(): void
     {
         $client = User::factory()->client()->create();
         $booking = Booking::factory()->completed()->create(['client_id' => $client->id]);
@@ -202,18 +198,16 @@ class OwnerCrudSoftDeleteTest extends TestCase
 
         $this->actingAs($client)
             ->postJson("/api/bookings/{$booking->id}/review", ['rating' => 4, 'comment' => 'Second thoughts'])
-            ->assertCreated()
-            ->assertJsonPath('data.id', $review->id)
-            ->assertJsonPath('data.rating', 4);
+            ->assertStatus(409);
     }
 
-    public function test_a_different_client_cannot_edit_or_delete_a_review(): void
+    public function test_review_edit_and_delete_routes_are_unavailable_to_every_client(): void
     {
         $stranger = User::factory()->client()->create();
         $review = Review::factory()->create();
 
-        $this->actingAs($stranger)->patchJson("/api/reviews/{$review->id}", ['rating' => 1])->assertForbidden();
-        $this->actingAs($stranger)->deleteJson("/api/reviews/{$review->id}")->assertForbidden();
+        $this->actingAs($stranger)->patchJson("/api/reviews/{$review->id}", ['rating' => 1])->assertStatus(405);
+        $this->actingAs($stranger)->deleteJson("/api/reviews/{$review->id}")->assertStatus(405);
     }
 
     public function test_provider_can_remove_their_reply(): void
@@ -278,10 +272,11 @@ class OwnerCrudSoftDeleteTest extends TestCase
     public function test_reporter_lists_edits_and_withdraws_an_open_report(): void
     {
         $client = User::factory()->client()->create();
-        $target = User::factory()->provider()->create();
+        $booking = Booking::factory()->create(['client_id' => $client->id]);
+        $target = $booking->providerProfile->user;
 
         $id = $this->actingAs($client)
-            ->postJson('/api/reports', ['reportable_type' => 'user', 'reportable_id' => $target->id, 'reason' => 'other'])
+            ->postJson('/api/reports', ['reportable_type' => 'user', 'reportable_id' => $target->id, 'reason' => 'other', 'details' => 'A report about my provider.'])
             ->assertCreated()
             ->json('data.id');
 
@@ -291,6 +286,11 @@ class OwnerCrudSoftDeleteTest extends TestCase
             ->patchJson("/api/reports/{$id}", ['details' => 'More detail'])
             ->assertOk()
             ->assertJsonPath('data.details', 'More detail');
+
+        $this->actingAs($client)->patchJson("/api/reports/{$id}", ['details' => null])
+            ->assertUnprocessable()->assertJsonValidationErrors('details');
+        $this->actingAs($client)->patchJson("/api/reports/{$id}", ['reason' => 'non_payment'])
+            ->assertUnprocessable()->assertJsonValidationErrors('reason');
 
         $this->actingAs($client)->deleteJson("/api/reports/{$id}")->assertOk();
         $this->assertSoftDeleted('reports', ['id' => $id]);
@@ -307,7 +307,7 @@ class OwnerCrudSoftDeleteTest extends TestCase
         ]);
         $report->forceFill(['status' => 'reviewing'])->save();
 
-        $this->actingAs($client)->patchJson("/api/reports/{$report->id}", ['details' => 'x'])->assertForbidden();
+        $this->actingAs($client)->patchJson("/api/reports/{$report->id}", ['details' => 'A valid new explanation.'])->assertForbidden();
         $this->actingAs($client)->deleteJson("/api/reports/{$report->id}")->assertForbidden();
 
         $stranger = User::factory()->client()->create();

@@ -16,8 +16,8 @@ class ResolveReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::in([ReportStatus::Resolved->value, ReportStatus::Dismissed->value])],
-            'handling_notes' => ['nullable', 'string', 'max:2000'],
+            'status' => ['required', Rule::in([ReportStatus::Reviewing->value, ReportStatus::Resolved->value, ReportStatus::Dismissed->value])],
+            'handling_notes' => ['required', 'string', 'min:10', 'max:2000'],
         ];
     }
 }

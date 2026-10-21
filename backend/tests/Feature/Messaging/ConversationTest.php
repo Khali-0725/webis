@@ -17,7 +17,7 @@ class ConversationTest extends TestCase
     {
         $client = User::factory()->client()->create();
         $providerUser = User::factory()->provider()->create();
-        $profile = ProviderProfile::factory()->create(['user_id' => $providerUser->id]);
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
 
         $this->actingAs($client)
             ->postJson('/api/conversations', ['provider_profile_id' => $profile->id])
@@ -34,7 +34,7 @@ class ConversationTest extends TestCase
     {
         $client = User::factory()->client()->create();
         $providerUser = User::factory()->provider()->create();
-        $profile = ProviderProfile::factory()->create(['user_id' => $providerUser->id]);
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
 
         $first = $this->actingAs($client)
             ->postJson('/api/conversations', ['provider_profile_id' => $profile->id])
@@ -57,6 +57,27 @@ class ConversationTest extends TestCase
         $this->actingAs($otherProvider)
             ->postJson('/api/conversations', ['provider_profile_id' => $profile->id])
             ->assertStatus(403);
+    }
+
+    public function test_new_conversation_gets_one_clearly_marked_automatic_greeting(): void
+    {
+        $client = User::factory()->client()->create();
+        $profile = ProviderProfile::factory()->verified()->create(['welcome_message' => 'Hello, please tell me what help you need.']);
+
+        $first = $this->actingAs($client)->postJson('/api/conversations', ['provider_profile_id' => $profile->id])
+            ->assertOk()->json('data.id');
+        $this->actingAs($client)->postJson('/api/conversations', ['provider_profile_id' => $profile->id])->assertOk();
+        $this->assertDatabaseCount('messages', 1);
+        $this->actingAs($client)->getJson("/api/conversations/{$first}/messages")
+            ->assertOk()->assertJsonPath('data.0.is_automated', true);
+    }
+
+    public function test_pending_provider_cannot_receive_new_conversations(): void
+    {
+        $client = User::factory()->client()->create();
+        $profile = ProviderProfile::factory()->create();
+        $this->actingAs($client)->postJson('/api/conversations', ['provider_profile_id' => $profile->id])
+            ->assertForbidden();
     }
 
     public function test_a_stranger_cannot_view_or_post_into_someone_elses_conversation(): void

@@ -21,7 +21,8 @@ class AvailabilityController extends Controller
             'date' => ['required', 'date', 'after_or_equal:today'],
         ]);
 
-        if (! $providerProfile->isVerified() || ! $providerProfile->is_accepting_bookings) {
+        if (! $providerProfile->isVerified() || ! $providerProfile->is_accepting_bookings
+            || ! $providerProfile->user?->canAccessAccount()) {
             return ApiResponse::ok([]);
         }
 

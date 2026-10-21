@@ -10,13 +10,13 @@ import { Icon } from '@/components/ui/Icon';
 import { Divider } from '@/components/ui/Divider';
 import { GoogleButton } from '@/components/ui/GoogleButton';
 import { useLogin, useGoogleAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/authStore';
 import { googleSignInEnabled } from '@/services/auth/googleIdentity';
 import { ROLE_HOME } from '@/constants';
 
 const schema = z.object({
   email: z.string().min(1, 'Email address is required.').email('Enter a valid email address.'),
   password: z.string().min(1, 'Password is required.'),
-  remember: z.boolean().optional(),
 });
 
 export default function LoginPage() {
@@ -26,6 +26,7 @@ export default function LoginPage() {
   const googleAuth = useGoogleAuth();
   const [formError, setFormError] = useState(null);
   const resetNotice = Boolean(location.state?.resetSuccess);
+  const sessionEndedMessage = useAuthStore((state) => state.sessionEndedMessage);
 
   const {
     register,
@@ -34,7 +35,7 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '', remember: false },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (values) => {
@@ -96,6 +97,10 @@ export default function LoginPage() {
         </Alert>
       )}
 
+      {(location.state?.sessionExpired || sessionEndedMessage) && (
+        <Alert tone="error" className="mb-4">{location.state?.sessionExpired || sessionEndedMessage}</Alert>
+      )}
+
       {formError && (
         <Alert tone="error" className="mb-4">
           {formError}
@@ -125,20 +130,12 @@ export default function LoginPage() {
           {...register('password')}
         />
 
-        <div className="flex items-center justify-between">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-muted">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-line text-navy-700 focus:ring-brand"
-              {...register('remember')}
-            />
-            Remember me
-          </label>
-
+        <div className="flex items-center justify-end">
           <Link to="/forgot-password" className="text-sm font-medium text-brand hover:text-brand-600">
             Forgot password?
           </Link>
         </div>
+        <Link to="/appeal" className="block text-sm font-medium text-brand hover:underline">Appeal an account suspension</Link>
 
         <Button type="submit" fullWidth loading={isSubmitting || login.isPending}>
           Login

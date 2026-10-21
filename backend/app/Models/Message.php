@@ -23,6 +23,7 @@ class Message extends Model
         'sender_id',
         'body',
         'moderation_status',
+        'is_automated',
     ];
 
     protected function casts(): array
@@ -31,6 +32,7 @@ class Message extends Model
             'moderation_status' => ModerationStatus::class,
             'read_at' => 'datetime',
             'edited_at' => 'datetime',
+            'is_automated' => 'boolean',
         ];
     }
 

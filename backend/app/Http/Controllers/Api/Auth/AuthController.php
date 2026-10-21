@@ -113,4 +113,9 @@ class AuthController extends Controller
     {
         return ApiResponse::ok(new UserResource($request->user()));
     }
+
+    public function activity(Request $request): JsonResponse
+    {
+        return ApiResponse::noContent();
+    }
 }

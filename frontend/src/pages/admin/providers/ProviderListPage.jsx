@@ -7,10 +7,13 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Select';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RowActions } from '@/components/ui/RowActions';
 import { TrashToggle, DeletedBadge } from '@/components/ui/TrashToggle';
+import { AdminRecordFilters } from '@/components/ui/AdminRecordFilters';
+import { BulkArchiveControls } from '@/components/ui/BulkArchiveControls';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { providerApi } from '@/services/api/admin/providerApi';
@@ -23,11 +26,13 @@ const STATUS_TONE = { pending: 'warning', approved: 'success', rejected: 'danger
 export default function ProviderListPage() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({ verification_status: '', search: '', trashed: '' });
+  const [recordFilters, setRecordFilters] = useState({ sort: 'newest', start_date: '', end_date: '' });
   const [page, setPage] = useState(1);
   const [notice, setNotice] = useState(null);
   const [editing, setEditing] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
-  const params = { ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)), page };
+  const [selectedIds, setSelectedIds] = useState([]);
+  const params = { ...Object.fromEntries(Object.entries({ ...filters, ...recordFilters }).filter(([, v]) => v)), page };
   const inTrash = filters.trashed === 'only';
 
   const updateFilter = (patch) => {
@@ -85,6 +90,8 @@ export default function ProviderListPage() {
         <Input placeholder="Search business name" value={filters.search} onChange={(e) => updateFilter({ search: e.target.value })} />
       </div>
 
+      <AdminRecordFilters value={recordFilters} inTrash={inTrash} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }} />
+
       {isPending && <LoadingState label="Loading providers…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}
 
@@ -97,9 +104,11 @@ export default function ProviderListPage() {
 
       {!isPending && !isError && providers.length > 0 && (
         <div className="overflow-x-auto">
+          <BulkArchiveControls resource="providers" rows={providers} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onArchived={(count) => { invalidate(); setNotice({ tone: 'success', message: `${count} provider profile${count === 1 ? '' : 's'} archived.` }); }} />
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
+                <th className="py-2 pr-3"><span className="sr-only">Select</span></th>
                 <th className="py-2 pr-4 font-medium">Business</th>
                 <th className="py-2 pr-4 font-medium">Owner</th>
                 <th className="py-2 pr-4 font-medium">Status</th>
@@ -111,6 +120,7 @@ export default function ProviderListPage() {
             <tbody className="divide-y divide-line">
               {providers.map((p) => (
                 <tr key={p.id}>
+                  <td className="py-3 pr-3">{!p.deleted_at && <input type="checkbox" aria-label={`Select ${p.business_name || 'provider'}`} checked={selectedIds.includes(p.id)} onChange={(event) => setSelectedIds(event.target.checked ? [...selectedIds, p.id] : selectedIds.filter((id) => id !== p.id))} />}</td>
                   <td className="py-3 pr-4 text-ink">
                     <Link to={`/admin/providers/${p.id}`} className="font-medium hover:underline">
                       {p.business_name || 'Unnamed provider'}
@@ -121,7 +131,9 @@ export default function ProviderListPage() {
                     {p.deleted_at ? (
                       <DeletedBadge deletedAt={p.deleted_at} />
                     ) : (
-                      <Badge tone={STATUS_TONE[p.verification_status] ?? 'neutral'}>{p.verification_status_label}</Badge>
+                      p.verification_status === 'approved'
+                        ? <VerifiedBadge verified />
+                        : <Badge tone={STATUS_TONE[p.verification_status] ?? 'neutral'}>{p.verification_status_label}</Badge>
                     )}
                   </td>
                   <td className="py-3 pr-4 text-ink-muted">{p.rating_avg ? `${p.rating_avg} (${p.rating_count})` : '—'}</td>

@@ -41,6 +41,9 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'terminated_at' => 'datetime',
+            'suspended_until' => 'datetime',
+            'suspended_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
             'status' => UserStatus::class,
@@ -52,6 +55,33 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isProvider(): bool { return $this->role === UserRole::Provider; }
     public function isAdmin(): bool { return $this->role === UserRole::Admin; }
     public function isActive(): bool { return $this->status === UserStatus::Active; }
+    public function canAccessAccount(): bool
+    {
+        // Fresh factory models used by actingAs() may not have reloaded nullable
+        // migration columns yet; the raw attribute lookup is safe for those.
+        if ($this->getRawOriginal('terminated_at') !== null) {
+            return false;
+        }
+
+        if ($this->status === UserStatus::Suspended
+            && $this->getRawOriginal('suspended_until') !== null
+            && $this->suspended_until->isPast()) {
+            $endedAt = $this->suspended_until->toIso8601String();
+            $this->forceFill([
+                'status' => UserStatus::Active,
+                'suspended_until' => null,
+            ])->saveQuietly();
+            AuditLog::create([
+                'actor_id' => null,
+                'action' => 'user.suspension_expired',
+                'auditable_type' => self::class,
+                'auditable_id' => $this->id,
+                'metadata' => ['scheduled_end' => $endedAt],
+            ]);
+        }
+
+        return $this->status->canSignIn();
+    }
 
     // Accessors
     public function getFullNameAttribute(): string { return trim($this->first_name.' '.$this->last_name); }

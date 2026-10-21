@@ -21,6 +21,8 @@ export default function LandingPage() {
     queryKey: queryKeys.public.categories,
     queryFn: publicApi.listCategories,
   });
+  const { data: announcement } = useQuery({ queryKey: ['public', 'announcement'], queryFn: publicApi.announcement });
+  const { data: featured } = useQuery({ queryKey: ['public', 'featured-services'], queryFn: () => publicApi.searchServices({ per_page: 3 }) });
 
   const handleSearch = (event) => {
     event.preventDefault();
@@ -41,9 +43,9 @@ export default function LandingPage() {
             </h1>
 
             <p className="mt-4 max-w-lg text-sm text-white/70 sm:text-base">
-              Book reliable and professional services anytime, anywhere. WEBIS connects you with
-              verified experts in Tanza, Cavite.
+              Find independent service providers, compare their listings, and manage bookings in one place. WEBIS verifies provider documents before they can publish services.
             </p>
+            <div className="mt-5 flex flex-wrap gap-4 text-sm font-semibold"><Link to="/search" className="text-white underline underline-offset-4">Browse services</Link><Link to="/providers" className="text-white underline underline-offset-4">Browse providers</Link><Link to="/providers/map" className="text-white underline underline-offset-4">Explore the map</Link></div>
 
             <form
               className="mt-7 flex max-w-lg overflow-hidden rounded-lg bg-white shadow-card"
@@ -80,6 +82,10 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {featured?.items?.length > 0 && <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6"><div className="flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-bold text-navy-800">Explore services</h2><Link to="/search" className="text-sm font-semibold text-brand hover:underline">Browse all</Link></div><div className="mt-5 grid gap-4 md:grid-cols-3">{featured.items.map((service) => <Link key={service.id} to={`/services/${service.id}`} className="webis-card block p-5 hover:border-navy-300"><p className="text-xs font-semibold uppercase tracking-wide text-brand">{service.category?.name}</p><h3 className="mt-2 font-display text-lg font-semibold text-navy-800">{service.title}</h3><p className="mt-2 line-clamp-2 text-sm text-ink-muted">{service.description}</p></Link>)}</div></section>}
+
+      {announcement?.text && <section className="border-b border-line bg-blue-50"><div className="mx-auto max-w-7xl px-4 py-5 sm:px-6"><h2 className="font-display text-lg font-semibold text-navy-800">WEBIS update</h2><p className="mt-1 whitespace-pre-wrap text-sm text-ink">{announcement.text}</p></div></section>}
 
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
         <div className="flex items-end justify-between">
@@ -138,6 +144,15 @@ export default function LandingPage() {
             <Button variant="brand">Register as a provider</Button>
           </Link>
         </div>
+      </section>
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
+        <h2 className="font-display text-2xl font-bold text-navy-800">How WEBIS works</h2>
+        <ol className="mt-6 grid gap-4 md:grid-cols-3">
+          <li className="webis-card p-5"><span className="text-sm font-bold text-brand">01 · Discover</span><p className="mt-2 text-sm text-ink-muted">Search services or browse provider profiles and public service areas.</p></li>
+          <li className="webis-card p-5"><span className="text-sm font-bold text-brand">02 · Book</span><p className="mt-2 text-sm text-ink-muted">Choose an available time, share the job details, and wait for provider acceptance.</p></li>
+          <li className="webis-card p-5"><span className="text-sm font-bold text-brand">03 · Confirm</span><p className="mt-2 text-sm text-ink-muted">Track payment verification and leave a final review after the work is completed.</p></li>
+        </ol>
+        <p className="mt-5 text-sm text-ink-muted">Verification confirms that required documents were reviewed. It does not guarantee workmanship, availability, or personal safety. Review the listing and communicate through WEBIS before booking.</p>
       </section>
     </>
   );

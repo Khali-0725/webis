@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RowActions } from '@/components/ui/RowActions';
 import { TrashToggle, DeletedBadge } from '@/components/ui/TrashToggle';
+import { AdminRecordFilters } from '@/components/ui/AdminRecordFilters';
+import { BulkArchiveControls } from '@/components/ui/BulkArchiveControls';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { violationApi } from '@/services/api/admin/violationApi';
@@ -19,12 +21,14 @@ export default function ViolationListPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('open');
   const [trashed, setTrashed] = useState('');
+  const [recordFilters, setRecordFilters] = useState({ sort: 'newest', start_date: '', end_date: '' });
   const [page, setPage] = useState(1);
   const [notice, setNotice] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const inTrash = trashed === 'only';
   // The trash shows every deleted violation regardless of its status.
-  const params = { ...(inTrash ? { trashed } : { admin_status: status }), page };
+  const params = { ...(inTrash ? { trashed } : { admin_status: status }), ...Object.fromEntries(Object.entries(recordFilters).filter(([, v]) => v)), page };
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.admin.violations(params),
@@ -53,7 +57,7 @@ export default function ViolationListPage() {
   });
 
   return (
-    <Card title="Chat Violations" action={<TrashToggle value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} />}>
+    <Card title="Chat Moderation Cases" action={<TrashToggle value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} />}>
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}
@@ -80,6 +84,8 @@ export default function ViolationListPage() {
         </div>
       )}
 
+      <AdminRecordFilters value={recordFilters} inTrash={inTrash} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }} />
+
       {isPending && <LoadingState label="Loading violations…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}
 
@@ -92,12 +98,14 @@ export default function ViolationListPage() {
 
       {!isPending && !isError && violations.length > 0 && (
         <div className="overflow-x-auto">
+          <BulkArchiveControls resource="chat-violations" rows={violations} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onArchived={(count) => { invalidate(); setNotice({ tone: 'success', message: `${count} case${count === 1 ? '' : 's'} archived.` }); }} />
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
+                <th className="py-2 pr-3"><span className="sr-only">Select</span></th>
                 <th className="py-2 pr-4 font-medium">User</th>
                 <th className="py-2 pr-4 font-medium">Category</th>
-                <th className="py-2 pr-4 font-medium">Severity</th>
+                <th className="py-2 pr-4 font-medium">Flag severity</th>
                 <th className="py-2 pr-4 font-medium">Status</th>
                 <th className="py-2 font-medium">Actions</th>
               </tr>
@@ -105,6 +113,7 @@ export default function ViolationListPage() {
             <tbody className="divide-y divide-line">
               {violations.map((v) => (
                 <tr key={v.id}>
+                  <td className="py-3 pr-3">{!v.deleted_at && <input type="checkbox" aria-label={`Select case ${v.id}`} checked={selectedIds.includes(v.id)} onChange={(event) => setSelectedIds(event.target.checked ? [...selectedIds, v.id] : selectedIds.filter((id) => id !== v.id))} />}</td>
                   <td className="py-3 pr-4 text-ink">
                     {v.deleted_at ? (
                       <span className="font-medium">{v.user?.full_name ?? 'Unknown user'}</span>

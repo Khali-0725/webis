@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Admin;
 
 use App\Models\Report;
+use App\Models\ProviderProfile;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -20,7 +21,8 @@ class ReportResource extends JsonResource
                 'full_name' => $this->reporter->full_name,
                 'email' => $this->reporter->email,
             ] : null),
-            'reportable_type' => class_basename($this->reportable_type),
+            'reportable_type' => $this->reportable_type === ProviderProfile::class
+                ? 'Provider' : class_basename($this->reportable_type),
             'reportable_id' => $this->reportable_id,
             'reason' => $this->reason->value,
             'reason_label' => $this->reason->label(),

@@ -2,32 +2,37 @@
 
 namespace App\Services;
 
-use App\Enums\UserStatus;
 use App\Enums\ViolationAdminStatus;
 use App\Exceptions\DomainException;
 use App\Models\ChatViolation;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Admin disposition of a flagged message (§9.3 / Phase 9). `warn`/`suspend`/
- * `dismiss` don't map 1:1 onto ViolationAdminStatus's 4 cases (there's no
- * "Warned" case) - `dismiss` -> Dismissed, `warn` and `suspend` both ->
- * Actioned (the only "something was done" case left), and `suspend`
- * additionally suspends the offending account. `warn` has no account
- * side-effect - there's no in-app notification system yet to deliver it
- * through, so it's logged only.
+ * Admin disposition of a flagged message. Suspensions use the same account
+ * policy and audit trail as the user-management action.
  */
 class ChatViolationService
 {
-    public function action(ChatViolation $violation, User $admin, string $action): ChatViolation
+    public function __construct(private readonly AccountSuspensionService $suspensions) {}
+
+    public function action(ChatViolation $violation, User $admin, string $action, array $suspension = [], ?Request $request = null): ChatViolation
     {
-        return DB::transaction(function () use ($violation, $admin, $action) {
+        return DB::transaction(function () use ($violation, $admin, $action, $suspension, $request) {
+            $violation = ChatViolation::query()->lockForUpdate()->findOrFail($violation->id);
+            if (! in_array($violation->admin_status, [ViolationAdminStatus::Open, ViolationAdminStatus::Reviewed], true)) {
+                throw DomainException::conflict('This moderation case has already been closed.');
+            }
             $adminStatus = match ($action) {
                 'dismiss' => ViolationAdminStatus::Dismissed,
                 'warn', 'suspend' => ViolationAdminStatus::Actioned,
                 default => throw DomainException::unprocessable('Unknown violation action.'),
             };
+
+            if ($action === 'suspend' && ! $violation->user) {
+                throw DomainException::conflict('The account for this case is unavailable.');
+            }
 
             $violation->forceFill([
                 'admin_status' => $adminStatus,
@@ -35,8 +40,10 @@ class ChatViolationService
                 'reviewed_at' => now(),
             ])->save();
 
-            if ($action === 'suspend' && $violation->user) {
-                $violation->user->forceFill(['status' => UserStatus::Suspended])->save();
+            if ($action === 'suspend') {
+                $this->suspensions->suspend(
+                    $violation->user, $admin, $suspension, $request, 'chat_violation:'.$violation->id,
+                );
             }
 
             return $violation->fresh();

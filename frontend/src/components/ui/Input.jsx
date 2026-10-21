@@ -1,5 +1,6 @@
-import { forwardRef, useId } from 'react';
+import { forwardRef, useId, useState } from 'react';
 import { cn } from '@/utils/cn';
+import { Icon } from './Icon';
 
 /**
  * Accessible text input.
@@ -13,6 +14,7 @@ export const Input = forwardRef(function Input(
   ref,
 ) {
   const generatedId = useId();
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const inputId = id ?? generatedId;
   const errorId = `${inputId}-error`;
   const hintId = `${inputId}-hint`;
@@ -42,7 +44,7 @@ export const Input = forwardRef(function Input(
         <input
           ref={ref}
           id={inputId}
-          type={type}
+          type={type === 'password' && passwordVisible ? 'text' : type}
           required={required}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy || undefined}
@@ -50,10 +52,22 @@ export const Input = forwardRef(function Input(
             'h-11 w-full rounded-lg border bg-white px-3 text-sm text-ink placeholder:text-ink-soft',
             'transition-colors focus:border-navy-500',
             icon && 'pl-9',
+            type === 'password' && 'pr-12',
             error ? 'border-red-400' : 'border-line',
           )}
           {...props}
         />
+        {type === 'password' && (
+          <button
+            type="button"
+            aria-label={passwordVisible ? `Hide ${label ?? 'password'}` : `Show ${label ?? 'password'}`}
+            aria-pressed={passwordVisible}
+            onClick={() => setPasswordVisible((visible) => !visible)}
+            className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md text-ink-muted hover:text-navy-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy-600"
+          >
+            <Icon name={passwordVisible ? 'eyeOff' : 'eye'} />
+          </button>
+        )}
       </div>
 
       {hint && !error && (

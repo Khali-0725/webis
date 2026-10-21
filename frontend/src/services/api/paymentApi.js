@@ -8,14 +8,21 @@ export const paymentApi = {
   },
 
   /** POST /api/bookings/{id}/payment/proof (multipart) */
-  async submitProof(bookingId, { proof, reference_number }) {
+  async submitProof(bookingId, { proof, reference_number, declared_amount, paid_at }) {
     const formData = new FormData();
     formData.append('proof', proof);
     if (reference_number) formData.append('reference_number', reference_number);
+    formData.append('declared_amount', declared_amount);
+    if (paid_at) formData.append('paid_at', paid_at);
 
     const response = await api.post(`/bookings/${bookingId}/payment/proof`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return unwrap(response);
+  },
+
+  async receipt(bookingId) {
+    const response = await api.get(`/bookings/${bookingId}/payment/receipt`);
     return unwrap(response);
   },
 

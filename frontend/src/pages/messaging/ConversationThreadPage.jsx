@@ -180,13 +180,14 @@ export default function ConversationThreadPage() {
                 )}
               >
                 {message.body}
+                {message.is_automated && <p className="mt-1 text-[11px] italic opacity-75">Automatic greeting</p>}
                 {message.is_flagged && (
                   <p className="mt-1 text-[11px] italic opacity-80">Flagged for review</p>
                 )}
               </div>
               <div className="mt-0.5 flex items-center gap-2 px-1 text-[11px] text-ink-muted">
                 {message.edited_at && <span>edited</span>}
-                {message.is_mine && (
+                {message.is_mine && !message.is_automated && (
                   <>
                     <button type="button" className="hover:text-ink hover:underline" onClick={() => startEditing(message)}>
                       Edit

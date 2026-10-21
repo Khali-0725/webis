@@ -12,6 +12,7 @@ const KNOWN_KEYS = [
   { key: 'platform.name', label: 'Platform name' },
   { key: 'booking.min_lead_hours', label: 'Minimum booking lead time (hours)' },
   { key: 'booking.max_advance_days', label: 'Maximum booking advance (days)' },
+  { key: 'platform.announcement', label: 'Public announcement (leave blank to hide)' },
 ];
 
 export default function SettingsPage() {

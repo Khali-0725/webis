@@ -15,8 +15,8 @@ enum ViolationAdminStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Open => 'Open',
-            self::Reviewed => 'Reviewed',
+            self::Open => 'Reported',
+            self::Reviewed => 'Under Review',
             self::Dismissed => 'Dismissed',
             self::Actioned => 'Action Taken',
         };

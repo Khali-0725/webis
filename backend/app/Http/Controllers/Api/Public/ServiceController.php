@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Controller;
+use App\Enums\UserStatus;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class ServiceController extends Controller
 {
@@ -19,14 +19,15 @@ class ServiceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $cacheKey = 'public:services:'.md5($request->getQueryString() ?? '');
-
-        // Cache the materialised page, never the paginator - see ApiResponse::toArray().
-        $page = Cache::remember($cacheKey, now()->addSeconds(60), function () use ($request) {
+        // Eligibility changes (suspension, verification and booking availability)
+        // must take effect on the next search request, so this listing is not cached.
+        $page = (function () use ($request) {
             $query = Service::query()
                 ->published()
                 ->active()
-                ->whereHas('providerProfile', fn ($q) => $q->verified())
+                ->whereHas('providerProfile', fn ($q) => $q->verified()->acceptingBookings()
+                    ->whereHas('user', fn ($user) => $user->where('status', UserStatus::Active->value)
+                        ->whereNull('terminated_at')->whereNull('deleted_at')))
                 ->with(['category', 'providerProfile.user', 'providerProfile.baseBarangay']);
 
             if ($keyword = $request->string('q')->trim()->toString()) {
@@ -75,14 +76,16 @@ class ServiceController extends Controller
                 'data' => ApiResponse::toArray(ServiceResource::collection($paginated->getCollection())),
                 'meta' => ApiResponse::paginationMeta($paginated),
             ];
-        });
+        })();
 
         return ApiResponse::ok($page['data'], meta: $page['meta']);
     }
 
     public function show(Service $service): JsonResponse
     {
-        if (! $service->isPublished() || ! $service->is_active || ! $service->providerProfile->isVerified()) {
+        if (! $service->isPublished() || ! $service->is_active || ! $service->providerProfile->isVerified()
+            || ! $service->providerProfile->is_accepting_bookings
+            || ! $service->providerProfile->user?->canAccessAccount()) {
             return ApiResponse::error('This service is not available.', [], 404);
         }
 

@@ -22,6 +22,8 @@ class PaymentProof extends Model
         'mime_type',
         'size_bytes',
         'reference_number',
+        'declared_amount',
+        'paid_at',
         'uploaded_by',
     ];
 
@@ -30,6 +32,8 @@ class PaymentProof extends Model
         return [
             'size_bytes' => 'integer',
             'superseded_at' => 'datetime',
+            'declared_amount' => 'decimal:2',
+            'paid_at' => 'datetime',
         ];
     }
 

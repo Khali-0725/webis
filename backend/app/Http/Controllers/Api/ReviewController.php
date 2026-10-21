@@ -90,30 +90,6 @@ class ReviewController extends Controller
     }
 
     /**
-     * PATCH /reviews/{review} - the author edits their rating/comment.
-     */
-    public function update(StoreReviewRequest $request, Review $review): JsonResponse
-    {
-        $this->authorize('update', $review);
-
-        $updated = $this->reviews->update($review, $request->validated('rating'), $request->validated('comment'));
-
-        return ApiResponse::ok(new ReviewResource($updated->load(['client', 'booking.service'])), 'Review updated.');
-    }
-
-    /**
-     * DELETE /reviews/{review} - the author withdraws it (soft delete).
-     */
-    public function destroy(Request $request, Review $review): JsonResponse
-    {
-        $this->authorize('delete', $review);
-
-        $this->reviews->delete($review);
-
-        return ApiResponse::noContent('Review deleted.');
-    }
-
-    /**
      * DELETE /reviews/{review}/reply - the provider removes their reply.
      */
     public function removeReply(Request $request, Review $review): JsonResponse
@@ -125,14 +101,4 @@ class ReviewController extends Controller
         return ApiResponse::ok(new ReviewResource($updated->load(['client', 'booking.service'])), 'Reply removed.');
     }
 
-    public function setVisibility(Request $request, Review $review): JsonResponse
-    {
-        $this->authorize('setVisibility', $review);
-
-        $validated = $request->validate(['is_visible' => ['required', 'boolean']]);
-
-        $updated = $this->reviews->setVisibility($review, $validated['is_visible']);
-
-        return ApiResponse::ok(new ReviewResource($updated->load(['client', 'booking.service'])), 'Review updated.');
-    }
 }

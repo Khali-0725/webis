@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
+import { useCallback, useEffect, useState } from 'react';
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/Button';
@@ -29,14 +29,34 @@ function ClickToPlace({ onPick }) {
   return null;
 }
 
+function KeepMapSized({ latitude, longitude, suggestedCenter }) {
+  const map = useMap();
+  const suggestedLatitude = suggestedCenter?.latitude;
+  const suggestedLongitude = suggestedCenter?.longitude;
+  useEffect(() => {
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(map.getContainer());
+    map.invalidateSize();
+    return () => observer.disconnect();
+  }, [map]);
+  useEffect(() => {
+    if (latitude != null && longitude != null) map.setView([latitude, longitude], 16);
+    else if (suggestedLatitude != null && suggestedLongitude != null) {
+      map.setView([suggestedLatitude, suggestedLongitude], 14);
+    }
+  }, [map, latitude, longitude, suggestedLatitude, suggestedLongitude]);
+  return null;
+}
+
 /**
  * A pin-drop location picker. No API key: OpenStreetMap raster tiles, per the
  * thesis scope note (manual pin placement, not a mapping-API integration).
  */
-export function LocationPicker({ latitude, longitude, onChange, height = 260 }) {
+export function LocationPicker({ latitude, longitude, onChange, suggestedCenter, height = 260 }) {
   const [locating, setLocating] = useState(false);
   const hasPin = latitude != null && longitude != null;
-  const center = hasPin ? [latitude, longitude] : TANZA_CENTER;
+  const center = hasPin ? [latitude, longitude] : suggestedCenter?.latitude != null && suggestedCenter?.longitude != null
+    ? [suggestedCenter.latitude, suggestedCenter.longitude] : TANZA_CENTER;
 
   const handlePick = useCallback(
     (lat, lng) => onChange(Number(lat.toFixed(7)), Number(lng.toFixed(7))),
@@ -58,9 +78,10 @@ export function LocationPicker({ latitude, longitude, onChange, height = 260 }) 
   };
 
   return (
-    <div className="space-y-2">
-      <div className="overflow-hidden rounded-lg border border-line" style={{ height }}>
+    <div className="min-w-0 space-y-2">
+      <div className="relative z-0 w-full min-w-0 overflow-hidden rounded-lg border border-line" style={{ height }}>
         <MapContainer center={center} zoom={hasPin ? 16 : 13} style={{ height: '100%', width: '100%' }}>
+          <KeepMapSized latitude={latitude} longitude={longitude} suggestedCenter={suggestedCenter} />
           <TileLayer
             attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -69,7 +90,7 @@ export function LocationPicker({ latitude, longitude, onChange, height = 260 }) 
           {hasPin && <Marker position={[latitude, longitude]} icon={PIN_ICON} />}
         </MapContainer>
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-ink-muted">
           {hasPin ? `Pin set at ${latitude.toFixed(5)}, ${longitude.toFixed(5)}` : 'Tap the map to drop a pin.'}
         </p>

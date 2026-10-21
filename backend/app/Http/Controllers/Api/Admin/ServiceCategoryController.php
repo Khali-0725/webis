@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreServiceCategoryRequest;
 use App\Http\Requests\Admin\UpdateServiceCategoryRequest;
 use App\Http\Resources\ServiceCategoryResource;
+use App\Support\AdminRecordFilters;
 use App\Models\ServiceCategory;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
@@ -20,7 +21,7 @@ class ServiceCategoryController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $categories = TrashFilter::apply(ServiceCategory::query(), $request)->ordered()->get();
+        $categories = AdminRecordFilters::apply(TrashFilter::apply(ServiceCategory::query(), $request), $request)->get();
 
         return ApiResponse::ok(ServiceCategoryResource::collection($categories));
     }

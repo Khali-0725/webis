@@ -23,6 +23,7 @@ class UpdateProviderProfileRequest extends FormRequest
             'latitude' => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
             'is_accepting_bookings' => ['sometimes', 'boolean'],
+            'welcome_message' => ['sometimes', 'nullable', 'string', 'max:500'],
         ];
     }
 

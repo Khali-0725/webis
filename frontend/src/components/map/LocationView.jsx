@@ -1,4 +1,5 @@
-import { MapContainer, Marker, TileLayer } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -13,9 +14,20 @@ const PIN_ICON = L.divIcon({
 });
 
 /** Read-only pin display for an already-set location (no click handling). */
+function KeepMapSized() {
+  const map = useMap();
+  useEffect(() => {
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(map.getContainer());
+    map.invalidateSize();
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
+}
+
 export function LocationView({ latitude, longitude, height = 220 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-line" style={{ height }}>
+    <div className="relative z-0 w-full min-w-0 overflow-hidden rounded-lg border border-line" style={{ height }}>
       <MapContainer
         center={[latitude, longitude]}
         zoom={16}
@@ -24,6 +36,7 @@ export function LocationView({ latitude, longitude, height = 220 }) {
         scrollWheelZoom={false}
         doubleClickZoom={false}
       >
+        <KeepMapSized />
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

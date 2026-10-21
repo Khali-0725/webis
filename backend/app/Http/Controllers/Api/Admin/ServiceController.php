@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateServiceRequest;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
+use App\Support\AdminRecordFilters;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
 use App\Support\TrashFilter;
@@ -37,7 +38,7 @@ class ServiceController extends Controller
 
         $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
 
-        return ApiResponse::paginated($query->orderByDesc('created_at')->paginate($perPage), ServiceResource::class);
+        return ApiResponse::paginated(AdminRecordFilters::apply($query, $request)->paginate($perPage), ServiceResource::class);
     }
 
     public function show(Service $service): JsonResponse

@@ -30,6 +30,7 @@ class ProviderProfile extends Model
         'latitude',
         'longitude',
         'is_accepting_bookings',
+        'welcome_message',
     ];
 
     protected function casts(): array
@@ -46,6 +47,7 @@ class ProviderProfile extends Model
             'rating_count' => 'integer',
             'completed_bookings_count' => 'integer',
             'is_accepting_bookings' => 'boolean',
+            'exclude_all_holidays' => 'boolean',
         ];
     }
 

@@ -15,6 +15,11 @@ export function Modal({ open, onClose, title, description, children, footer, siz
   const descriptionId = useId();
   const panelRef = useRef(null);
   const openerRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -32,7 +37,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose?.();
+        onCloseRef.current?.();
       }
     };
     document.addEventListener('keydown', onKeyDown);
@@ -42,7 +47,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
       document.body.style.overflow = previousOverflow;
       openerRef.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

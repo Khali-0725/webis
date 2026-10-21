@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Booking;
 use App\Models\ProviderAvailabilityException;
 use App\Models\ProviderAvailabilityRule;
+use App\Models\ProviderProfile;
 use Carbon\Carbon;
 
 /**
@@ -23,6 +24,7 @@ class SlotGenerator
     public function freeSlots(int $providerProfileId, string $date): array
     {
         $day = Carbon::parse($date);
+        if ($this->isExcludedHoliday($providerProfileId, $day)) return [];
         $exception = $this->exceptionFor($providerProfileId, $day);
 
         if ($exception?->is_closed) {
@@ -79,6 +81,7 @@ class SlotGenerator
     public function isWithinAvailability(int $providerProfileId, string $date, string $startTime, string $endTime): bool
     {
         $day = Carbon::parse($date);
+        if ($this->isExcludedHoliday($providerProfileId, $day)) return false;
         $exception = $this->exceptionFor($providerProfileId, $day);
 
         if ($exception?->is_closed) {
@@ -103,6 +106,13 @@ class SlotGenerator
             ->where('provider_profile_id', $providerProfileId)
             ->whereDate('date', $day->toDateString())
             ->first();
+    }
+
+    private function isExcludedHoliday(int $providerProfileId, Carbon $day): bool
+    {
+        $profile = ProviderProfile::find($providerProfileId);
+        return (bool) $profile?->exclude_all_holidays
+            && array_key_exists($day->toDateString(), config('holidays')[$day->year] ?? []);
     }
 
     private function ruleFor(int $providerProfileId, Carbon $day): ?ProviderAvailabilityRule

@@ -94,6 +94,15 @@ api.interceptors.response.use(
 
     const payload = typeof data === 'object' && data !== null ? data : {};
 
+    // Any protected request can be the first to discover that another login
+    // replaced this session. Let the app shell clear stale user data and route
+    // back to sign-in instead of leaving a protected page showing an API error.
+    if (status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('webis:session-ended', {
+        detail: { message: payload.message || defaultMessageFor(status) },
+      }));
+    }
+
     return Promise.reject({
       status,
       message: payload.message || defaultMessageFor(status),

@@ -33,13 +33,21 @@ class MessagingService
             }
 
             $providerProfile = ProviderProfile::findOrFail($data['provider_profile_id']);
+            if (! $providerProfile->isVerified() || ! $providerProfile->is_accepting_bookings
+                || ! $providerProfile->user?->canAccessAccount()) {
+                throw DomainException::forbidden('This provider is not available for a new conversation.');
+            }
 
             // ->fresh(): a freshly-inserted model doesn't reflect columns
             // left to their DB default (client_unread_count, etc.) - see the
             // identical Booking::create() trap noted in Phase 5.
-            return Conversation::firstOrCreate(
+            $conversation = Conversation::firstOrCreate(
                 ['client_id' => $actor->id, 'provider_user_id' => $providerProfile->user_id],
-            )->fresh();
+            );
+            if ($conversation->wasRecentlyCreated && $providerProfile->welcome_message) {
+                $this->send($conversation, $providerProfile->user, $providerProfile->welcome_message, false, true);
+            }
+            return $conversation->fresh();
         }
 
         if (! empty($data['booking_id'])) {
@@ -53,10 +61,14 @@ class MessagingService
                 throw DomainException::forbidden('This is not your booking.');
             }
 
-            return Conversation::firstOrCreate(
+            $conversation = Conversation::firstOrCreate(
                 ['client_id' => $booking->client_id, 'provider_user_id' => $booking->providerProfile->user_id],
                 ['booking_id' => $booking->id],
-            )->fresh();
+            );
+            if ($conversation->wasRecentlyCreated && $booking->providerProfile->welcome_message) {
+                $this->send($conversation, $booking->providerProfile->user, $booking->providerProfile->welcome_message, false, true);
+            }
+            return $conversation->fresh();
         }
 
         throw DomainException::unprocessable('A provider or a booking is required to start a conversation.');
@@ -65,7 +77,7 @@ class MessagingService
     /**
      * @return array{status: 'sent'|'blocked'|'requires_confirmation', message?: Message}
      */
-    public function send(Conversation $conversation, User $sender, string $body, bool $confirmOverride = false): array
+    public function send(Conversation $conversation, User $sender, string $body, bool $confirmOverride = false, bool $automated = false): array
     {
         $result = $this->moderation->evaluate($body);
 
@@ -83,7 +95,7 @@ class MessagingService
             );
         }
 
-        $outcome = DB::transaction(function () use ($conversation, $sender, $body, $confirmOverride, $result) {
+        $outcome = DB::transaction(function () use ($conversation, $sender, $body, $confirmOverride, $result, $automated) {
             $tier = $result['tier'];
             $escalated = $this->isEscalated($sender);
 
@@ -99,6 +111,7 @@ class MessagingService
                 'sender_id' => $sender->id,
                 'body' => $body,
                 'moderation_status' => $tier,
+                'is_automated' => $automated,
             ]);
 
             if ($tier === 'warned' || $tier === 'flagged') {

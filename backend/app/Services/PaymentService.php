@@ -3,12 +3,16 @@
 namespace App\Services;
 
 use App\Enums\PaymentStatus;
+use App\Enums\UserRole;
+use App\Enums\BookingStatus;
 use App\Enums\SettlementMethod;
 use App\Exceptions\DomainException;
 use App\Models\Payment;
 use App\Models\PaymentProof;
 use App\Models\User;
+use App\Notifications\AccountEventNotification;
 use App\Support\Realtime;
+use App\Support\AuditLogger;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
@@ -20,9 +24,9 @@ use Illuminate\Support\Facades\DB;
  */
 class PaymentService
 {
-    public function submitProof(Payment $payment, User $client, UploadedFile $file, ?string $referenceNumber): Payment
+    public function submitProof(Payment $payment, User $client, UploadedFile $file, string $referenceNumber, string $declaredAmount, ?string $paidAt): Payment
     {
-        $updated = DB::transaction(function () use ($payment, $client, $file, $referenceNumber) {
+        $updated = DB::transaction(function () use ($payment, $client, $file, $referenceNumber, $declaredAmount, $paidAt) {
             $locked = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->status->isSettled()) {
@@ -31,6 +35,20 @@ class PaymentService
 
             if ($locked->settlement_method === SettlementMethod::Cash) {
                 throw DomainException::unprocessable('This booking is settled in cash - no proof is needed.');
+            }
+
+            if (! in_array($locked->booking->status, [BookingStatus::Accepted, BookingStatus::InProgress], true)) {
+                throw DomainException::conflict('Payment proof can only be submitted for an accepted or in-progress booking.');
+            }
+
+            if (! in_array($locked->status, [PaymentStatus::Pending, PaymentStatus::Rejected], true)) {
+                throw DomainException::conflict('This proof is already under review. Wait for a decision before resubmitting.');
+            }
+
+            if ($this->cents($declaredAmount) !== $this->cents($locked->amount)) {
+                throw DomainException::unprocessable('Declared amount must equal the booking amount. Contact the provider about any difference.', [
+                    'declared_amount' => ['The declared amount does not match the booking amount.'],
+                ]);
             }
 
             $locked->proofs()->whereNull('superseded_at')->update(['superseded_at' => now()]);
@@ -44,21 +62,34 @@ class PaymentService
                 'mime_type' => $file->getMimeType(),
                 'size_bytes' => $file->getSize(),
                 'reference_number' => $referenceNumber,
+                'declared_amount' => $declaredAmount,
+                'paid_at' => $paidAt,
                 'uploaded_by' => $client->id,
             ]);
 
             $attributes = ['status' => PaymentStatus::ProofSubmitted];
 
-            if ($referenceNumber) {
-                $attributes['reference_number'] = $referenceNumber;
-            }
+            $attributes['reference_number'] = $referenceNumber;
 
             $locked->forceFill($attributes)->save();
+            AuditLogger::record($client, 'payment.proof_submitted', $locked, ['proof_id' => $locked->proofs()->latest('id')->value('id')]);
 
             return $locked->fresh(['proofs', 'paymentMethod']);
         });
 
         $this->pushChange($updated);
+        $providerUser = $updated->providerProfile?->user;
+        $providerUser?->notify(new AccountEventNotification(
+            'payment.proof_submitted',
+            "Payment proof for booking {$updated->booking->booking_code} is awaiting review.",
+            "/provider/bookings/{$updated->booking_id}",
+        ));
+        User::where('role', UserRole::Admin->value)->where('status', 'active')->get()
+            ->each(fn (User $admin) => $admin->notify(new AccountEventNotification(
+                'payment.proof_submitted',
+                "A payment proof for booking {$updated->booking->booking_code} is awaiting review.",
+                '/admin/payments',
+            )));
 
         return $updated;
     }
@@ -83,17 +114,27 @@ class PaymentService
                 );
             }
 
+            if (! in_array($locked->booking->status, [BookingStatus::Accepted, BookingStatus::InProgress, BookingStatus::Completed], true)) {
+                throw DomainException::conflict('A payment for a pending, cancelled, or rejected booking cannot be verified.');
+            }
+
             $locked->forceFill([
                 'status' => PaymentStatus::Verified,
                 'verified_by' => $actor->id,
                 'verified_at' => now(),
                 'rejection_reason' => null,
             ])->save();
+            AuditLogger::record($actor, 'payment.verified', $locked);
 
             return $locked->fresh();
         });
 
         $this->pushChange($updated);
+        $updated->client?->notify(new AccountEventNotification(
+            'payment.verified',
+            "Payment for booking {$updated->booking->booking_code} was verified.",
+            "/client/bookings/{$updated->booking_id}",
+        ));
 
         return $updated;
     }
@@ -112,11 +153,17 @@ class PaymentService
                 'verified_by' => $actor->id,
                 'rejection_reason' => $reason,
             ])->save();
+            AuditLogger::record($actor, 'payment.rejected', $locked, ['reason' => $reason]);
 
             return $locked->fresh();
         });
 
         $this->pushChange($updated);
+        $updated->client?->notify(new AccountEventNotification(
+            'payment.rejected',
+            "Payment proof for booking {$updated->booking->booking_code} needs another review. Check the booking for details.",
+            "/client/bookings/{$updated->booking_id}",
+        ));
 
         return $updated;
     }
@@ -128,5 +175,12 @@ class PaymentService
             'payments',
             ['booking_id' => $payment->booking_id, 'payment_id' => $payment->id],
         );
+    }
+
+    private function cents(string $amount): int
+    {
+        [$whole, $fraction] = array_pad(explode('.', $amount, 2), 2, '');
+
+        return (int) $whole * 100 + (int) str_pad($fraction, 2, '0');
     }
 }

@@ -29,6 +29,7 @@ class MessageResource extends JsonResource
                     : null,
             ]),
             'body' => $this->body,
+            'is_automated' => $this->is_automated,
             'is_flagged' => $this->moderation_status->value === 'flagged',
             'read_at' => $this->read_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),

@@ -8,21 +8,24 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Order matters: foreign keys require parent tables to be seeded first.
-     * DemoAccountSeeder creates the 4 labelled demo accounts (admin, client,
-     * provider, suspended). BarangaySeeder and ServiceCategorySeeder populate
-     * reference data. DemoDataSeeder creates the realistic demo dataset.
+     * Reference data must exist before the demo provider profile is created.
+     * DemoDataSeeder then creates the realistic demo dataset.
      */
     public function run(): void
     {
-        $this->call([
-            // Phase 1: demo accounts
-            DemoAccountSeeder::class,
+        if (app()->environment('production')) {
+            throw new \RuntimeException('Demo accounts and synthetic verification documents must not be seeded in production.');
+        }
 
-            // Phase 2: reference data (must come before DemoDataSeeder)
+        $this->call([
+            // Phase 1: reference data
             BarangaySeeder::class,
             ServiceCategorySeeder::class,
 
-            // Phase 2: providers, clients, services, bookings, reviews, etc.
+            // Phase 2: demo accounts and providers
+            DemoAccountSeeder::class,
+
+            // Phase 3: clients, services, bookings, reviews, etc.
             DemoDataSeeder::class,
         ]);
     }

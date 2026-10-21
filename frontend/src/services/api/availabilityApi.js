@@ -1,6 +1,17 @@
 import { api, unwrap } from '@/services/api/client';
 
 export const availabilityApi = {
+  async holidays(year) {
+    const response = await api.get('/provider/holidays', { params: { year } });
+    return unwrap(response);
+  },
+  async updateHolidays(excludeAllHolidays, confirmExistingBookings = false) {
+    const response = await api.patch('/provider/holidays', {
+      exclude_all_holidays: excludeAllHolidays,
+      confirm_existing_bookings: confirmExistingBookings,
+    });
+    return unwrap(response);
+  },
   /** GET /api/provider/availability/rules */
   async getRules() {
     const response = await api.get('/provider/availability/rules');

@@ -23,12 +23,12 @@ class DemoAccountSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->account('admin@webis.test', 'System', 'Administrator', UserRole::Admin);
+        $admin = $this->account('admin@webis.test', 'System', 'Administrator', UserRole::Admin);
         $this->account('client@webis.test', 'Demo', 'Client', UserRole::Client);
         $provider = $this->account('provider@webis.test', 'Demo', 'Provider', UserRole::Provider);
         $this->account('suspended@webis.test', 'Suspended', 'Account', UserRole::Client, UserStatus::Suspended);
 
-        $this->providerProfile($provider);
+        $this->providerProfile($provider, $admin);
 
         $this->command?->info('Demo accounts seeded. Password for all: password123');
     }
@@ -63,7 +63,7 @@ class DemoAccountSeeder extends Seeder
     // providers, has no ProviderProfile of its own - without this the account
     // 404s on every /provider/* endpoint. Pre-verified so the demo account can
     // exercise the publish flow immediately.
-    private function providerProfile(User $user): void
+    private function providerProfile(User $user, User $admin): void
     {
         $profile = ProviderProfile::firstOrNew(['user_id' => $user->id]);
         $isNew = ! $profile->exists;
@@ -85,6 +85,12 @@ class DemoAccountSeeder extends Seeder
                 'verified_at' => now(),
             ])->save();
         }
+
+        if ($profile->base_barangay_id === null) {
+            $profile->forceFill(['base_barangay_id' => Barangay::query()->value('id')])->save();
+        }
+
+        DemoVerificationDocuments::createFor($profile, $admin);
 
         // Mon-Sat, 08:00-17:00, same as the factory-seeded demo providers -
         // without this the demo account cannot be booked at all.

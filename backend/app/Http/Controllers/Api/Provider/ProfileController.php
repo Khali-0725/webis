@@ -10,6 +10,8 @@ use App\Http\Resources\ProviderProfileResource;
 use App\Models\ProviderServiceArea;
 use App\Models\ProviderSkill;
 use App\Support\Api\ApiResponse;
+use App\Services\ChatModerationService;
+use App\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +32,12 @@ class ProfileController extends Controller
         $profile = $request->user()->providerProfile()->firstOrFail();
         $this->authorize('update', $profile);
 
-        $profile->update($request->validated());
+        $data = $request->validated();
+        if (! empty($data['welcome_message'])
+            && app(ChatModerationService::class)->evaluate($data['welcome_message'])['tier'] !== 'allowed') {
+            throw DomainException::unprocessable('The automatic welcome message contains content that WEBIS does not allow in chat.');
+        }
+        $profile->update($data);
 
         return ApiResponse::ok(new ProviderProfileResource($profile->fresh(['baseBarangay', 'skills', 'serviceAreas'])), 'Profile updated successfully.');
     }

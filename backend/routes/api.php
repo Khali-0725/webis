@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\AuditLogController;
 use App\Http\Controllers\Api\Admin\ChatViolationController;
+use App\Http\Controllers\Api\Admin\BulkArchiveController;
 use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\VerificationController;
@@ -54,6 +55,11 @@ use Illuminate\Support\Facades\Route;
 // ---------------------------------------------------------------------------
 
 Route::get('/health', HealthController::class)->name('api.health');
+Route::post('/appeals', [App\Http\Controllers\Api\SuspensionAppealController::class, 'store'])->middleware('throttle:auth')->name('api.appeals.store');
+Route::post('/appeals/status', [App\Http\Controllers\Api\SuspensionAppealController::class, 'mine'])->middleware('throttle:auth')->name('api.appeals.status');
+Route::get('/announcement', fn () => ApiResponse::ok([
+    'text' => \App\Models\SystemSetting::getValue('platform.announcement', ''),
+]))->name('api.announcement');
 
 Route::get('/files/avatar/{user}', [FileController::class, 'avatar'])
     ->name('api.files.avatar');
@@ -72,6 +78,7 @@ Route::get('/services/{service}', [ServiceController::class, 'show'])
 
 Route::get('/providers', [ProviderController::class, 'index'])
     ->name('api.providers.index');
+Route::get('/providers-map', [ProviderController::class, 'map'])->name('api.providers.map');
 
 Route::get('/providers/{providerProfile}', [ProviderController::class, 'show'])
     ->name('api.providers.show');
@@ -113,6 +120,7 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('/me', [AuthController::class, 'me'])->name('me');
+        Route::post('/activity', [AuthController::class, 'activity'])->middleware('throttle:60,1')->name('activity');
     });
 });
 
@@ -129,6 +137,9 @@ Route::post('/auth/email/verification-notification', [EmailVerificationControlle
 // ---------------------------------------------------------------------------
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+
+    Route::get('/notifications', [App\Http\Controllers\Api\NotificationController::class, 'index'])->name('api.notifications.index');
+    Route::patch('/notifications/{notification}/read', [App\Http\Controllers\Api\NotificationController::class, 'markRead'])->name('api.notifications.read');
 
     // -----------------------------------------------------------------------
     // Profile Management
@@ -153,8 +164,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::prefix('provider')->name('api.provider.')->middleware('role:provider')->group(function () {
         Route::get('/ping', fn () => response()->json(['success' => true]));
         Route::post('/verification/documents', [VerificationDocumentController::class, 'store'])->name('verification.store');
+        Route::get('/verification', [VerificationDocumentController::class, 'index'])->name('verification.index');
 
         Route::get('/profile', [App\Http\Controllers\Api\Provider\ProfileController::class, 'show'])->name('profile.show');
+        Route::get('/holidays', [App\Http\Controllers\Api\Provider\AvailabilityController::class, 'holidays'])->name('holidays.index');
+        Route::patch('/holidays', [App\Http\Controllers\Api\Provider\AvailabilityController::class, 'updateHolidays'])->name('holidays.update');
         Route::patch('/profile', [App\Http\Controllers\Api\Provider\ProfileController::class, 'update'])->name('profile.update');
         Route::put('/skills', [App\Http\Controllers\Api\Provider\ProfileController::class, 'updateSkills'])->name('skills.update');
         Route::put('/service-areas', [App\Http\Controllers\Api\Provider\ProfileController::class, 'updateServiceAreas'])->name('service-areas.update');
@@ -190,6 +204,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/reviews', [ReviewController::class, 'providerReviews'])->name('reviews.index');
 
         Route::get('/earnings/summary', [EarningsController::class, 'summary'])->name('earnings.summary');
+        Route::get('/earnings/transactions', [EarningsController::class, 'transactions'])->name('earnings.transactions');
         Route::get('/earnings/over-time', [EarningsController::class, 'overTime'])->name('earnings.over-time');
     });
 
@@ -212,6 +227,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/{booking}/status', [BookingController::class, 'updateStatus'])->name('status');
 
         Route::get('/{booking}/payment', [PaymentController::class, 'show'])->name('payment.show');
+        Route::get('/{booking}/payment/receipt', [PaymentController::class, 'receipt'])->name('payment.receipt');
         Route::post('/{booking}/payment/proof', [PaymentController::class, 'submitProof'])
             ->middleware('throttle:uploads')
             ->name('payment.proof');
@@ -236,20 +252,15 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     });
 
     // -----------------------------------------------------------------------
-    // Reviews - provider acts on reviews of their own profile; the client
-    // who wrote a review may edit or withdraw it (ReviewPolicy)
+    // Providers can reply to their own reviews. Visibility moderation is
+    // restricted to the audited administrator endpoint below.
     // -----------------------------------------------------------------------
     Route::prefix('reviews')->name('api.reviews.')->group(function () {
         Route::middleware('role:provider')->group(function () {
             Route::post('/{review}/reply', [ReviewController::class, 'reply'])->name('reply');
             Route::delete('/{review}/reply', [ReviewController::class, 'removeReply'])->name('reply.destroy');
-            Route::patch('/{review}/visibility', [ReviewController::class, 'setVisibility'])->name('visibility');
         });
 
-        Route::middleware('role:client')->group(function () {
-            Route::patch('/{review}', [ReviewController::class, 'update'])->name('update');
-            Route::delete('/{review}', [ReviewController::class, 'destroy'])->name('destroy');
-        });
     });
 
     // -----------------------------------------------------------------------
@@ -267,6 +278,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Private file serving - every route here is policy-gated, never public
     // -----------------------------------------------------------------------
     Route::get('/files/payment-proof/{proof}', [FileController::class, 'paymentProof'])->name('api.files.payment-proof');
+    Route::get('/files/verification-document/{document}', [FileController::class, 'verificationDocument'])->name('api.files.verification-document');
     Route::get('/files/payment-qr/{method}', [FileController::class, 'paymentQr'])->withTrashed()->name('api.files.payment-qr');
 
     // -----------------------------------------------------------------------
@@ -298,6 +310,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // -----------------------------------------------------------------------
     Route::prefix('admin')->name('api.admin.')->middleware('role:admin')->group(function () {
         Route::get('/ping', fn () => response()->json(['success' => true]));
+        Route::post('/records/{resource}/bulk-archive', BulkArchiveController::class)
+            ->whereIn('resource', ['services', 'providers', 'reports', 'chat-violations', 'reviews'])
+            ->name('records.bulk-archive');
         // Users - full CRUD, delete is soft (restore lives under /trash)
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
@@ -307,11 +322,22 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/users/{user}/restore', [UserController::class, 'restore'])->withTrashed()->name('users.restore');
         Route::patch('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
+        Route::patch('/users/{user}/terminate', [UserController::class, 'terminate'])->name('users.terminate');
+        Route::patch('/users/{user}/restore-terminated', [UserController::class, 'restoreTerminated'])->name('users.restore-terminated');
+        Route::get('/appeals', [App\Http\Controllers\Api\SuspensionAppealController::class, 'index'])->name('appeals.index');
+        Route::patch('/appeals/{appeal}', [App\Http\Controllers\Api\SuspensionAppealController::class, 'decide'])->name('appeals.decide');
+        Route::get('/reviews', [App\Http\Controllers\Api\Admin\ReviewController::class, 'index'])->name('reviews.index');
+        Route::patch('/reviews/{review}/visibility', [App\Http\Controllers\Api\Admin\ReviewController::class, 'visibility'])->name('reviews.visibility');
+        Route::delete('/reviews/{review}', [App\Http\Controllers\Api\Admin\ReviewController::class, 'archive'])->name('reviews.archive');
+        Route::post('/reviews/{review}/restore', [App\Http\Controllers\Api\Admin\ReviewController::class, 'restore'])->withTrashed()->name('reviews.restore');
 
         // Verification routes
         Route::get('/verification/documents', [VerificationController::class, 'index'])->name('verification.index');
+        Route::get('/verification/providers', [VerificationController::class, 'providers'])->name('verification.providers.index');
         Route::patch('/verification/documents/{document}/approve', [VerificationController::class, 'approve'])->name('verification.approve');
         Route::patch('/verification/documents/{document}/reject', [VerificationController::class, 'reject'])->name('verification.reject');
+        Route::post('/verification/documents/bulk', [VerificationController::class, 'bulk'])->name('verification.bulk');
+        Route::patch('/verification/providers/{providerProfile}/approve', [VerificationController::class, 'approveProvider'])->name('verification.providers.approve');
 
         // Service category management
         Route::get('/categories', [App\Http\Controllers\Api\Admin\ServiceCategoryController::class, 'index'])->name('categories.index');

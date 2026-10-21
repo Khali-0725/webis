@@ -9,11 +9,13 @@ import { create } from 'zustand';
  */
 export const useAuthStore = create((set) => ({
   user: null,
+  sessionEndedMessage: null,
   /** 'idle' | 'loading' | 'ready' - `ready` means the boot check has finished. */
   status: 'idle',
 
-  setUser: (user) => set({ user, status: 'ready' }),
-  clearUser: () => set({ user: null, status: 'ready' }),
+  setUser: (user) => set({ user, status: 'ready', sessionEndedMessage: null }),
+  clearUser: () => set({ user: null, status: 'ready', sessionEndedMessage: null }),
+  setSessionEndedMessage: (message) => set({ sessionEndedMessage: message }),
   setStatus: (status) => set({ status }),
 }));
 

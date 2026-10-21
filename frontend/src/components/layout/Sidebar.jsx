@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
+import { useState } from 'react';
 import { cn } from '@/utils/cn';
 import { Icon } from '@/components/ui/Icon';
 import { Logo } from '@/components/ui/Logo';
@@ -6,6 +7,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { useAuth, useLogout } from '@/hooks/useAuth';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { ROLES } from '@/constants';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 /**
  * Navigation per role. Route paths that do not exist yet are marked
@@ -40,6 +42,8 @@ const NAV = {
   [ROLES.ADMIN]: [
     { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
     { to: '/admin/users', label: 'Users', icon: 'users' },
+    { to: '/admin/appeals', label: 'Appeals', icon: 'flag' },
+    { to: '/admin/reviews', label: 'Reviews', icon: 'star' },
     { to: '/admin/verification', label: 'Verifications', icon: 'shield' },
     { to: '/admin/providers', label: 'Providers', icon: 'shield' },
     { to: '/admin/categories', label: 'Categories', icon: 'tag' },
@@ -66,6 +70,7 @@ export function Sidebar({ onNavigate }) {
   const { user } = useAuth();
   const { logout, isPending } = useLogout();
   const unreadCount = useUnreadCount();
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   if (!user) return null;
 
@@ -74,7 +79,9 @@ export function Sidebar({ onNavigate }) {
   return (
     <div className="flex h-full flex-col bg-navy-800 text-white">
       <div className="px-5 py-5">
-        <Logo variant="light" sublabel={PORTAL_LABEL[user.role]} showMark={false} />
+        <Link to="/" onClick={onNavigate} aria-label="WEBIS home">
+          <Logo variant="light" sublabel={PORTAL_LABEL[user.role]} showMark={false} />
+        </Link>
       </div>
 
       <div className="mx-3 flex items-center gap-3 rounded-lg bg-white/5 px-3 py-3">
@@ -129,7 +136,7 @@ export function Sidebar({ onNavigate }) {
       <div className="border-t border-white/10 p-3">
         <button
           type="button"
-          onClick={logout}
+          onClick={() => setConfirmLogout(true)}
           disabled={isPending}
           className="flex w-full items-center gap-3 rounded-lg bg-red-600/90 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-60"
         >
@@ -137,6 +144,14 @@ export function Sidebar({ onNavigate }) {
           {isPending ? 'Signing out…' : 'Logout'}
         </button>
       </div>
+      <ConfirmDialog
+        open={confirmLogout}
+        onClose={() => setConfirmLogout(false)}
+        onConfirm={logout}
+        title="Are you sure you want to log out?"
+        confirmLabel="Yes, Log Out"
+        loading={isPending}
+      />
     </div>
   );
 }

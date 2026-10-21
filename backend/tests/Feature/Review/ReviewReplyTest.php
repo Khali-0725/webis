@@ -15,7 +15,7 @@ class ReviewReplyTest extends TestCase
     public function test_provider_can_reply_to_their_own_review(): void
     {
         $providerUser = User::factory()->provider()->create();
-        $profile = ProviderProfile::factory()->create(['user_id' => $providerUser->id]);
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
         $review = Review::factory()->create(['provider_profile_id' => $profile->id]);
 
         $this->actingAs($providerUser)
@@ -30,7 +30,7 @@ class ReviewReplyTest extends TestCase
         $review = Review::factory()->create(['provider_profile_id' => $ownerProfile->id]);
 
         $intruderUser = User::factory()->provider()->create();
-        ProviderProfile::factory()->create(['user_id' => $intruderUser->id]);
+        ProviderProfile::factory()->verified()->create(['user_id' => $intruderUser->id]);
 
         $this->actingAs($intruderUser)
             ->postJson("/api/reviews/{$review->id}/reply", ['provider_reply' => 'Hijacked'])

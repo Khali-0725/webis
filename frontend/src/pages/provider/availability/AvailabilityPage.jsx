@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { fieldError } from '@/services/api/client';
 import { availabilityApi } from '@/services/api/availabilityApi';
@@ -50,6 +51,22 @@ export default function AvailabilityPage() {
   const [exceptionEnd, setExceptionEnd] = useState('17:00');
   const [exceptionReason, setExceptionReason] = useState('');
   const [editingException, setEditingException] = useState(null);
+  const [holidayYear, setHolidayYear] = useState(new Date().getFullYear());
+  const [confirmHolidays, setConfirmHolidays] = useState(false);
+
+  const holidaysQuery = useQuery({ queryKey: ['provider', 'holidays', holidayYear], queryFn: () => availabilityApi.holidays(holidayYear) });
+  const holidayMutation = useMutation({
+    mutationFn: ({ enabled, confirmed }) => availabilityApi.updateHolidays(enabled, confirmed),
+    onSuccess: () => {
+      setConfirmHolidays(false);
+      queryClient.invalidateQueries({ queryKey: ['provider', 'holidays'] });
+      setNotice({ tone: 'success', message: 'Holiday preference updated. Existing bookings remain in place.' });
+    },
+    onError: (error) => {
+      if (error?.status === 409) setConfirmHolidays(true);
+      else setNotice({ tone: 'error', message: error?.message ?? 'Could not update holiday preference.' });
+    },
+  });
 
   const rulesQuery = useQuery({
     queryKey: queryKeys.provider.availabilityRules,
@@ -134,13 +151,23 @@ export default function AvailabilityPage() {
     <div className="space-y-5">
       {notice && <Alert tone={notice.tone}>{notice.message}</Alert>}
 
+      <Card title="Holiday Exclusions">
+        <label className="flex items-center gap-3 text-sm font-medium text-ink"><input type="checkbox" checked={Boolean(holidaysQuery.data?.exclude_all_holidays)} disabled={holidaysQuery.isPending || holidayMutation.isPending} onChange={(event) => holidayMutation.mutate({ enabled: event.target.checked, confirmed: false })} className="h-5 w-5 rounded border-line text-navy-700" /> Exclude All Holidays</label>
+        <p className="mt-2 text-xs text-ink-muted">Blocks new bookings on configured Philippine national regular and special non-working days. Existing bookings stay scheduled.</p>
+        <label className="mt-4 block text-sm text-ink-muted">Calendar year<select value={holidayYear} onChange={(event) => setHolidayYear(Number(event.target.value))} className="ml-2 h-9 rounded-lg border border-line bg-white px-2 text-ink"><option value={2026}>2026</option><option value={2027}>2027</option></select></label>
+        {holidaysQuery.data && <div className="mt-3 max-h-36 overflow-y-auto text-xs text-ink-muted">{holidaysQuery.data.calendar_available ? holidaysQuery.data.dates.map((holiday) => <span key={holiday.date} className="mr-3 inline-block py-1">{holiday.date} · {holiday.name}</span>) : 'No configured calendar for this year.'}</div>}
+      </Card>
+      <ConfirmDialog open={confirmHolidays} onClose={() => setConfirmHolidays(false)} onConfirm={() => holidayMutation.mutate({ enabled: true, confirmed: true })} title="Exclude holidays despite existing bookings?" description={holidayMutation.error?.message} confirmLabel="Exclude future holiday slots" loading={holidayMutation.isPending}>
+        <p className="text-sm text-ink-muted">Existing bookings will remain scheduled. New bookings on the listed holidays will be blocked.</p>
+      </ConfirmDialog>
+
       <Card title="Weekly Availability">
         <form onSubmit={handleRulesSubmit} className="space-y-3">
           {DAYS.map((day, index) => {
             const row = rows[index];
             return (
-              <div key={day.value} className="grid grid-cols-[auto_1fr_1fr_1fr_1fr] items-center gap-3 border-b border-line pb-3">
-                <label className="flex items-center gap-2 text-sm font-medium text-ink">
+              <div key={day.value} className="grid min-w-0 grid-cols-2 items-center gap-3 border-b border-line pb-3 sm:grid-cols-[auto_1fr_1fr_1fr]">
+                <label className="col-span-2 flex items-center gap-2 text-sm font-medium text-ink sm:col-span-1">
                   <input
                     type="checkbox"
                     checked={row.enabled}
@@ -154,20 +181,20 @@ export default function AvailabilityPage() {
                   disabled={!row.enabled}
                   value={row.start_time}
                   onChange={(event) => updateRow(index, { start_time: event.target.value })}
-                  className="h-9 rounded-lg border border-line bg-white px-2 text-sm text-ink disabled:bg-slate-50 disabled:text-ink-muted"
+                  className="h-9 min-w-0 rounded-lg border border-line bg-white px-2 text-sm text-ink disabled:bg-slate-50 disabled:text-ink-muted"
                 />
                 <input
                   type="time"
                   disabled={!row.enabled}
                   value={row.end_time}
                   onChange={(event) => updateRow(index, { end_time: event.target.value })}
-                  className="h-9 rounded-lg border border-line bg-white px-2 text-sm text-ink disabled:bg-slate-50 disabled:text-ink-muted"
+                  className="h-9 min-w-0 rounded-lg border border-line bg-white px-2 text-sm text-ink disabled:bg-slate-50 disabled:text-ink-muted"
                 />
                 <select
                   disabled={!row.enabled}
                   value={row.slot_minutes}
                   onChange={(event) => updateRow(index, { slot_minutes: event.target.value })}
-                  className="h-9 rounded-lg border border-line bg-white px-2 text-sm text-ink disabled:bg-slate-50 disabled:text-ink-muted"
+                  className="h-9 min-w-0 rounded-lg border border-line bg-white px-2 text-sm text-ink disabled:bg-slate-50 disabled:text-ink-muted"
                 >
                   {[30, 60, 90, 120].map((minutes) => (
                     <option key={minutes} value={minutes}>
@@ -175,7 +202,6 @@ export default function AvailabilityPage() {
                     </option>
                   ))}
                 </select>
-                <span />
               </div>
             );
           })}

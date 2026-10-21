@@ -10,6 +10,8 @@ use App\Http\Resources\AvailabilityExceptionResource;
 use App\Http\Resources\AvailabilityRuleResource;
 use App\Models\ProviderAvailabilityException;
 use App\Models\ProviderAvailabilityRule;
+use App\Models\Booking;
+use App\Exceptions\DomainException;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +19,39 @@ use Illuminate\Support\Facades\DB;
 
 class AvailabilityController extends Controller
 {
+    public function holidays(Request $request): JsonResponse
+    {
+        $year = (int) ($request->validate(['year' => ['nullable', 'integer', 'between:2026,2100']])['year'] ?? now('Asia/Manila')->year);
+        $profile = $request->user()->providerProfile()->firstOrFail();
+        $dates = config('holidays')[$year] ?? [];
+        return ApiResponse::ok([
+            'exclude_all_holidays' => $profile->exclude_all_holidays,
+            'year' => $year,
+            'dates' => collect($dates)->map(fn ($name, $date) => ['date' => $date, 'name' => $name])->values(),
+            'calendar_available' => count($dates) > 0,
+        ]);
+    }
+
+    public function updateHolidays(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'exclude_all_holidays' => ['required', 'boolean'],
+            'confirm_existing_bookings' => ['sometimes', 'boolean'],
+        ]);
+        $profile = $request->user()->providerProfile()->firstOrFail();
+        if ($data['exclude_all_holidays'] && ! $profile->exclude_all_holidays) {
+            $dates = array_keys(array_merge(...array_values(config('holidays'))));
+            $affected = Booking::where('provider_profile_id', $profile->id)
+                ->whereDate('scheduled_date', '>=', now('Asia/Manila')->toDateString())
+                ->whereIn(DB::raw('DATE(scheduled_date)'), $dates)->slotBlocking()->count();
+            if ($affected > 0 && empty($data['confirm_existing_bookings'])) {
+                throw DomainException::conflict("{$affected} future booking(s) fall on excluded holidays. Confirm to keep those bookings while blocking new ones.");
+            }
+        }
+        $profile->forceFill(['exclude_all_holidays' => $data['exclude_all_holidays']])->save();
+        return ApiResponse::ok(['exclude_all_holidays' => $profile->exclude_all_holidays], 'Holiday preference updated. Existing bookings remain unchanged.');
+    }
+
     public function rules(Request $request): JsonResponse
     {
         $profile = $request->user()->providerProfile()->firstOrFail();

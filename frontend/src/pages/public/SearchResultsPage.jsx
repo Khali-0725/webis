@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { publicApi } from '@/services/api/publicApi';
@@ -183,6 +184,7 @@ export default function SearchResultsPage() {
                       <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{service.description}</p>
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
                         <span>{service.provider?.business_name}</span>
+                        <VerifiedBadge verified={service.provider?.is_verified} />
                         {service.provider?.base_barangay && (
                           <>
                             <span aria-hidden="true">·</span>

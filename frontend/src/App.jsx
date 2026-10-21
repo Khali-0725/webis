@@ -5,6 +5,7 @@ import { queryClient } from '@/services/api/queryClient';
 import { AppRoutes } from '@/routes';
 import { useAuthBootstrap } from '@/hooks/useAuth';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { useSessionActivity } from '@/hooks/useSessionActivity';
 import { Button } from '@/components/ui/Button';
 
 /**
@@ -54,6 +55,7 @@ class ErrorBoundary extends Component {
 function AuthBootstrap({ children }) {
   useAuthBootstrap();
   useRealtimeSync();
+  useSessionActivity();
 
   return children;
 }

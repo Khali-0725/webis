@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PaymentProof;
 use App\Models\ProviderPaymentMethod;
 use App\Models\User;
+use App\Models\ProviderVerificationDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
@@ -66,6 +67,13 @@ class FileController extends Controller
         abort_if($method->qr_image_path === null, 404);
 
         return $this->stream($method->qr_image_path);
+    }
+
+    public function verificationDocument(Request $request, ProviderVerificationDocument $document): Response
+    {
+        $this->authorize('view', $document);
+
+        return $this->stream($document->file_path);
     }
 
     private function stream(string $path): Response

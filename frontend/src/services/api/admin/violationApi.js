@@ -14,8 +14,8 @@ export const violationApi = {
   },
 
   /** POST /api/admin/chat-violations/{id}/{action} */
-  async act(id, action) {
-    const response = await api.post(`/admin/chat-violations/${id}/${action}`);
+  async act(id, action, payload = {}) {
+    const response = await api.post(`/admin/chat-violations/${id}/${action}`, payload);
     return unwrap(response);
   },
 

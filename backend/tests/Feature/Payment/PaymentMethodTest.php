@@ -16,7 +16,7 @@ class PaymentMethodTest extends TestCase
     private function providerWithProfile(): array
     {
         $user = User::factory()->provider()->create();
-        $profile = ProviderProfile::factory()->create(['user_id' => $user->id]);
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $user->id]);
 
         return [$user, $profile];
     }

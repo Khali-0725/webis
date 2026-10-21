@@ -7,6 +7,9 @@ use App\Http\Requests\StoreReportRequest;
 use App\Http\Requests\UpdateReportRequest;
 use App\Http\Resources\ReportResource;
 use App\Models\Report;
+use App\Models\User;
+use App\Enums\UserRole;
+use App\Notifications\AccountEventNotification;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,6 +47,14 @@ class ReportController extends Controller
             'reason' => $request->validated('reason'),
             'details' => $request->validated('details'),
         ]);
+        User::where('role', UserRole::Admin->value)->where('status', 'active')->get()
+            ->each(fn (User $admin) => $admin->notify(new AccountEventNotification(
+                'report.submitted', 'A new report was submitted for review.', '/admin/reports',
+            )));
+        $audience = $request->user()->isProvider() ? 'provider' : 'client';
+        $request->user()->notify(new AccountEventNotification(
+            'report.received', 'Your report was submitted for administrator review.', "/{$audience}/reports",
+        ));
 
         return ApiResponse::created(new ReportResource($report->fresh()), 'Report submitted.');
     }

@@ -14,6 +14,11 @@ class PaymentPolicy
             || $user->isAdmin();
     }
 
+    public function viewReceipt(User $user, Payment $payment): bool
+    {
+        return $user->id === $payment->client_id || $user->isAdmin();
+    }
+
     /**
      * The provider being paid, or admin as a logged override (per the
      * requirements audit's role matrix - not the primary path, but allowed).

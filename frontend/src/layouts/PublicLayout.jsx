@@ -1,7 +1,9 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { cn } from '@/utils/cn';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/hooks/useAuth';
 
 const LINKS = [
@@ -14,6 +16,13 @@ const LINKS = [
 
 export function PublicLayout() {
   const { user, isAuthenticated } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setMenuOpen(false);
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -52,7 +61,7 @@ export function PublicLayout() {
             )}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 md:flex">
             {isAuthenticated ? (
               <Link to={user.home_path}>
                 <Button size="sm">Go to dashboard</Button>
@@ -70,7 +79,37 @@ export function PublicLayout() {
               </>
             )}
           </div>
+          <button
+            type="button"
+            className="rounded-lg p-3 text-navy-700 hover:bg-canvas md:hidden"
+            aria-label={menuOpen ? 'Close public navigation' : 'Open public navigation'}
+            aria-expanded={menuOpen}
+            aria-controls="public-mobile-navigation"
+            onClick={() => setMenuOpen((open) => !open)}
+            onKeyDown={(event) => event.key === 'Escape' && setMenuOpen(false)}
+          >
+            <Icon name={menuOpen ? 'close' : 'menu'} />
+          </button>
         </div>
+        {menuOpen && (
+          <nav id="public-mobile-navigation" aria-label="Mobile primary" className="border-t border-line px-4 py-3 md:hidden" onKeyDown={(event) => event.key === 'Escape' && setMenuOpen(false)}>
+            {LINKS.map((link) => (
+              <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => cn('block rounded-lg px-3 py-3 text-sm', isActive ? 'bg-navy-50 font-semibold text-navy-800' : 'text-ink-muted hover:bg-canvas')}>
+                {link.label}
+              </NavLink>
+            ))}
+            <div className="mt-2 flex flex-wrap gap-2 border-t border-line pt-3">
+              {isAuthenticated ? (
+                <Link to={user.home_path} className="rounded-lg bg-navy-700 px-4 py-3 text-sm font-semibold text-white">Go to dashboard</Link>
+              ) : (
+                <>
+                  <Link to="/login" className="rounded-lg border border-line px-4 py-3 text-sm font-semibold text-navy-800">Login</Link>
+                  <Link to="/register" className="rounded-lg bg-navy-700 px-4 py-3 text-sm font-semibold text-white">Register</Link>
+                </>
+              )}
+            </div>
+          </nav>
+        )}
       </header>
 
       <main className="flex-1">

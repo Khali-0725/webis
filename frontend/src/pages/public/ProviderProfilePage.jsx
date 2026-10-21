@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
+import { ReportAction } from '@/components/ui/ReportAction';
 import { Pagination } from '@/components/ui/Pagination';
 import { StarRating } from '@/components/ui/StarRating';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
@@ -78,6 +80,7 @@ export default function ProviderProfilePage() {
             <h1 className="font-display text-2xl font-bold text-navy-800">
               {provider.business_name}
             </h1>
+            <VerifiedBadge verified={provider.is_verified} />
             {(provider.base_barangay || provider.age != null) && (
               <p className="mt-1 text-sm text-ink-muted">
                 {[provider.base_barangay?.name, provider.age != null ? `${provider.age} years old` : null]
@@ -103,6 +106,8 @@ export default function ProviderProfilePage() {
           </div>
         )}
       </div>
+
+      <ReportAction type="provider" id={provider.id} label="provider profile" />
 
       <h2 className="mt-8 font-display text-xl font-bold text-navy-800">Services</h2>
 

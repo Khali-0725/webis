@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\ForceJsonResponse;
+use App\Http\Middleware\EnforceAccountSession;
 use App\Support\Api\ExceptionRenderer;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -46,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleCors::class,
             ForceJsonResponse::class,
         ]);
+        $middleware->api(append: [EnforceAccountSession::class]);
 
         $middleware->alias([
             'role' => EnsureUserRole::class,

@@ -33,4 +33,20 @@ class AuditLogListingTest extends TestCase
             ->getJson('/api/admin/audit-logs')
             ->assertForbidden();
     }
+
+    public function test_account_history_is_scoped_to_one_user(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $subject = User::factory()->client()->create();
+        $other = User::factory()->client()->create();
+        AuditLog::create(['actor_id' => $admin->id, 'action' => 'user.suspended',
+            'auditable_type' => User::class, 'auditable_id' => $subject->id]);
+        AuditLog::create(['actor_id' => $admin->id, 'action' => 'user.suspended',
+            'auditable_type' => User::class, 'auditable_id' => $other->id]);
+
+        $response = $this->actingAs($admin)->getJson("/api/admin/audit-logs?user_id={$subject->id}")
+            ->assertOk();
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame($subject->id, $response->json('data.0.auditable_id'));
+    }
 }

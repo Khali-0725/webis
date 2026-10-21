@@ -5,8 +5,10 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { bookingApi } from '@/services/api/bookingApi';
+import { publicApi } from '@/services/api/publicApi';
 import { queryKeys } from '@/services/api/queryClient';
 import { POLL_SLOW } from '@/services/realtime/echo';
 import { BOOKING_STATUS_META } from '@/constants';
@@ -14,25 +16,44 @@ import { BOOKING_STATUS_META } from '@/constants';
 export default function BookingListPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sort, setSort] = useState('newest');
   const [page, setPage] = useState(1);
+  const [bookingToAccept, setBookingToAccept] = useState(null);
+  const { data: categories = [] } = useQuery({ queryKey: queryKeys.public.categories, queryFn: publicApi.listCategories });
+  const filters = {
+    ...(status ? { status } : {}),
+    ...(categoryId ? { category_id: categoryId } : {}),
+    ...(startDate ? { start_date: startDate } : {}),
+    ...(endDate ? { end_date: endDate } : {}),
+    sort,
+    page,
+  };
 
   const { data, isPending, isError, error, refetch } = useQuery({
-    queryKey: queryKeys.bookings.list({ status, page }),
-    queryFn: () => bookingApi.list({ ...(status ? { status } : {}), page }),
+    queryKey: queryKeys.bookings.list(filters),
+    queryFn: () => bookingApi.list(filters),
     refetchInterval: POLL_SLOW,
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['bookings'] });
 
-  const acceptMutation = useMutation({ mutationFn: bookingApi.accept, onSuccess: invalidate });
+  const acceptMutation = useMutation({
+    mutationFn: bookingApi.accept,
+    onSuccess: () => {
+      setBookingToAccept(null);
+      invalidate();
+    },
+  });
   const rejectMutation = useMutation({ mutationFn: (id) => bookingApi.reject(id), onSuccess: invalidate });
 
   return (
     <Card title="Bookings">
-      <div className="mb-4 flex items-center gap-2">
-        <label htmlFor="status-filter" className="text-sm text-ink-muted">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <label htmlFor="status-filter" className="flex flex-col gap-1 text-sm text-ink-muted">
           Status
-        </label>
         <select
           id="status-filter"
           value={status}
@@ -49,6 +70,67 @@ export default function BookingListPage() {
             </option>
           ))}
         </select>
+        </label>
+        <label htmlFor="category-filter" className="flex flex-col gap-1 text-sm text-ink-muted">
+          Category
+          <select
+            id="category-filter"
+            value={categoryId}
+            onChange={(event) => {
+              setCategoryId(event.target.value);
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-line bg-white px-2 text-sm text-ink"
+          >
+            <option value="">All categories</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+        </label>
+        <label htmlFor="start-date-filter" className="flex flex-col gap-1 text-sm text-ink-muted">
+          From date
+          <input
+            id="start-date-filter"
+            type="date"
+            value={startDate}
+            max={endDate || undefined}
+            onChange={(event) => {
+              setStartDate(event.target.value);
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-line bg-white px-2 text-sm text-ink"
+          />
+        </label>
+        <label htmlFor="end-date-filter" className="flex flex-col gap-1 text-sm text-ink-muted">
+          To date
+          <input
+            id="end-date-filter"
+            type="date"
+            value={endDate}
+            min={startDate || undefined}
+            onChange={(event) => {
+              setEndDate(event.target.value);
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-line bg-white px-2 text-sm text-ink"
+          />
+        </label>
+        <label htmlFor="sort-filter" className="flex flex-col gap-1 text-sm text-ink-muted">
+          Sort by date
+          <select
+            id="sort-filter"
+            value={sort}
+            onChange={(event) => {
+              setSort(event.target.value);
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-line bg-white px-2 text-sm text-ink"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </label>
       </div>
 
       {isPending && <LoadingState label="Loading bookings…" />}
@@ -87,7 +169,10 @@ export default function BookingListPage() {
                         <>
                           <Button
                             size="sm"
-                            onClick={() => acceptMutation.mutate(booking.id)}
+                            onClick={() => {
+                              acceptMutation.reset();
+                              setBookingToAccept(booking);
+                            }}
                             loading={acceptMutation.isPending && acceptMutation.variables === booking.id}
                           >
                             Accept
@@ -117,6 +202,23 @@ export default function BookingListPage() {
       )}
 
       <Pagination meta={data?.meta} onChange={setPage} />
+      <ConfirmDialog
+        open={Boolean(bookingToAccept)}
+        onClose={() => setBookingToAccept(null)}
+        onConfirm={() => {
+          if (bookingToAccept && !acceptMutation.isPending) acceptMutation.mutate(bookingToAccept.id);
+        }}
+        title="Are you sure you want to accept this booking?"
+        description={`${bookingToAccept?.client?.full_name ?? 'Client'} · ${bookingToAccept?.service?.title ?? 'Service'}`}
+        confirmLabel="Accept Booking"
+        loading={acceptMutation.isPending}
+        error={acceptMutation.error?.message}
+      >
+        <p className="text-sm text-ink-muted">
+          {bookingToAccept?.scheduled_date} at {bookingToAccept?.scheduled_start_time?.slice(0, 5)}.
+          The service address becomes available after acceptance.
+        </p>
+      </ConfirmDialog>
     </Card>
   );
 }

@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\UpdateProviderProfileRequest;
 use App\Http\Resources\Admin\ProviderProfileResource;
 use App\Http\Resources\ServiceResource;
 use App\Models\ProviderProfile;
+use App\Support\AdminRecordFilters;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
 use App\Support\TrashFilter;
@@ -43,7 +44,7 @@ class ProviderController extends Controller
 
         $perPage = min($request->integer('per_page', config('webis.pagination.default')), config('webis.pagination.max'));
 
-        return ApiResponse::paginated($query->orderByDesc('created_at')->paginate($perPage), ProviderProfileResource::class);
+        return ApiResponse::paginated(AdminRecordFilters::apply($query, $request)->paginate($perPage), ProviderProfileResource::class);
     }
 
     public function show(ProviderProfile $providerProfile): JsonResponse

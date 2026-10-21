@@ -25,8 +25,21 @@ describe('LoginPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i, { selector: 'input' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
+  });
+
+  it('toggles password visibility without losing the typed value', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LoginPage />);
+    const password = screen.getByLabelText(/password/i, { selector: 'input' });
+    await user.type(password, 'Secret123!');
+    expect(password).toHaveAttribute('type', 'password');
+    await user.click(screen.getByRole('button', { name: /show password/i }));
+    expect(password).toHaveAttribute('type', 'text');
+    expect(password).toHaveValue('Secret123!');
+    await user.click(screen.getByRole('button', { name: /hide password/i }));
+    expect(password).toHaveAttribute('type', 'password');
   });
 
   it('blocks submission and shows messages when fields are empty', async () => {
@@ -45,7 +58,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email address/i), 'not-an-email');
-    await user.type(screen.getByLabelText(/password/i), 'Password123');
+    await user.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'Password123');
     await user.click(screen.getByRole('button', { name: 'Login' }));
 
     expect(await screen.findByText('Enter a valid email address.')).toBeInTheDocument();
@@ -58,7 +71,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email address/i), 'client@webis.test');
-    await user.type(screen.getByLabelText(/password/i), 'Password123');
+    await user.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'Password123');
     await user.click(screen.getByRole('button', { name: 'Login' }));
 
     // React Query v5 passes a context object as a second argument to
@@ -68,7 +81,6 @@ describe('LoginPage', () => {
     expect(authApi.login.mock.calls[0][0]).toEqual({
       email: 'client@webis.test',
       password: 'Password123',
-      remember: false,
     });
   });
 
@@ -83,7 +95,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email address/i), 'client@webis.test');
-    await user.type(screen.getByLabelText(/password/i), 'WrongPassword1');
+    await user.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'WrongPassword1');
     await user.click(screen.getByRole('button', { name: 'Login' }));
 
     expect(
@@ -102,7 +114,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email address/i), 'banned@webis.test');
-    await user.type(screen.getByLabelText(/password/i), 'Password123');
+    await user.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'Password123');
     await user.click(screen.getByRole('button', { name: 'Login' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/suspended/i);

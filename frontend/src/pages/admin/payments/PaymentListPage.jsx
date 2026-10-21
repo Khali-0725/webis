@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RowActions } from '@/components/ui/RowActions';
 import { TrashToggle, DeletedBadge } from '@/components/ui/TrashToggle';
+import { AdminRecordFilters } from '@/components/ui/AdminRecordFilters';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { paymentApi } from '@/services/api/paymentApi';
@@ -23,9 +24,10 @@ export default function AdminPaymentListPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [trashed, setTrashed] = useState('');
+  const [recordFilters, setRecordFilters] = useState({ sort: 'newest', start_date: '', end_date: '' });
   const [notice, setNotice] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
-  const params = { ...(trashed ? { trashed } : {}), page };
+  const params = { ...(trashed ? { trashed } : {}), ...Object.fromEntries(Object.entries(recordFilters).filter(([, v]) => v)), page };
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'payments', params],
@@ -60,6 +62,8 @@ export default function AdminPaymentListPage() {
           {notice.message}
         </Alert>
       )}
+
+      <AdminRecordFilters value={recordFilters} inTrash={trashed === 'only'} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }} />
 
       {isPending && <LoadingState label="Loading payments…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}

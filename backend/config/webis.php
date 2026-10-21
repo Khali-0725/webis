@@ -57,4 +57,9 @@ return [
         'timezone' => 'Asia/Manila',
     ],
 
+    // Policy may be tightened per deployment, but never exceeds 15 days.
+    'suspension' => [
+        'max_days' => (int) env('WEBIS_SUSPENSION_MAX_DAYS', 15),
+    ],
+
 ];

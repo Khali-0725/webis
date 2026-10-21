@@ -70,6 +70,22 @@ class ReviewCreationTest extends TestCase
             ->assertStatus(409);
     }
 
+    public function test_submitted_review_cannot_be_edited_deleted_or_replaced_after_archiving(): void
+    {
+        [$client, , $booking] = $this->completedBooking();
+        $reviewId = $this->actingAs($client)
+            ->postJson("/api/bookings/{$booking->id}/review", ['rating' => 5, 'comment' => 'Original'])
+            ->assertCreated()->json('data.id');
+
+        $this->actingAs($client)->patchJson("/api/reviews/{$reviewId}", ['rating' => 1])->assertStatus(405);
+        $this->actingAs($client)->deleteJson("/api/reviews/{$reviewId}")->assertStatus(405);
+
+        \App\Models\Review::findOrFail($reviewId)->delete();
+        $this->actingAs($client)
+            ->postJson("/api/bookings/{$booking->id}/review", ['rating' => 1])
+            ->assertStatus(409);
+    }
+
     public function test_a_stranger_cannot_review_someone_elses_booking(): void
     {
         [, , $booking] = $this->completedBooking();

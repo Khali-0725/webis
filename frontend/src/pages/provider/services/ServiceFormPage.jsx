@@ -28,6 +28,7 @@ export default function ServiceFormPage() {
   const isEditing = Boolean(id);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState(null);
+  const [draftDetails, setDraftDetails] = useState('');
 
   const { data: categories = [] } = useQuery({
     queryKey: queryKeys.public.categories,
@@ -116,6 +117,18 @@ export default function ServiceFormPage() {
     mutation.mutate(payload);
   };
 
+  const generateDraft = () => {
+    const category = categories.find((item) => String(item.id) === String(form.service_category_id))?.name;
+    const title = form.title.trim();
+    if (!category || !title) {
+      setFormError('Select a category and enter a service title before creating a draft.');
+      return;
+    }
+    setFormError(null);
+    const details = draftDetails.trim();
+    setForm({ ...form, description: `${title} is a ${category.toLowerCase()} service offered through WEBIS.${details ? ` ${details}` : ' Contact the provider to discuss the scope, schedule, and price before booking.'}` });
+  };
+
   return (
     <Card title={isEditing ? 'Edit Service' : 'Create Service'} className="mx-auto max-w-2xl">
       {formError && (
@@ -157,6 +170,11 @@ export default function ServiceFormPage() {
           <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-ink">
             Description<span className="ml-0.5 text-red-600">*</span>
           </label>
+          {!isEditing && <div className="mb-3 space-y-2">
+            <label htmlFor="draft-details" className="block text-sm text-ink-muted">Your service details for an optional description draft</label>
+            <textarea id="draft-details" rows={2} value={draftDetails} onChange={(event) => setDraftDetails(event.target.value)} placeholder="Describe the work you actually offer" className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink" />
+            <Button type="button" size="sm" variant="outline" onClick={generateDraft} disabled={Boolean(form.description)}>Create description draft</Button>
+          </div>}
           <textarea
             id="description"
             required

@@ -4,7 +4,7 @@ Capstone system for the study *Design and Development of a Web-Based Platform fo
 
 WEBIS connects clients in Tanza, Cavite with verified independent service providers: service listings with barangay-based discovery, time-slot booking with an exact service-location pin, in-platform messaging with off-platform-contact filtering, QR-based payment recording, ratings, and an administrator console.
 
-> **Build status — all 12 phases complete.** Backend 228/228 tests, frontend 26/26. Every module from `docs/PHASE-0-REQUIREMENTS-AUDIT.md` is built, tested, and has been running live (see below). Ongoing fixes and small feature additions since the 12-phase plan closed are logged in `backend/BUILD-LOG.md`'s "Post-Phase 12 changes" section, not as new phases.
+> **Local revision status (2026-10-09):** Backend 325 tests and frontend 33 tests pass; frontend lint and build pass. The original 12-phase build is complete, while the professor revision checklist still has open manual and scope items. See `docs/PROFESSOR-REVISION-TRACKER.md` and `docs/PROFESSOR-REVISION-TESTING.md` for verified results and limitations.
 
 **Live deployment** (free tier, testing phase — see `docs/deployment/DEPLOYMENT.md` for the full setup): React frontend on Vercel, Laravel API on Render (Singapore), MySQL-compatible TiDB Cloud Starter (AWS Singapore, same region as the API), uploaded files on Backblaze B2 (S3-compatible). An UptimeRobot monitor on the backend's `/api/health` every 5 minutes keeps Render's free tier from spinning down between visits (a GitHub Actions cron does the same as a best-effort backup).
 
@@ -19,7 +19,7 @@ React 18 + Vite  ──HTTP/JSON──▶  Laravel 13 API  ──▶  MySQL 8
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Vite 5, Tailwind CSS 3, React Router 6, TanStack Query 5, React Hook Form + Zod, Zustand, Axios |
+| Frontend | React 18, Vite 8, Tailwind CSS 3, React Router 7, TanStack Query 5, React Hook Form + Zod, Zustand, Axios |
 | Backend | Laravel 13 (PHP 8.3+), Sanctum 4 (stateful cookie auth), Form Requests, Policies, API Resources, service classes |
 | Database | MySQL 8 (InnoDB, utf8mb4) |
 | Maps (Phase 5) | Leaflet + OpenStreetMap tiles |
@@ -150,7 +150,7 @@ Seeded demo accounts — **password for all: `password123`**
 ```bash
 php artisan test                    # full test suite
 php artisan test --filter=Login     # one test class
-php artisan migrate:fresh --seed    # rebuild the database
+php artisan migrate                # apply additive migrations; back up data first
 vendor/bin/pint                     # format PHP to Laravel's style
 ```
 

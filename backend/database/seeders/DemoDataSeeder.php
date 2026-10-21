@@ -69,6 +69,7 @@ class DemoDataSeeder extends Seeder
             $v=$i<10;
             $p=ProviderProfile::firstOrNew(['user_id'=>$u->id]);
             $p->forceFill(['user_id'=>$u->id,'business_name'=>$f."'s ".$cat,'bio'=>"$cat provider $y yrs",'experience_years'=>$y,'base_barangay_id'=>$b->id,'latitude'=>$b->latitude,'longitude'=>$b->longitude,'verification_status'=>$v?VerificationStatus::Approved:VerificationStatus::Pending,'verified_at'=>$v?now()->subDays(rand(10,60)):null,'is_accepting_bookings'=>true])->save();
+            if($v) DemoVerificationDocuments::createFor($p, User::where('email', 'admin@webis.test')->firstOrFail());
             foreach(($sk[$cat]??['General']) as $s){ProviderSkill::firstOrCreate(['provider_profile_id'=>$p->id,'skill'=>$s]);}
             for($dd=1;$dd<=6;$dd++){ProviderAvailabilityRule::firstOrCreate(['provider_profile_id'=>$p->id,'day_of_week'=>$dd],['start_time'=>'08:00','end_time'=>'17:00','slot_minutes'=>60,'is_active'=>true]);}
             foreach($bg->random(min(rand(3,5),$bg->count())) as $a){ProviderServiceArea::firstOrCreate(['provider_profile_id'=>$p->id,'barangay_id'=>$a->id]);}

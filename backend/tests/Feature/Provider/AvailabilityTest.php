@@ -4,6 +4,9 @@ namespace Tests\Feature\Provider;
 
 use App\Models\ProviderAvailabilityException;
 use App\Models\ProviderProfile;
+use App\Models\ProviderAvailabilityRule;
+use App\Models\Booking;
+use App\Services\SlotGenerator;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,7 +18,7 @@ class AvailabilityTest extends TestCase
     private function providerWithProfile(): array
     {
         $user = User::factory()->provider()->create();
-        $profile = ProviderProfile::factory()->create(['user_id' => $user->id]);
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $user->id]);
 
         return [$user, $profile];
     }
@@ -86,5 +89,25 @@ class AvailabilityTest extends TestCase
         $this->actingAs($intruder)
             ->deleteJson("/api/provider/availability/exceptions/{$exception->id}")
             ->assertStatus(403);
+    }
+
+    public function test_holiday_exclusion_blocks_new_slots_and_requires_confirmation_for_existing_bookings(): void
+    {
+        [$provider, $profile] = $this->providerWithProfile();
+        ProviderAvailabilityRule::factory()->create(['provider_profile_id' => $profile->id, 'day_of_week' => 5]);
+        $slots = app(SlotGenerator::class);
+        $this->assertNotEmpty($slots->freeSlots($profile->id, '2027-01-01'));
+        Booking::factory()->accepted()->create(['provider_profile_id' => $profile->id, 'scheduled_date' => '2027-01-01']);
+
+        $this->actingAs($provider)->patchJson('/api/provider/holidays', ['exclude_all_holidays' => true])
+            ->assertStatus(409);
+        $this->actingAs($provider)->patchJson('/api/provider/holidays', [
+            'exclude_all_holidays' => true, 'confirm_existing_bookings' => true,
+        ])->assertOk();
+        $this->assertSame([], $slots->freeSlots($profile->id, '2027-01-01'));
+        $this->assertFalse($slots->isWithinAvailability($profile->id, '2027-01-01', '08:00', '09:00'));
+        $this->actingAs($provider)->getJson('/api/provider/holidays?year=2027')
+            ->assertOk()->assertJsonPath('data.exclude_all_holidays', true)
+            ->assertJsonPath('data.dates.0.date', '2027-01-01');
     }
 }

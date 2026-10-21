@@ -16,6 +16,7 @@ class SettingsController extends Controller
         'platform.name',
         'booking.min_lead_hours',
         'booking.max_advance_days',
+        'platform.announcement',
     ];
 
     public function index(): JsonResponse
@@ -34,6 +35,9 @@ class SettingsController extends Controller
         ]);
 
         foreach ($data['settings'] as $entry) {
+            if ($entry['key'] === 'platform.announcement') {
+                validator(['announcement' => $entry['value']], ['announcement' => ['string', 'max:500']])->validate();
+            }
             SystemSetting::updateOrCreate(
                 ['key' => $entry['key']],
                 ['value' => $entry['value'], 'updated_by' => $request->user()->id],

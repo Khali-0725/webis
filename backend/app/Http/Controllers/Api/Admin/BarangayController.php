@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreBarangayRequest;
 use App\Http\Requests\Admin\UpdateBarangayRequest;
 use App\Http\Resources\BarangayResource;
+use App\Support\AdminRecordFilters;
 use App\Models\Barangay;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
@@ -18,7 +19,7 @@ class BarangayController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $barangays = TrashFilter::apply(Barangay::query(), $request)->orderBy('name')->get();
+        $barangays = AdminRecordFilters::apply(TrashFilter::apply(Barangay::query(), $request), $request)->get();
 
         return ApiResponse::ok(BarangayResource::collection($barangays));
     }
