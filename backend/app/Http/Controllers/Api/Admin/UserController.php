@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Http\Resources\Admin\UserResource;
 use App\Models\User;
+use App\Services\AccountSuspensionService;
 use App\Support\AdminRecordFilters;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
@@ -148,13 +149,13 @@ class UserController extends Controller
         return ApiResponse::ok(new UserResource($user->fresh()), 'User updated successfully.');
     }
 
-    public function suspend(Request $request, User $user, \App\Services\AccountSuspensionService $suspensions): JsonResponse
+    public function suspend(Request $request, User $user, AccountSuspensionService $suspensions): JsonResponse
     {
         if ($user->id === $request->user()->id || $user->terminated_at !== null) {
             throw DomainException::forbidden('This account cannot be suspended.');
         }
 
-        $maximumDays = \App\Services\AccountSuspensionService::maximumDays();
+        $maximumDays = AccountSuspensionService::maximumDays();
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:5', 'max:1000'],
             'basis' => ['required', 'string', 'max:120'],

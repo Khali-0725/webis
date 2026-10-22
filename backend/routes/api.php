@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\AuditLogController;
-use App\Http\Controllers\Api\Admin\ChatViolationController;
 use App\Http\Controllers\Api\Admin\BulkArchiveController;
+use App\Http\Controllers\Api\Admin\ChatViolationController;
 use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\VerificationController;
@@ -17,10 +17,12 @@ use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Provider\EarningsController;
 use App\Http\Controllers\Api\Provider\PaymentMethodController;
 use App\Http\Controllers\Api\Provider\VerificationDocumentController;
+use App\Http\Controllers\Api\Provider\WorkExperienceController;
 use App\Http\Controllers\Api\Public\AvailabilityController;
 use App\Http\Controllers\Api\Public\BarangayController;
 use App\Http\Controllers\Api\Public\ProviderController;
@@ -28,6 +30,8 @@ use App\Http\Controllers\Api\Public\ServiceCategoryController;
 use App\Http\Controllers\Api\Public\ServiceController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\SuspensionAppealController;
+use App\Models\SystemSetting;
 use App\Support\Api\ApiResponse;
 use Illuminate\Support\Facades\Route;
 
@@ -55,10 +59,10 @@ use Illuminate\Support\Facades\Route;
 // ---------------------------------------------------------------------------
 
 Route::get('/health', HealthController::class)->name('api.health');
-Route::post('/appeals', [App\Http\Controllers\Api\SuspensionAppealController::class, 'store'])->middleware('throttle:auth')->name('api.appeals.store');
-Route::post('/appeals/status', [App\Http\Controllers\Api\SuspensionAppealController::class, 'mine'])->middleware('throttle:auth')->name('api.appeals.status');
+Route::post('/appeals', [SuspensionAppealController::class, 'store'])->middleware('throttle:auth')->name('api.appeals.store');
+Route::post('/appeals/status', [SuspensionAppealController::class, 'mine'])->middleware('throttle:auth')->name('api.appeals.status');
 Route::get('/announcement', fn () => ApiResponse::ok([
-    'text' => \App\Models\SystemSetting::getValue('platform.announcement', ''),
+    'text' => SystemSetting::getValue('platform.announcement', ''),
 ]))->name('api.announcement');
 
 Route::get('/files/avatar/{user}', [FileController::class, 'avatar'])
@@ -138,8 +142,8 @@ Route::post('/auth/email/verification-notification', [EmailVerificationControlle
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
-    Route::get('/notifications', [App\Http\Controllers\Api\NotificationController::class, 'index'])->name('api.notifications.index');
-    Route::patch('/notifications/{notification}/read', [App\Http\Controllers\Api\NotificationController::class, 'markRead'])->name('api.notifications.read');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('api.notifications.read');
 
     // -----------------------------------------------------------------------
     // Profile Management
@@ -173,10 +177,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::put('/skills', [App\Http\Controllers\Api\Provider\ProfileController::class, 'updateSkills'])->name('skills.update');
         Route::put('/service-areas', [App\Http\Controllers\Api\Provider\ProfileController::class, 'updateServiceAreas'])->name('service-areas.update');
 
-        Route::get('/work-experiences', [App\Http\Controllers\Api\Provider\WorkExperienceController::class, 'index'])->name('work-experiences.index');
-        Route::post('/work-experiences', [App\Http\Controllers\Api\Provider\WorkExperienceController::class, 'store'])->name('work-experiences.store');
-        Route::patch('/work-experiences/{experience}', [App\Http\Controllers\Api\Provider\WorkExperienceController::class, 'update'])->name('work-experiences.update');
-        Route::delete('/work-experiences/{experience}', [App\Http\Controllers\Api\Provider\WorkExperienceController::class, 'destroy'])->name('work-experiences.destroy');
+        Route::get('/work-experiences', [WorkExperienceController::class, 'index'])->name('work-experiences.index');
+        Route::post('/work-experiences', [WorkExperienceController::class, 'store'])->name('work-experiences.store');
+        Route::patch('/work-experiences/{experience}', [WorkExperienceController::class, 'update'])->name('work-experiences.update');
+        Route::delete('/work-experiences/{experience}', [WorkExperienceController::class, 'destroy'])->name('work-experiences.destroy');
 
         Route::get('/services', [App\Http\Controllers\Api\Provider\ServiceController::class, 'index'])->name('services.index');
         Route::get('/services/{service}', [App\Http\Controllers\Api\Provider\ServiceController::class, 'show'])->name('services.show');
@@ -319,14 +323,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/users/{user}', [UserController::class, 'show'])->withTrashed()->name('users.show');
         Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-Route::delete('/users/{user}/permanent', [UserController::class, 'destroyPermanently'])->withTrashed()->name('users.destroy-permanently');
+        Route::delete('/users/{user}/permanent', [UserController::class, 'destroyPermanently'])->withTrashed()->name('users.destroy-permanently');
         Route::post('/users/{user}/restore', [UserController::class, 'restore'])->withTrashed()->name('users.restore');
         Route::patch('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
         Route::patch('/users/{user}/terminate', [UserController::class, 'terminate'])->name('users.terminate');
         Route::patch('/users/{user}/restore-terminated', [UserController::class, 'restoreTerminated'])->name('users.restore-terminated');
-        Route::get('/appeals', [App\Http\Controllers\Api\SuspensionAppealController::class, 'index'])->name('appeals.index');
-        Route::patch('/appeals/{appeal}', [App\Http\Controllers\Api\SuspensionAppealController::class, 'decide'])->name('appeals.decide');
+        Route::get('/appeals', [SuspensionAppealController::class, 'index'])->name('appeals.index');
+        Route::patch('/appeals/{appeal}', [SuspensionAppealController::class, 'decide'])->name('appeals.decide');
         Route::get('/reviews', [App\Http\Controllers\Api\Admin\ReviewController::class, 'index'])->name('reviews.index');
         Route::patch('/reviews/{review}/visibility', [App\Http\Controllers\Api\Admin\ReviewController::class, 'visibility'])->name('reviews.visibility');
         Route::delete('/reviews/{review}', [App\Http\Controllers\Api\Admin\ReviewController::class, 'archive'])->name('reviews.archive');
