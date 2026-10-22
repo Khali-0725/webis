@@ -53,9 +53,9 @@ export const userApi = {
     return unwrap(response);
   },
 
-  /** DELETE /api/admin/users/{id}/permanent (trashed users without linked history) */
-  async permanentRemove(id) {
-    const response = await api.delete(`/admin/users/${id}/permanent`);
+  /** DELETE /api/admin/users/{id}/permanent */
+  async permanentRemove(id, confirmation) {
+    const response = await api.delete(`/admin/users/${id}/permanent`, { data: { confirmation } });
     return unwrap(response);
   },
 

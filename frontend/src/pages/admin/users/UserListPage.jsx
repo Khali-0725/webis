@@ -55,6 +55,7 @@ export default function UserListPage() {
   const [editor, setEditor] = useState(null); // { mode: 'create' } | { mode: 'edit', user }
   const [pendingDelete, setPendingDelete] = useState(null);
   const [pendingPermanentDelete, setPendingPermanentDelete] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [pendingAccountAction, setPendingAccountAction] = useState(null);
   const [accountReason, setAccountReason] = useState('');
   const [accountBasis, setAccountBasis] = useState('');
@@ -130,10 +131,11 @@ export default function UserListPage() {
   });
 
   const permanentDeleteMutation = useMutation({
-    mutationFn: (id) => userApi.permanentRemove(id),
+    mutationFn: ({ id, confirmation }) => userApi.permanentRemove(id, confirmation),
     onSuccess: async () => {
       await invalidate();
       setPendingPermanentDelete(null);
+      setDeleteConfirmation('');
       setNotice({ tone: 'success', message: 'User permanently deleted. The email can be registered again.' });
     },
   });
@@ -237,7 +239,7 @@ export default function UserListPage() {
                         >
                           Restore
                         </Button>
-                        <Button size="sm" variant="danger" onClick={() => setPendingPermanentDelete(u)}>
+                        <Button size="sm" variant="danger" onClick={() => { setPendingPermanentDelete(u); setDeleteConfirmation(''); }}>
                           Delete permanently
                         </Button>
                       </div>
@@ -335,20 +337,29 @@ export default function UserListPage() {
         open={Boolean(pendingPermanentDelete)}
         onClose={() => {
           setPendingPermanentDelete(null);
+          setDeleteConfirmation('');
           permanentDeleteMutation.reset();
         }}
-        onConfirm={() => permanentDeleteMutation.mutate(pendingPermanentDelete.id)}
+        onConfirm={() => permanentDeleteMutation.mutate({ id: pendingPermanentDelete.id, confirmation: deleteConfirmation })}
         title="Permanently delete this user?"
         description={pendingPermanentDelete ? `${pendingPermanentDelete.full_name} (${pendingPermanentDelete.email})` : undefined}
         confirmLabel="Confirm permanent deletion"
         tone="danger"
         loading={permanentDeleteMutation.isPending}
+        disabled={deleteConfirmation !== 'DELETE'}
         error={permanentDeleteMutation.error?.message}
       >
         <p className="text-sm text-ink-muted">
-          This cannot be undone. The account and its unused provider setup will be removed, and the email can be registered again.
-          Accounts with bookings, payments, conversations, reviews, or appeals cannot be permanently deleted.
+          This cannot be undone. The account and all linked conversations, messages, bookings, payments,
+          reviews, and provider records will be removed for everyone. The email can be registered again.
         </p>
+        <Input
+          label="Type DELETE to confirm"
+          value={deleteConfirmation}
+          onChange={(e) => setDeleteConfirmation(e.target.value)}
+          autoComplete="off"
+          className="mt-4"
+        />
       </ConfirmDialog>
       <ConfirmDialog
         open={Boolean(pendingAccountAction)}

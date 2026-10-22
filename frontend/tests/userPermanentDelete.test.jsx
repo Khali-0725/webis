@@ -32,7 +32,7 @@ describe('admin user trash', () => {
     }));
   });
 
-  it('requires confirmation before permanently deleting a trashed account', async () => {
+  it('requires typing DELETE before permanently deleting a trashed account', async () => {
     const user = userEvent.setup();
     userApi.permanentRemove.mockResolvedValue(null);
     renderWithProviders(<UserListPage />);
@@ -41,23 +41,29 @@ describe('admin user trash', () => {
     await screen.findByText('Deleted Provider');
     await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
     expect(userApi.permanentRemove).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Confirm permanent deletion' })).toBeDisabled();
+    await user.type(screen.getByLabelText('Type DELETE to confirm'), 'delete');
+    expect(screen.getByRole('button', { name: 'Confirm permanent deletion' })).toBeDisabled();
+    await user.clear(screen.getByLabelText('Type DELETE to confirm'));
+    await user.type(screen.getByLabelText('Type DELETE to confirm'), 'DELETE');
     await user.click(screen.getByRole('button', { name: 'Confirm permanent deletion' }));
-    await waitFor(() => expect(userApi.permanentRemove).toHaveBeenCalledExactlyOnceWith(2));
+    await waitFor(() => expect(userApi.permanentRemove).toHaveBeenCalledExactlyOnceWith(2, 'DELETE'));
   });
 
-  it('keeps the confirmation open when linked history blocks deletion', async () => {
+  it('keeps the confirmation open when deletion fails', async () => {
     const user = userEvent.setup();
     userApi.permanentRemove.mockRejectedValue({
-      message: 'This account has transaction or conversation history and cannot be permanently deleted.',
+      message: 'Unable to delete this account.',
     });
     renderWithProviders(<UserListPage />);
 
     await user.click(screen.getByRole('button', { name: 'Trash' }));
     await screen.findByText('Deleted Provider');
     await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    await user.type(screen.getByLabelText('Type DELETE to confirm'), 'DELETE');
     await user.click(screen.getByRole('button', { name: 'Confirm permanent deletion' }));
 
-    expect(await screen.findByText(/transaction or conversation history/)).toBeInTheDocument();
+    expect(await screen.findByText(/Unable to delete this account/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
   });
 });

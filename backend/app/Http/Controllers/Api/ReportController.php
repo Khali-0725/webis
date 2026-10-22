@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\UserRole;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreReportRequest;
 use App\Http\Requests\UpdateReportRequest;
 use App\Http\Resources\ReportResource;
 use App\Models\Report;
 use App\Models\User;
-use App\Enums\UserRole;
 use App\Notifications\AccountEventNotification;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The reporter's side of reports: file one, see their own, and edit or
@@ -40,13 +42,21 @@ class ReportController extends Controller
 
     public function store(StoreReportRequest $request): JsonResponse
     {
-        $report = Report::create([
-            'reporter_id' => $request->user()->id,
-            'reportable_type' => $request->reportableModelClass(),
-            'reportable_id' => $request->validated('reportable_id'),
-            'reason' => $request->validated('reason'),
-            'details' => $request->validated('details'),
-        ]);
+        $report = DB::transaction(function () use ($request): Report {
+            $type = $request->reportableModelClass();
+            $target = $type === User::class ? User::withTrashed() : $type::query();
+            if (! $target->whereKey($request->validated('reportable_id'))->lockForUpdate()->first(['id'])) {
+                throw DomainException::unprocessable('This record is not available for your report.');
+            }
+
+            return Report::create([
+                'reporter_id' => $request->user()->id,
+                'reportable_type' => $type,
+                'reportable_id' => $request->validated('reportable_id'),
+                'reason' => $request->validated('reason'),
+                'details' => $request->validated('details'),
+            ]);
+        });
         User::where('role', UserRole::Admin->value)->where('status', 'active')->get()
             ->each(fn (User $admin) => $admin->notify(new AccountEventNotification(
                 'report.submitted', 'A new report was submitted for review.', '/admin/reports',
