@@ -41,6 +41,38 @@ class SettingsManagementTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_clear_the_public_announcement(): void
+    {
+        $admin = User::factory()->admin()->create();
+        SystemSetting::create(['key' => 'platform.announcement', 'value' => 'Old notice']);
+
+        $this->actingAs($admin)
+            ->putJson('/api/admin/settings', [
+                'settings' => [['key' => 'platform.announcement', 'value' => '']],
+            ])
+            ->assertOk();
+
+        $this->assertSame('', SystemSetting::getValue('platform.announcement'));
+        $this->getJson('/api/announcement')->assertOk()->assertJsonPath('data.text', '');
+    }
+
+    public function test_invalid_announcement_shows_its_field_error_without_saving_other_settings(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->putJson('/api/admin/settings', [
+                'settings' => [
+                    ['key' => 'platform.name', 'value' => 'WEBIS'],
+                    ['key' => 'platform.announcement', 'value' => str_repeat('a', 501)],
+                ],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('settings.1.value');
+
+        $this->assertDatabaseMissing('system_settings', ['key' => 'platform.name']);
+    }
+
     public function test_an_unknown_setting_key_is_rejected(): void
     {
         $admin = User::factory()->admin()->create();

@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { settingsApi } from '@/services/api/admin/settingsApi';
+import { fieldError } from '@/services/api/client';
 import { queryKeys } from '@/services/api/queryClient';
 
 const KNOWN_KEYS = [
-  { key: 'platform.name', label: 'Platform name' },
-  { key: 'booking.min_lead_hours', label: 'Minimum booking lead time (hours)' },
-  { key: 'booking.max_advance_days', label: 'Maximum booking advance (days)' },
-  { key: 'platform.announcement', label: 'Public announcement (leave blank to hide)' },
+  { key: 'platform.name', label: 'Platform name', defaultValue: 'WEBIS' },
+  { key: 'booking.min_lead_hours', label: 'Minimum booking lead time (hours)', defaultValue: '24' },
+  { key: 'booking.max_advance_days', label: 'Maximum booking advance (days)', defaultValue: '30' },
+  { key: 'platform.announcement', label: 'Public announcement (leave blank to hide)', defaultValue: '' },
 ];
 
 export default function SettingsPage() {
@@ -28,7 +29,7 @@ export default function SettingsPage() {
 
   if (rows && dataUpdatedAt !== syncedAt) {
     const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-    setValues(Object.fromEntries(KNOWN_KEYS.map(({ key }) => [key, map[key] ?? ''])));
+    setValues(Object.fromEntries(KNOWN_KEYS.map(({ key, defaultValue }) => [key, map[key] ?? defaultValue])));
     setSyncedAt(dataUpdatedAt);
   }
 
@@ -38,7 +39,9 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.settings });
       setNotice({ tone: 'success', message: 'Settings updated.' });
     },
-    onError: (err) => setNotice({ tone: 'error', message: err?.message ?? 'Failed to update settings.' }),
+    onError: (err) => {
+      if (!err?.errors) setNotice({ tone: 'error', message: err?.message ?? 'Failed to update settings.' });
+    },
   });
 
   const handleSubmit = (event) => {
@@ -59,11 +62,12 @@ export default function SettingsPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {KNOWN_KEYS.map(({ key, label }) => (
+        {KNOWN_KEYS.map(({ key, label }, index) => (
           <Input
             key={key}
             label={label}
             value={values[key] ?? ''}
+            error={fieldError(updateMutation.error, `settings.${index}.value`)}
             onChange={(e) => setValues({ ...values, [key]: e.target.value })}
           />
         ))}

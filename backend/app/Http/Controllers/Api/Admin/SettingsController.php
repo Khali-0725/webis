@@ -31,16 +31,24 @@ class SettingsController extends Controller
         $data = $request->validate([
             'settings' => ['required', 'array', 'min:1'],
             'settings.*.key' => ['required', Rule::in(self::KNOWN_KEYS)],
-            'settings.*.value' => ['required'],
+            'settings.*.value' => ['present'],
         ]);
 
+        foreach ($data['settings'] as $index => $entry) {
+            validator($data, [
+                "settings.$index.value" => $entry['key'] === 'platform.announcement'
+                    ? ['nullable', 'string', 'max:500']
+                    : ['required'],
+            ])->validate();
+        }
+
         foreach ($data['settings'] as $entry) {
-            if ($entry['key'] === 'platform.announcement') {
-                validator(['announcement' => $entry['value']], ['announcement' => ['string', 'max:500']])->validate();
-            }
             SystemSetting::updateOrCreate(
                 ['key' => $entry['key']],
-                ['value' => $entry['value'], 'updated_by' => $request->user()->id],
+                [
+                    'value' => $entry['key'] === 'platform.announcement' ? ($entry['value'] ?? '') : $entry['value'],
+                    'updated_by' => $request->user()->id,
+                ],
             );
         }
 
