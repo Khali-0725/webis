@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { ROLES } from '@/constants';
+import { fieldError } from '@/services/api/client';
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -74,6 +75,11 @@ export default function ProfilePage() {
     if (!file) return;
 
     setNotice(null);
+    if (file.size > 4 * 1024 * 1024) {
+      setNotice({ tone: 'error', message: 'Choose an image up to 4 MB.' });
+      e.target.value = '';
+      return;
+    }
     setUploadingAvatar(true);
 
     const avatarData = new FormData();
@@ -84,7 +90,7 @@ export default function ProfilePage() {
       await refreshUser();
       setNotice({ tone: 'success', message: 'Avatar updated successfully.' });
     } catch (error) {
-      setNotice({ tone: 'error', message: error?.message ?? 'Failed to upload avatar.' });
+      setNotice({ tone: 'error', message: fieldError(error, 'avatar') ?? error?.message ?? 'Failed to upload avatar.' });
     } finally {
       setUploadingAvatar(false);
       e.target.value = '';

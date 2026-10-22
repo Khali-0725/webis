@@ -53,6 +53,12 @@ export const userApi = {
     return unwrap(response);
   },
 
+  /** DELETE /api/admin/users/{id}/permanent (trashed users without linked history) */
+  async permanentRemove(id) {
+    const response = await api.delete(`/admin/users/${id}/permanent`);
+    return unwrap(response);
+  },
+
   /** POST /api/admin/users/{id}/restore */
   async restore(id) {
     const response = await api.post(`/admin/users/${id}/restore`);

@@ -17,6 +17,7 @@ use App\Support\TrashFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -245,5 +246,58 @@ class UserController extends Controller
         AuditLogger::record($request->user(), 'user.restored', $user, [], $request);
 
         return ApiResponse::ok(new UserResource($user->fresh()), 'User restored.');
+    }
+
+    public function destroyPermanently(Request $request, User $user): JsonResponse
+    {
+        if (! $user->trashed()) {
+            throw DomainException::conflict('Move this user to Trash before deleting permanently.');
+        }
+
+        $paths = DB::transaction(function () use ($request, $user): array {
+            $user = User::withTrashed()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $profile = $user->providerProfile()->withTrashed()->first();
+            $profileId = $profile?->id;
+            $id = $user->id;
+
+            $hasHistory = DB::table('bookings')->where('client_id', $id)
+                ->when($profileId, fn ($query) => $query->orWhere('provider_profile_id', $profileId))->exists()
+                || DB::table('payments')->where('client_id', $id)
+                    ->when($profileId, fn ($query) => $query->orWhere('provider_profile_id', $profileId))->exists()
+                || DB::table('conversations')->where('client_id', $id)->orWhere('provider_user_id', $id)->exists()
+                || DB::table('messages')->where('sender_id', $id)->exists()
+                || DB::table('reviews')->where('client_id', $id)
+                    ->when($profileId, fn ($query) => $query->orWhere('provider_profile_id', $profileId))->exists()
+                || DB::table('payment_proofs')->where('uploaded_by', $id)->exists()
+                || DB::table('suspension_appeals')->where('user_id', $id)->exists();
+
+            if ($hasHistory) {
+                throw DomainException::conflict('This account has transaction or conversation history and cannot be permanently deleted.');
+            }
+
+            $paths = array_filter([$user->avatar_path]);
+            if ($profile) {
+                $paths = array_merge(
+                    $paths,
+                    $profile->verificationDocuments()->pluck('file_path')->all(),
+                    $profile->paymentMethods()->withTrashed()->pluck('qr_image_path')->filter()->all(),
+                );
+            }
+
+            $user->tokens()->delete();
+            $user->notifications()->delete();
+            DB::table('sessions')->where('user_id', $id)->delete();
+            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            AuditLogger::record($request->user(), 'user.permanently_deleted', $user, [], $request);
+            $user->forceDelete();
+
+            return array_values($paths);
+        });
+
+        if ($paths) {
+            Storage::disk(config('webis.uploads.disk'))->delete($paths);
+        }
+
+        return ApiResponse::noContent('User permanently deleted.');
     }
 }

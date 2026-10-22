@@ -54,6 +54,7 @@ export default function UserListPage() {
   const [notice, setNotice] = useState(null);
   const [editor, setEditor] = useState(null); // { mode: 'create' } | { mode: 'edit', user }
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [pendingPermanentDelete, setPendingPermanentDelete] = useState(null);
   const [pendingAccountAction, setPendingAccountAction] = useState(null);
   const [accountReason, setAccountReason] = useState('');
   const [accountBasis, setAccountBasis] = useState('');
@@ -128,6 +129,15 @@ export default function UserListPage() {
     },
   });
 
+  const permanentDeleteMutation = useMutation({
+    mutationFn: (id) => userApi.permanentRemove(id),
+    onSuccess: async () => {
+      await invalidate();
+      setPendingPermanentDelete(null);
+      setNotice({ tone: 'success', message: 'User permanently deleted. The email can be registered again.' });
+    },
+  });
+
   return (
     <Card
       title="Users"
@@ -185,7 +195,7 @@ export default function UserListPage() {
       {!isPending && !isError && users.length === 0 && (
         <EmptyState
           title={inTrash ? 'Trash is empty' : 'No users found'}
-          description={inTrash ? 'Deleted users will appear here until restored.' : 'Try adjusting the filters above.'}
+          description={inTrash ? 'Deleted users will appear here until restored or permanently deleted.' : 'Try adjusting the filters above.'}
         />
       )}
 
@@ -219,13 +229,18 @@ export default function UserListPage() {
                   </td>
                   <td className="py-3">
                     {u.deleted_at ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => act(() => userApi.restore(u.id), 'User restored.', 'Failed to restore user.')}
-                      >
-                        Restore
-                      </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => act(() => userApi.restore(u.id), 'User restored.', 'Failed to restore user.')}
+                        >
+                          Restore
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={() => setPendingPermanentDelete(u)}>
+                          Delete permanently
+                        </Button>
+                      </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         <Link to={`/admin/audit-logs?user_id=${u.id}`}>
@@ -314,6 +329,25 @@ export default function UserListPage() {
         <p className="text-sm text-ink-muted">
           The account is moved to the trash: it can no longer sign in and disappears from lists, but its
           bookings, payments and messages stay on record. You can restore it later.
+        </p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={Boolean(pendingPermanentDelete)}
+        onClose={() => {
+          setPendingPermanentDelete(null);
+          permanentDeleteMutation.reset();
+        }}
+        onConfirm={() => permanentDeleteMutation.mutate(pendingPermanentDelete.id)}
+        title="Permanently delete this user?"
+        description={pendingPermanentDelete ? `${pendingPermanentDelete.full_name} (${pendingPermanentDelete.email})` : undefined}
+        confirmLabel="Confirm permanent deletion"
+        tone="danger"
+        loading={permanentDeleteMutation.isPending}
+        error={permanentDeleteMutation.error?.message}
+      >
+        <p className="text-sm text-ink-muted">
+          This cannot be undone. The account and its unused provider setup will be removed, and the email can be registered again.
+          Accounts with bookings, payments, conversations, reviews, or appeals cannot be permanently deleted.
         </p>
       </ConfirmDialog>
       <ConfirmDialog

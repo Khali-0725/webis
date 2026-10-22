@@ -319,6 +319,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/users/{user}', [UserController::class, 'show'])->withTrashed()->name('users.show');
         Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+Route::delete('/users/{user}/permanent', [UserController::class, 'destroyPermanently'])->withTrashed()->name('users.destroy-permanently');
         Route::post('/users/{user}/restore', [UserController::class, 'restore'])->withTrashed()->name('users.restore');
         Route::patch('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
