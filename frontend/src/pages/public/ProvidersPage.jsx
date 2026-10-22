@@ -82,7 +82,12 @@ export default function ProvidersPage() {
         {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}
 
         {!isPending && !isError && providers.length === 0 && (
-          <EmptyState title="No providers found" description="Try a different search term or barangay." />
+          <>
+            <EmptyState title="No providers found" description="Try a different search term or barangay." />
+            <p className="mt-4 text-center text-sm text-ink-muted">
+              See a sample listing in our <a href="/#demo-provider" className="font-semibold text-brand hover:underline">demo provider preview</a>.
+            </p>
+          </>
         )}
 
         {!isPending && !isError && providers.length > 0 && (

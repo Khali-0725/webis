@@ -2,10 +2,17 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { publicApi } from '@/services/api/publicApi';
 import { queryKeys } from '@/services/api/queryClient';
+
+const demoServices = [
+  { category: 'Plumbing', title: 'Pipe Repair', price: '₱500', duration: '60 minutes' },
+  { category: 'Electrical', title: 'Outlet Install', price: '₱600', duration: '45 minutes' },
+  { category: 'House Cleaning', title: 'General Cleaning', price: '₱1,200', duration: '180 minutes' },
+];
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -84,6 +91,28 @@ export default function LandingPage() {
       </section>
 
       {featured?.items?.length > 0 && <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6"><div className="flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-bold text-navy-800">Explore services</h2><Link to="/search" className="text-sm font-semibold text-brand hover:underline">Browse all</Link></div><div className="mt-5 grid gap-4 md:grid-cols-3">{featured.items.map((service) => <Link key={service.id} to={`/services/${service.id}`} className="webis-card block p-5 hover:border-navy-300"><p className="text-xs font-semibold uppercase tracking-wide text-brand">{service.category?.name}</p><h3 className="mt-2 font-display text-lg font-semibold text-navy-800">{service.title}</h3><p className="mt-2 line-clamp-2 text-sm text-ink-muted">{service.description}</p></Link>)}</div></section>}
+
+      <section id="demo-provider" aria-labelledby="demo-provider-title" className="border-y border-line bg-canvas">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <Badge tone="warning">Demo preview</Badge>
+              <h2 id="demo-provider-title" className="mt-3 font-display text-2xl font-bold text-navy-800">Demo Provider Services</h2>
+              <p className="mt-1 max-w-2xl text-sm text-ink-muted">Sample listings to show how services appear on WEBIS. This provider is unverified and cannot accept bookings.</p>
+            </div>
+            <span className="text-sm font-semibold text-amber-800">Sample only · Not bookable</span>
+          </div>
+          <ul className="mt-6 grid gap-4 md:grid-cols-3">
+            {demoServices.map((service) => (
+              <li key={service.title} className="webis-card p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand">{service.category}</p>
+                <h3 className="mt-2 font-display text-lg font-semibold text-navy-800">{service.title}</h3>
+                <p className="mt-3 text-sm text-ink-muted">{service.price} · {service.duration}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
 
       {announcement?.text && <section className="border-b border-line bg-blue-50"><div className="mx-auto max-w-7xl px-4 py-5 sm:px-6"><h2 className="font-display text-lg font-semibold text-navy-800">WEBIS update</h2><p className="mt-1 whitespace-pre-wrap text-sm text-ink">{announcement.text}</p></div></section>}
 
