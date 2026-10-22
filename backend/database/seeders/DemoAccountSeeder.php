@@ -2,12 +2,15 @@
 
 namespace Database\Seeders;
 
+use App\Enums\PricingType;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Barangay;
 use App\Models\ProviderAvailabilityRule;
 use App\Models\ProviderProfile;
+use App\Models\Service;
+use App\Models\ServiceCategory;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -29,6 +32,7 @@ class DemoAccountSeeder extends Seeder
         $this->account('suspended@webis.test', 'Suspended', 'Account', UserRole::Client, UserStatus::Suspended);
 
         $this->providerProfile($provider, $admin);
+        $this->providerServices($provider->providerProfile()->firstOrFail());
 
         $this->command?->info('Demo accounts seeded. Password for all: password123');
     }
@@ -99,6 +103,34 @@ class DemoAccountSeeder extends Seeder
                 ['provider_profile_id' => $profile->id, 'day_of_week' => $day],
                 ['start_time' => '08:00', 'end_time' => '17:00', 'slot_minutes' => 60, 'is_active' => true],
             );
+        }
+    }
+
+    private function providerServices(ProviderProfile $profile): void
+    {
+        foreach ([
+            ['Plumbing', 'Pipe Repair', 500, 60],
+            ['Electrical', 'Outlet Install', 600, 45],
+            ['House Cleaning', 'General Cleaning', 1200, 180],
+        ] as [$category, $title, $price, $duration]) {
+            $service = Service::firstOrNew([
+                'provider_profile_id' => $profile->id,
+                'title' => $title,
+            ]);
+
+            if ($service->exists) {
+                continue;
+            }
+
+            $service->forceFill([
+                'service_category_id' => ServiceCategory::where('name', $category)->firstOrFail()->id,
+                'description' => "Demo-only {$title} service for local testing.",
+                'pricing_type' => PricingType::Fixed,
+                'price' => $price,
+                'duration_minutes' => $duration,
+                'is_active' => true,
+                'published_at' => now(),
+            ])->save();
         }
     }
 }
