@@ -12,6 +12,11 @@ export const verificationApi = {
     return unwrap(response);
   },
 
+  async previewDocument(documentId) {
+    const response = await api.get(`/files/verification-document/${documentId}`, { responseType: 'blob' });
+    return response.data;
+  },
+
   /** GET /api/admin/verification/documents?status= */
   async listDocuments(params = {}) {
     const response = await api.get('/admin/verification/documents', { params });

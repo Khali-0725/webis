@@ -7,6 +7,7 @@ import { verificationApi } from '@/services/api/verificationApi';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { useAuth } from '@/hooks/useAuth';
+import { VerificationDocumentPreview } from '@/components/verification/VerificationDocumentPreview';
 
 const DOCUMENT_TYPES = [
   { value: 'government_id', label: 'Government-issued ID' },
@@ -25,6 +26,7 @@ export default function ProviderVerificationPage() {
   const [file, setFile] = useState(null);
   const [type, setType] = useState(DOCUMENT_TYPES[0].value);
   const [notice, setNotice] = useState(null);
+  const [previewDocument, setPreviewDocument] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,7 +90,7 @@ export default function ProviderVerificationPage() {
               {statusQuery.data.documents.map((doc) => (
                 <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
                   <span>{doc.original_name} ({doc.document_type.replaceAll('_', ' ')})</span>
-                  <span>{doc.status} · <a href={doc.preview_url} target="_blank" rel="noreferrer" className="text-brand underline">View</a></span>
+                  <span>{doc.status} · <button type="button" onClick={() => setPreviewDocument(doc)} aria-label={`View ${doc.original_name}`} className="text-brand underline">View</button></span>
                 </div>
               ))}
             </div>
@@ -137,6 +139,7 @@ export default function ProviderVerificationPage() {
           Upload document
         </Button>
       </form>
+      {previewDocument && <VerificationDocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />}
     </Card>
   );
 }

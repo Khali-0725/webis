@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/States';
 import { Icon } from '@/components/ui/Icon';
+import { VerificationDocumentPreview } from '@/components/verification/VerificationDocumentPreview';
 import { verificationApi } from '@/services/api/verificationApi';
 
 const TABS = [
@@ -29,6 +30,7 @@ export default function AdminVerificationPage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
   const [actionError, setActionError] = useState(null);
+  const [previewDocument, setPreviewDocument] = useState(null);
   const profileTab = tab !== 'pending';
   const params = { ...TABS.find((item) => item.key === tab).params, page };
 
@@ -67,7 +69,7 @@ export default function AdminVerificationPage() {
         setNotice({ tone: 'success', message: 'Provider verified after required document checks.' });
       } else if (action.decision === 'approve') {
         await verificationApi.approveDocument(action.id);
-        setNotice({ tone: 'success', message: 'Document approved. A final provider decision is still required.' });
+        setNotice({ tone: 'success', message: 'Document approved. Both required documents and a final provider decision are still needed.' });
       } else {
         await verificationApi.rejectDocument(action.id, reason);
         setNotice({ tone: 'success', message: 'Document rejected with the recorded reason.' });
@@ -88,6 +90,9 @@ export default function AdminVerificationPage() {
       <p className="mb-4 text-sm text-ink-muted">
         Verification means an administrator reviewed submitted documents. It does not mean government validation,
         a criminal background check, or a guarantee of safety.
+      </p>
+      <p className="mb-4 text-sm text-ink-muted">
+        Both required documents must be approved. Then select Verify provider in the Unverified tab.
       </p>
       {notice && <Alert tone={notice.tone} className="mb-4">{notice.message}</Alert>}
 
@@ -139,8 +144,8 @@ export default function AdminVerificationPage() {
                     <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2">
                       <span>{doc.document_type.replaceAll('_', ' ')} · {doc.original_name} · {doc.status}</span>
                       <span className="flex flex-wrap gap-2">
-                        <a href={doc.preview_url} target="_blank" rel="noreferrer" aria-label={`View ${doc.original_name}`}
-                          className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-navy-700 hover:bg-navy-50"><Icon name="eye" className="h-4 w-4" /> View</a>
+                        <button type="button" onClick={() => setPreviewDocument(doc)} aria-label={`View ${doc.original_name}`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-navy-700 hover:bg-navy-50"><Icon name="eye" className="h-4 w-4" /> View</button>
                         {doc.status === 'pending' && <>
                           <Button size="sm" variant="success" onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })}>Approve</Button>
                           <Button size="sm" variant="danger" onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })}>Decline</Button>
@@ -177,8 +182,8 @@ export default function AdminVerificationPage() {
                   <td className="py-3 pr-3">{doc.document_type.replaceAll('_', ' ')}<div className="text-xs text-ink-muted">{doc.original_name}</div></td>
                   <td className="py-3 pr-3"><Badge tone={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'danger' : 'warning'}>{doc.status}</Badge></td>
                   <td className="py-3"><div className="flex flex-wrap gap-2">
-                    <a href={doc.preview_url} target="_blank" rel="noreferrer" aria-label={`View ${doc.original_name}`}
-                      className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-navy-700 hover:bg-navy-50"><Icon name="eye" className="h-4 w-4" /> View</a>
+                    <button type="button" onClick={() => setPreviewDocument(doc)} aria-label={`View ${doc.original_name}`}
+                      className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-navy-700 hover:bg-navy-50"><Icon name="eye" className="h-4 w-4" /> View</button>
                     {doc.status === 'pending' && <>
                       <Button size="sm" variant="success" onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })}>Approve</Button>
                       <Button size="sm" variant="danger" onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })}>Decline</Button>
@@ -194,6 +199,8 @@ export default function AdminVerificationPage() {
         </div>
       )}
       <Pagination meta={data?.meta} onChange={(next) => { setPage(next); setSelected([]); }} />
+
+      {previewDocument && <VerificationDocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />}
 
       <ConfirmDialog open={Boolean(action)} onClose={() => { setAction(null); setActionError(null); setReason(''); }}
         onConfirm={runAction} title={action?.kind === 'provider' ? 'Verify this provider?' : `${action?.decision === 'reject' ? 'Decline' : 'Approve'} selected document${action?.kind === 'bulk' ? 's' : ''}?`}
