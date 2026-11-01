@@ -30,6 +30,8 @@ const PATHS = {
   flag: 'M5 21V4M5 4h12l-2 4 2 4H5',
   menu: 'M4 7h16M4 12h16M4 17h16',
   close: 'M6 6l12 12M18 6L6 18',
+  terminate: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0110-7.7M17 16l5 5M22 16l-5 5',
+  trash: 'M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6',
   zap: 'M13 2L4 14h6l-1 8 9-12h-6l1-8z',
   thermometer: 'M14 4a2 2 0 00-4 0v9.34a4 4 0 104 0V4z M12 8v6',
   hammer: 'M15 4l5 5-2.5 2.5L12.5 6.5zM11 8L3 16v4h4l8-8',

@@ -89,6 +89,11 @@ class ChatModerationService
             ? [$variants['digits'], $variants['digitsDespaced']]
             : [$variants['text'], $variants['textDespaced'], $variants['digits']];
 
+        // Full-word profanity matching must not turn an ordinary "put a" into "puta".
+        if ($rule['rule'] === 'profanity') {
+            $haystacks = [$variants['text']];
+        }
+
         foreach ($haystacks as $haystack) {
             if (isset($rule['pattern']) && preg_match($rule['pattern'], $haystack) === 1) {
                 if (! $this->isAllowlisted($rule, $haystack)) {

@@ -40,6 +40,29 @@ class ChatModerationServiceTest extends TestCase
         ];
     }
 
+    #[DataProvider('profanityCorpus')]
+    public function test_it_blocks_tagalog_and_english_profanity(string $body): void
+    {
+        $result = $this->moderation->evaluate($body);
+
+        $this->assertSame('blocked', $result['tier']);
+        $this->assertSame('profanity', $result['matched_rule']);
+    }
+
+    public static function profanityCorpus(): array
+    {
+        return [
+            'english' => ['That is bullshit'],
+            'english spaced' => ['What the f u c k'],
+            'english leet' => ['This is sh1t'],
+            'english plural insult' => ['Those assholes arrived late'],
+            'english plural profanity' => ['Ignore those fuckers'],
+            'tagalog' => ['Putang ina mo'],
+            'tagalog spaced' => ['p u t a'],
+            'tagalog insult' => ['Gago ka'],
+        ];
+    }
+
     #[DataProvider('warnedCorpus')]
     public function test_it_warns_on_weak_signals(string $body): void
     {
@@ -73,6 +96,10 @@ class ChatModerationServiceTest extends TestCase
             'short house number' => ['1234'],
             'webis url allowlisted' => ['You can see it on webis.com/services/1'],
             'question about materials' => ['Do I need to prepare the materials myself?'],
+            'english near match' => ['Please join the class tomorrow.'],
+            'tagalog near match' => ['This is a putative example.'],
+            'ordinary English put a' => ['Please put a chair here.'],
+            'ordinary English put a alone' => ['put a'],
         ];
     }
 }

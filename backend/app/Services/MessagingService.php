@@ -89,6 +89,10 @@ class MessagingService
         if ($result['tier'] === 'blocked') {
             $this->logViolation($conversation, $sender, $body, $result, ViolationAction::Blocked);
 
+            if ($result['matched_rule'] === 'profanity') {
+                throw DomainException::unprocessable('This message was not sent because it contains inappropriate language. Please edit it and try again.');
+            }
+
             throw DomainException::unprocessable(
                 "This message wasn't sent because it looks like it contains contact information. "
                 .'WEBIS keeps bookings and payments on the platform for your protection.',
@@ -156,6 +160,10 @@ class MessagingService
 
         if ($result['tier'] === 'blocked') {
             $this->logViolation($conversation, $editor, $body, $result, ViolationAction::Blocked);
+
+            if ($result['matched_rule'] === 'profanity') {
+                throw DomainException::unprocessable('This edit was not saved because it contains inappropriate language. Please edit it and try again.');
+            }
 
             throw DomainException::unprocessable(
                 "This edit wasn't saved because it looks like it contains contact information. "

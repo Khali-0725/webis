@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Icon } from '@/components/ui/Icon';
 import { Select } from '@/components/ui/Select';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
@@ -239,8 +240,8 @@ export default function UserListPage() {
                         >
                           Restore
                         </Button>
-                        <Button size="sm" variant="danger" onClick={() => { setPendingPermanentDelete(u); setDeleteConfirmation(''); }}>
-                          Delete permanently
+                        <Button size="sm" variant="subtle" className="h-9 w-9 p-0" aria-label={`Delete permanently ${u.full_name}`} title={`Delete permanently ${u.full_name}`} onClick={() => { setPendingPermanentDelete(u); setDeleteConfirmation(''); }}>
+                          <Icon name="trash" className="h-4 w-4" />
                         </Button>
                       </div>
                     ) : (
@@ -274,18 +275,20 @@ export default function UserListPage() {
                           </Button>
                         )}
                         {u.status !== 'terminated' && u.id !== me?.id && (
-                          <Button size="sm" variant="danger" onClick={() => setPendingAccountAction({ user: u, kind: 'terminate' })}>
-                            Terminate
+                          <Button size="sm" variant="subtle" className="h-9 w-9 p-0" aria-label={`Terminate ${u.full_name}`} title={`Terminate ${u.full_name}`} onClick={() => setPendingAccountAction({ user: u, kind: 'terminate' })}>
+                            <Icon name="terminate" className="h-4 w-4" />
                           </Button>
                         )}
                         <Button
                           size="sm"
-                          variant="danger"
+                          variant="subtle"
+                          className="h-9 w-9 p-0"
+                          aria-label={`Delete ${u.full_name}`}
                           disabled={u.id === me?.id}
-                          title={u.id === me?.id ? 'You cannot delete your own account here' : undefined}
+                          title={u.id === me?.id ? 'You cannot delete your own account here' : `Delete ${u.full_name}`}
                           onClick={() => setPendingDelete(u)}
                         >
-                          Delete
+                          <Icon name="trash" className="h-4 w-4" />
                         </Button>
                       </div>
                     )}
@@ -324,7 +327,7 @@ export default function UserListPage() {
         title="Delete this user?"
         description={pendingDelete ? `${pendingDelete.full_name} (${pendingDelete.email})` : undefined}
         confirmLabel="Delete user"
-        tone="danger"
+        tone="primary"
         loading={deleteMutation.isPending}
         error={deleteMutation.error?.message}
       >
@@ -344,7 +347,7 @@ export default function UserListPage() {
         title="Permanently delete this user?"
         description={pendingPermanentDelete ? `${pendingPermanentDelete.full_name} (${pendingPermanentDelete.email})` : undefined}
         confirmLabel="Confirm permanent deletion"
-        tone="danger"
+        tone="primary"
         loading={permanentDeleteMutation.isPending}
         disabled={deleteConfirmation !== 'DELETE'}
         error={permanentDeleteMutation.error?.message}
@@ -367,7 +370,7 @@ export default function UserListPage() {
         onConfirm={submitAccountAction}
         title={`${pendingAccountAction?.kind === 'restore' ? 'Restore' : pendingAccountAction?.kind === 'suspend' ? 'Suspend' : 'Terminate'} ${pendingAccountAction?.user.full_name ?? 'account'}?`}
         confirmLabel={pendingAccountAction?.kind === 'restore' ? 'Restore access' : pendingAccountAction?.kind === 'suspend' ? 'Suspend account' : 'Terminate account'}
-        tone={pendingAccountAction?.kind === 'restore' ? 'primary' : 'danger'}
+        tone={pendingAccountAction?.kind === 'suspend' ? 'danger' : 'primary'}
         loading={accountActionBusy}
         error={accountActionError}
       >

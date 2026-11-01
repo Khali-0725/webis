@@ -22,6 +22,23 @@ return [
     // is never stored; a `chat_violations` row is written instead.
     'block_rules' => [
         [
+            'category' => 'other',
+            'rule' => 'profanity',
+            'pattern' => '/(?<![a-z])(?:
+                f[\W_]*u[\W_]*c[\W_]*k(?:[\W_]*(?:ing|ers?|ed|s))?
+                |(?:bull[\W_]*)?s[\W_]*h[\W_]*i[\W_]*t(?:[\W_]*ty)?
+                |b[\W_]*i[\W_]*t[\W_]*c[\W_]*h(?:[\W_]*es)?
+                |a[\W_]*s[\W_]*s[\W_]*h[\W_]*o[\W_]*l[\W_]*e(?:[\W_]*s)?
+                |(?:puta|p[\W_]+u[\W_]+t[\W_]+a)(?:[\W_]*n[\W_]*g[\W_]*i[\W_]*n[\W_]*a)?
+                |t[\W_]*a[\W_]*n[\W_]*g[\W_]*i[\W_]*n[\W_]*a
+                |g[\W_]*a[\W_]*g[\W_]*[oa]
+                |t[\W_]*a[\W_]*n[\W_]*g[\W_]*a
+                |b[\W_]*o[\W_]*b[\W_]*o
+                |p[\W_]*a[\W_]*k[\W_]*y[\W_]*u
+            )(?![a-z])/ix',
+            'severity' => 'medium',
+        ],
+        [
             'category' => 'phone_number',
             'rule' => 'ph_mobile_number',
             'pattern' => '/(\+?63|0)9\d{9}/',

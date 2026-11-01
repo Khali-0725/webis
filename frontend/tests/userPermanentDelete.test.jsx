@@ -39,7 +39,7 @@ describe('admin user trash', () => {
 
     await user.click(screen.getByRole('button', { name: 'Trash' }));
     await screen.findByText('Deleted Provider');
-    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    await user.click(screen.getByRole('button', { name: 'Delete permanently Deleted Provider' }));
     expect(userApi.permanentRemove).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Confirm permanent deletion' })).toBeDisabled();
     await user.type(screen.getByLabelText('Type DELETE to confirm'), 'delete');
@@ -59,11 +59,37 @@ describe('admin user trash', () => {
 
     await user.click(screen.getByRole('button', { name: 'Trash' }));
     await screen.findByText('Deleted Provider');
-    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    await user.click(screen.getByRole('button', { name: 'Delete permanently Deleted Provider' }));
     await user.type(screen.getByLabelText('Type DELETE to confirm'), 'DELETE');
     await user.click(screen.getByRole('button', { name: 'Confirm permanent deletion' }));
 
     expect(await screen.findByText(/Unable to delete this account/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
+  });
+
+  it('uses accessible neutral icons for terminate and delete while preventing self-deletion', async () => {
+    const user = userEvent.setup();
+    userApi.list.mockResolvedValue({
+      items: [
+        { id: 2, full_name: 'Target User', email: 'target@example.com', role_label: 'Client', status: 'active', status_label: 'Active' },
+        { id: 1, full_name: 'Demo Client', email: 'admin@example.com', role_label: 'Administrator', status: 'active', status_label: 'Active' },
+      ],
+      meta: { current_page: 1, last_page: 1 },
+    });
+    renderWithProviders(<UserListPage />);
+
+    const terminate = await screen.findByRole('button', { name: 'Terminate Target User' });
+    const remove = screen.getByRole('button', { name: 'Delete Target User' });
+    expect(terminate).toHaveTextContent('');
+    expect(remove).toHaveTextContent('');
+    expect(terminate.querySelector('svg')).toBeInTheDocument();
+    expect(remove.querySelector('svg')).toBeInTheDocument();
+    expect(terminate).not.toHaveClass('bg-red-600');
+    expect(remove).not.toHaveClass('bg-red-600');
+    expect(screen.getByRole('button', { name: 'Delete Demo Client' })).toBeDisabled();
+
+    await user.click(terminate);
+    expect(screen.getByRole('button', { name: 'Terminate account' })).not.toHaveClass('bg-red-600');
+    expect(screen.getByText('Terminate Target User?')).toBeInTheDocument();
   });
 });

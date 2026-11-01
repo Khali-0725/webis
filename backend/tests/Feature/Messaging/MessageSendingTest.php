@@ -58,6 +58,46 @@ class MessageSendingTest extends TestCase
         ]);
     }
 
+    public function test_profanity_cannot_be_sent_even_with_confirmation_override(): void
+    {
+        [$client, , $conversation] = $this->conversation();
+
+        $this->actingAs($client)
+            ->postJson("/api/conversations/{$conversation->id}/messages", [
+                'body' => 'Putang ina mo',
+                'confirm_override' => true,
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'This message was not sent because it contains inappropriate language. Please edit it and try again.');
+
+        $this->assertDatabaseCount('messages', 0);
+        $this->assertDatabaseHas('chat_violations', [
+            'conversation_id' => $conversation->id,
+            'matched_rule' => 'profanity',
+            'action_taken' => 'blocked',
+        ]);
+    }
+
+    public function test_profanity_cannot_be_saved_in_an_edited_message_even_with_override(): void
+    {
+        [$client, , $conversation] = $this->conversation();
+        $messageId = $this->actingAs($client)
+            ->postJson("/api/conversations/{$conversation->id}/messages", ['body' => 'Hello there'])
+            ->assertStatus(201)
+            ->json('data.id');
+
+        $this->actingAs($client)
+            ->patchJson("/api/conversations/{$conversation->id}/messages/{$messageId}", [
+                'body' => 'sh1t',
+                'confirm_override' => true,
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'This edit was not saved because it contains inappropriate language. Please edit it and try again.');
+
+        $this->assertDatabaseHas('messages', ['id' => $messageId, 'body' => 'Hello there']);
+        $this->assertDatabaseHas('chat_violations', ['conversation_id' => $conversation->id, 'matched_rule' => 'profanity', 'action_taken' => 'blocked']);
+    }
+
     public function test_a_warn_tier_message_requires_confirmation_before_it_is_sent(): void
     {
         [$client, , $conversation] = $this->conversation();
