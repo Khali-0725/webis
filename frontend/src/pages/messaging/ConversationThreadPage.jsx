@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { Avatar } from '@/components/ui/Avatar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Modal } from '@/components/ui/Modal';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { conversationApi } from '@/services/api/conversationApi';
 import { queryKeys } from '@/services/api/queryClient';
@@ -41,6 +42,7 @@ export default function ConversationThreadPage() {
   const [body, setBody] = useState('');
   const [confirmPrompt, setConfirmPrompt] = useState(null);
   const [formError, setFormError] = useState(null);
+  const [prohibitedError, setProhibitedError] = useState(null);
   const bottomRef = useRef(null);
 
   const messagesQuery = useQuery({
@@ -90,7 +92,13 @@ export default function ConversationThreadPage() {
       setConfirmPrompt(null);
       refreshThread();
     },
-    onError: (error) => setFormError(error?.message ?? 'Failed to send the message.'),
+    onError: (error) => {
+      if (error?.status === 422 && error.message?.includes('inappropriate language')) {
+        setProhibitedError(error.message);
+      } else {
+        setFormError(error?.message ?? 'Failed to send the message.');
+      }
+    },
   });
 
   const unsendMutation = useMutation({
@@ -294,6 +302,16 @@ export default function ConversationThreadPage() {
         <p className="rounded-lg bg-slate-50 p-2 text-sm text-ink">{pendingUnsend?.body}</p>
         <p className="mt-2 text-sm text-ink-muted">It disappears from the conversation for both of you.</p>
       </ConfirmDialog>
+
+      <Modal
+        open={Boolean(prohibitedError)}
+        onClose={() => setProhibitedError(null)}
+        title="This message is prohibited"
+        size="sm"
+        footer={<Button onClick={() => setProhibitedError(null)}>Edit message</Button>}
+      >
+        <p className="text-sm text-ink">{prohibitedError}</p>
+      </Modal>
 
       <Button variant="subtle" className="mt-3" onClick={() => navigate(-1)}>
         Back
