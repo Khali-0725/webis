@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
@@ -211,9 +212,7 @@ export default function PaymentMethodsPage() {
                   >
                     {method.is_active ? 'Deactivate' : 'Activate'}
                   </Button>
-                  <Button size="sm" variant="danger" onClick={() => setPendingDelete(method)}>
-                    Delete
-                  </Button>
+                  <IconActionButton icon="trash" label={`Delete ${method.account_name}`} onClick={() => setPendingDelete(method)} />
                 </div>
               </li>
             ))}

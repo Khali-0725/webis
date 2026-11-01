@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { Card } from '@/components/ui/Card';
@@ -182,9 +183,7 @@ export default function ServiceListPage() {
                             Deactivate
                           </Button>
                         )}
-                        <Button size="sm" variant="danger" onClick={() => setPendingDelete(service)}>
-                          Delete
-                        </Button>
+                        <IconActionButton icon="trash" label={`Delete ${service.title}`} onClick={() => setPendingDelete(service)} />
                       </div>
                     )}
                   </td>

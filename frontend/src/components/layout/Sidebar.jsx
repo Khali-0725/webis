@@ -138,7 +138,7 @@ export function Sidebar({ onNavigate }) {
           type="button"
           onClick={() => setConfirmLogout(true)}
           disabled={isPending}
-          className="flex w-full items-center gap-3 rounded-lg bg-red-600/90 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-60"
+          className="flex w-full items-center gap-3 rounded-lg border border-white/20 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-60"
         >
           <Icon name="logout" className="h-[18px] w-[18px]" />
           {isPending ? 'Signing out…' : 'Logout'}

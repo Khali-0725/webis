@@ -16,6 +16,7 @@ import { queryKeys } from '@/services/api/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { PRICING_TYPE_META, ROLES, SETTLEMENT_METHOD_META } from '@/constants';
 import { todayLocal } from '@/utils/date';
+import { isWithinBookingPinRange } from '@/utils/bookingPinRange';
 
 function priceLabelFor(service) {
   return service.pricing_type === 'quote'
@@ -45,6 +46,7 @@ function BookingRequestForm({ service, onClose }) {
   const [clientNotes, setClientNotes] = useState('');
   const [settlementMethod, setSettlementMethod] = useState('');
   const [formError, setFormError] = useState(null);
+  const [pinError, setPinError] = useState(null);
 
   const { data: barangays = [] } = useQuery({
     queryKey: queryKeys.public.barangays,
@@ -70,11 +72,8 @@ function BookingRequestForm({ service, onClose }) {
     .map((item) => item.municipality).filter(Boolean))].sort();
   const availableBarangays = barangays.filter((item) => item.province === province && item.municipality === municipality);
   const selectedBarangay = availableBarangays.find((item) => String(item.id) === barangayId);
-  const areaWithCoordinates = selectedBarangay?.latitude != null && selectedBarangay?.longitude != null
-    ? selectedBarangay
-    : availableBarangays.find((item) => item.latitude != null && item.longitude != null);
-  const suggestedCenter = areaWithCoordinates
-    ? { latitude: Number(areaWithCoordinates.latitude), longitude: Number(areaWithCoordinates.longitude) }
+  const suggestedCenter = selectedBarangay?.latitude != null && selectedBarangay?.longitude != null
+    ? { latitude: Number(selectedBarangay.latitude), longitude: Number(selectedBarangay.longitude) }
     : null;
 
   const handleSubmit = (event) => {
@@ -87,6 +86,10 @@ function BookingRequestForm({ service, onClose }) {
     }
     if (!hasPin) {
       setFormError('Please drop a pin on the map for the service location.');
+      return;
+    }
+    if (!isWithinBookingPinRange(pin.latitude, pin.longitude, suggestedCenter)) {
+      setFormError(`Place the pin within 2 km of ${selectedBarangay?.name ?? 'the selected barangay'}.`);
       return;
     }
     if (!locationConfirmed) {
@@ -160,11 +163,21 @@ function BookingRequestForm({ service, onClose }) {
               longitude={pin.longitude}
               suggestedCenter={suggestedCenter}
               onChange={(lat, lng) => {
+                if (!isWithinBookingPinRange(lat, lng, suggestedCenter)) {
+                  setPin({ latitude: null, longitude: null });
+                  setPinError(suggestedCenter
+                    ? `Place the pin within 2 km of ${selectedBarangay.name}. Change the barangay if the address is elsewhere.`
+                    : 'Select a barangay with a map center before placing a pin.');
+                  setLocationConfirmed(false);
+                  return;
+                }
                 setPin({ latitude: lat, longitude: lng });
+                setPinError(null);
                 setLocationConfirmed(false);
               }}
               height={320}
             />
+            {pinError && <Alert tone="error" className="mt-2">{pinError}</Alert>}
           </div>
 
           <div>
@@ -250,6 +263,7 @@ function BookingRequestForm({ service, onClose }) {
               setMunicipality('');
               setBarangayId('');
               setPin({ latitude: null, longitude: null });
+              setPinError(null);
               setLocationConfirmed(false);
             }} className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none">
               <option value="">Select a province</option>
@@ -265,6 +279,7 @@ function BookingRequestForm({ service, onClose }) {
               setMunicipality(event.target.value);
               setBarangayId('');
               setPin({ latitude: null, longitude: null });
+              setPinError(null);
               setLocationConfirmed(false);
             }} className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none">
               <option value="">Select a municipality or city</option>
@@ -284,6 +299,7 @@ function BookingRequestForm({ service, onClose }) {
               onChange={(event) => {
                 setBarangayId(event.target.value);
                 setPin({ latitude: null, longitude: null });
+                setPinError(null);
                 setLocationConfirmed(false);
               }}
               className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"

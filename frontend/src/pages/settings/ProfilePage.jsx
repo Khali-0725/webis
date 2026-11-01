@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { profileApi } from '@/services/api/profileApi';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/authStore';
@@ -143,9 +144,7 @@ export default function ProfilePage() {
             Your account is deactivated and you are signed out. Bookings and payments you were part of stay on
             record for the other party. An administrator can restore the account if you change your mind.
           </p>
-          <Button variant="danger" size="sm" className="mt-3" onClick={() => setShowDeleteAccount(true)}>
-            Delete my account
-          </Button>
+          <IconActionButton icon="trash" label="Delete my account" className="mt-3" onClick={() => setShowDeleteAccount(true)} />
         </div>
       )}
 

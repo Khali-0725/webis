@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
@@ -89,9 +90,7 @@ export default function MyReportsPage() {
                   <Button size="sm" variant="subtle" onClick={() => setEditing(report)}>
                     Edit
                   </Button>
-                  <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => setPendingWithdraw(report)}>
-                    Withdraw
-                  </Button>
+                  <IconActionButton icon="archive" label={`Withdraw report ${report.id}`} onClick={() => setPendingWithdraw(report)} />
                 </div>
               )}
             </li>

@@ -200,7 +200,7 @@ export default function ConversationThreadPage() {
                     <button type="button" className="hover:text-ink hover:underline" onClick={() => startEditing(message)}>
                       Edit
                     </button>
-                    <button type="button" className="hover:text-red-600 hover:underline" onClick={() => setPendingUnsend(message)}>
+                    <button type="button" className="hover:text-navy-700 hover:underline" onClick={() => setPendingUnsend(message)}>
                       Unsend
                     </button>
                   </>

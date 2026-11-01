@@ -8,7 +8,7 @@ const VARIANTS = {
   outline: 'border border-navy-700 bg-white text-navy-700 hover:bg-navy-50',
   ghost: 'text-navy-700 hover:bg-navy-50',
   success: 'bg-emerald-600 text-white hover:bg-emerald-700',
-  danger: 'bg-red-600 text-white hover:bg-red-700',
+  danger: 'border border-navy-700 bg-white text-navy-700 hover:bg-navy-50',
   subtle: 'border border-line bg-white text-ink hover:bg-canvas',
 };
 

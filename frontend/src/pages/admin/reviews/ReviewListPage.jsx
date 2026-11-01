@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AdminRecordFilters } from '@/components/ui/AdminRecordFilters';
 import { BulkArchiveControls } from '@/components/ui/BulkArchiveControls';
@@ -41,7 +42,7 @@ export default function AdminReviewListPage() {
           {!review.deleted_at && <input type="checkbox" aria-label={`Select review ${review.id}`} checked={selectedIds.includes(review.id)} onChange={(event) => setSelectedIds(event.target.checked ? [...selectedIds, review.id] : selectedIds.filter((id) => id !== review.id))} />}
           <div><p className="font-semibold text-ink">{review.service_title || `Booking #${review.booking_id}`} · {review.rating}/5</p><p className="text-xs text-ink-muted">{review.client?.full_name} · {review.created_at?.slice(0, 10)} · {review.deleted_at ? 'Archived' : review.is_visible ? 'Public' : 'Hidden'}</p></div>
         </div>
-        <div className="flex flex-wrap gap-2">{review.deleted_at ? <Button size="sm" variant="outline" onClick={() => select(review, 'restore')}>Restore hidden</Button> : <><Button size="sm" variant="outline" onClick={() => select(review, review.is_visible ? 'hide' : 'show')}>{review.is_visible ? 'Hide' : 'Show'}</Button><Button size="sm" variant="danger" onClick={() => select(review, 'archive')}>Archive</Button></>}</div>
+        <div className="flex flex-wrap gap-2">{review.deleted_at ? <Button size="sm" variant="outline" onClick={() => select(review, 'restore')}>Restore hidden</Button> : <><Button size="sm" variant="outline" onClick={() => select(review, review.is_visible ? 'hide' : 'show')}>{review.is_visible ? 'Hide' : 'Show'}</Button><IconActionButton icon="archive" label={`Archive review ${review.id}`} onClick={() => select(review, 'archive')} /></>}</div>
       </div>
       {review.comment && <p className="mt-2 text-sm text-ink-muted">{review.comment}</p>}
     </div>)}</div>}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { bulkArchiveApi } from '@/services/api/admin/bulkArchiveApi';
 
 export function BulkArchiveControls({ resource, rows, selectedIds, onSelectionChange, onArchived }) {
@@ -47,9 +47,7 @@ export function BulkArchiveControls({ resource, rows, selectedIds, onSelectionCh
         />
         Select all on this page
       </label>
-      <Button size="sm" variant="danger" disabled={selectedVisible.length === 0} onClick={() => setConfirmOpen(true)}>
-        Archive selected ({selectedVisible.length})
-      </Button>
+      <IconActionButton icon="archive" label={`Archive selected (${selectedVisible.length})`} disabled={selectedVisible.length === 0} onClick={() => setConfirmOpen(true)} />
       <ConfirmDialog
         open={confirmOpen}
         onClose={() => { setConfirmOpen(false); setError(null); }}
@@ -57,7 +55,7 @@ export function BulkArchiveControls({ resource, rows, selectedIds, onSelectionCh
         title={`Archive ${selectedVisible.length} selected record${selectedVisible.length === 1 ? '' : 's'}?`}
         description="The selected records leave active lists and can be restored from Trash."
         confirmLabel="Archive selected"
-        tone="danger"
+        tone="primary"
         loading={busy}
         error={error}
       >

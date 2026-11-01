@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -100,16 +101,15 @@ export default function ViolationDetailPage() {
           >
             Warn
           </Button>
-          <Button
-            variant="danger"
+          <IconActionButton
+            icon="pause"
+            label={`Suspend ${violation.user?.full_name ?? 'account'}`}
             onClick={() => {
               actionMutation.reset();
               setShowSuspendConfirm(true);
             }}
             loading={actionMutation.isPending && actionMutation.variables?.action === 'suspend'}
-          >
-            Suspend user
-          </Button>
+          />
         </div>
       )}
       <ConfirmDialog

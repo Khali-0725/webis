@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -177,14 +178,12 @@ export default function BookingListPage() {
                           >
                             Accept
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
+                          <IconActionButton
+                            icon="close"
+                            label={`Reject booking ${booking.booking_code ?? booking.id}`}
                             onClick={() => rejectMutation.mutate(booking.id)}
                             loading={rejectMutation.isPending && rejectMutation.variables === booking.id}
-                          >
-                            Reject
-                          </Button>
+                          />
                         </>
                       )}
                       <Link to={`/provider/bookings/${booking.id}`}>

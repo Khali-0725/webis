@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Modal } from '@/components/ui/Modal';
@@ -406,9 +407,7 @@ export default function ProviderProfilePage() {
                   <Button size="sm" variant="subtle" onClick={() => setEditingExperience(experience)}>
                     Edit
                   </Button>
-                  <Button size="sm" variant="danger" onClick={() => setPendingDeleteExperience(experience)}>
-                    Delete
-                  </Button>
+                  <IconActionButton icon="trash" label={`Delete ${experience.role_title}`} onClick={() => setPendingDeleteExperience(experience)} />
                 </div>
               </li>
             ))}

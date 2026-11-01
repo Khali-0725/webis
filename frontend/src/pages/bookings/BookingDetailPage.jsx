@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Alert } from '@/components/ui/Alert';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
@@ -698,13 +699,12 @@ export default function BookingDetailPage() {
             </Button>
           )}
           {isProvider && canTransitionTo('rejected') && (
-            <Button
-              variant="danger"
+            <IconActionButton
+              icon="close"
+              label="Reject booking"
               onClick={() => actionMutation.mutate({ action: 'reject' })}
               loading={actionMutation.isPending}
-            >
-              Reject
-            </Button>
+            />
           )}
           {isProvider && canTransitionTo('in_progress') && (
             <Button
@@ -738,9 +738,7 @@ export default function BookingDetailPage() {
             </Button>
           )}
           {canDelete && (
-            <Button variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => setShowDeleteConfirm(true)}>
-              Delete booking
-            </Button>
+            <IconActionButton icon="trash" label="Delete booking" onClick={() => setShowDeleteConfirm(true)} />
           )}
           {(isClient || isProvider) && (
             <Button

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/Button';
+import { BOOKING_PIN_RADIUS_KM } from '@/utils/bookingPinRange';
 
 // Leaflet's default marker image paths assume a specific bundler layout that
 // Vite does not reproduce. A plain SVG divIcon sidesteps the broken asset
@@ -54,13 +55,15 @@ function KeepMapSized({ latitude, longitude, suggestedCenter }) {
  */
 export function LocationPicker({ latitude, longitude, onChange, suggestedCenter, height = 260 }) {
   const [locating, setLocating] = useState(false);
+  const onChangeRef = useRef(onChange);
+  useLayoutEffect(() => { onChangeRef.current = onChange; }, [onChange]);
   const hasPin = latitude != null && longitude != null;
   const center = hasPin ? [latitude, longitude] : suggestedCenter?.latitude != null && suggestedCenter?.longitude != null
     ? [suggestedCenter.latitude, suggestedCenter.longitude] : TANZA_CENTER;
 
   const handlePick = useCallback(
-    (lat, lng) => onChange(Number(lat.toFixed(7)), Number(lng.toFixed(7))),
-    [onChange],
+    (lat, lng) => onChangeRef.current(Number(lat.toFixed(7)), Number(lng.toFixed(7))),
+    [],
   );
 
   const useMyLocation = () => {
@@ -87,6 +90,13 @@ export function LocationPicker({ latitude, longitude, onChange, suggestedCenter,
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <ClickToPlace onPick={handlePick} />
+          {suggestedCenter?.latitude != null && suggestedCenter?.longitude != null && (
+            <Circle
+              center={[suggestedCenter.latitude, suggestedCenter.longitude]}
+              radius={BOOKING_PIN_RADIUS_KM * 1000}
+              pathOptions={{ color: '#0f2557', fillColor: '#0f2557', fillOpacity: 0.08 }}
+            />
+          )}
           {hasPin && <Marker position={[latitude, longitude]} icon={PIN_ICON} />}
         </MapContainer>
       </div>
@@ -98,6 +108,9 @@ export function LocationPicker({ latitude, longitude, onChange, suggestedCenter,
           Use my location
         </Button>
       </div>
+      <p className="text-xs text-ink-muted">
+        {suggestedCenter ? 'Place the pin inside the circle, within 2 km of the selected barangay.' : 'Select a barangay to show the allowed pin area.'}
+      </p>
     </div>
   );
 }

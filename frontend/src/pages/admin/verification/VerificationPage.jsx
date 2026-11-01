@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
@@ -110,7 +111,7 @@ export default function AdminVerificationPage() {
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-navy-50 p-3 text-sm">
           <span>{selectedPending.length} pending document(s) selected</span>
           <Button size="sm" onClick={() => setAction({ kind: 'bulk', decision: 'approve', ids: selectedPending })}>Bulk Accept</Button>
-          <Button size="sm" variant="danger" onClick={() => setAction({ kind: 'bulk', decision: 'reject', ids: selectedPending })}>Bulk Decline</Button>
+          <IconActionButton icon="close" label={`Decline ${selectedPending.length} selected documents`} onClick={() => setAction({ kind: 'bulk', decision: 'reject', ids: selectedPending })} />
         </div>
       )}
 
@@ -148,7 +149,7 @@ export default function AdminVerificationPage() {
                           className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-navy-700 hover:bg-navy-50"><Icon name="eye" className="h-4 w-4" /> View</button>
                         {doc.status === 'pending' && <>
                           <Button size="sm" variant="success" onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })}>Approve</Button>
-                          <Button size="sm" variant="danger" onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })}>Decline</Button>
+                          <IconActionButton icon="close" label={`Decline ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })} />
                         </>}
                       </span>
                     </li>
@@ -186,7 +187,7 @@ export default function AdminVerificationPage() {
                       className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-navy-700 hover:bg-navy-50"><Icon name="eye" className="h-4 w-4" /> View</button>
                     {doc.status === 'pending' && <>
                       <Button size="sm" variant="success" onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })}>Approve</Button>
-                      <Button size="sm" variant="danger" onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })}>Decline</Button>
+                      <IconActionButton icon="close" label={`Decline ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })} />
                     </>}
                     {doc.status === 'approved' && doc.provider_verification_status !== 'approved' && (
                       <Button size="sm" onClick={() => setAction({ kind: 'provider', providerId: doc.provider.id })}>Verify provider</Button>

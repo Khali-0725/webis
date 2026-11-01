@@ -45,7 +45,7 @@ class BookingCreationTest extends TestCase
 
     private function bookingPayload(Service $service, Carbon $date, string $start = '10:00'): array
     {
-        $barangay = Barangay::factory()->create();
+        $barangay = Barangay::factory()->create(['latitude' => 14.3, 'longitude' => 120.85]);
 
         return [
             'service_id' => $service->id,
@@ -84,6 +84,62 @@ class BookingCreationTest extends TestCase
         ]);
         $this->assertDatabaseCount('booking_locations', 1);
         $this->assertDatabaseCount('booking_status_histories', 1);
+    }
+
+    public function test_client_cannot_book_with_a_pin_in_china(): void
+    {
+        [, , $service] = $this->verifiedProviderWithService();
+        $client = User::factory()->client()->create();
+        $payload = $this->bookingPayload($service, $this->futureDateOnWeekday(3));
+        $payload['latitude'] = 39.9;
+        $payload['longitude'] = 116.4;
+
+        $this->actingAs($client)->postJson('/api/bookings', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('latitude');
+        $this->assertDatabaseCount('bookings', 0);
+        $this->assertDatabaseCount('payments', 0);
+    }
+
+    public function test_client_cannot_pin_halayhay_while_mulawin_is_selected(): void
+    {
+        [, , $service] = $this->verifiedProviderWithService();
+        $client = User::factory()->client()->create();
+        $payload = $this->bookingPayload($service, $this->futureDateOnWeekday(3));
+        Barangay::findOrFail($payload['barangay_id'])->update(['name' => 'Mulawin', 'latitude' => 14.326, 'longitude' => 120.853]);
+        $payload['latitude'] = 14.352;
+        $payload['longitude'] = 120.866;
+
+        $this->actingAs($client)->postJson('/api/bookings', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('latitude');
+        $this->assertDatabaseCount('bookings', 0);
+    }
+
+    public function test_client_cannot_book_when_selected_barangay_has_no_map_center(): void
+    {
+        [, , $service] = $this->verifiedProviderWithService();
+        $client = User::factory()->client()->create();
+        $payload = $this->bookingPayload($service, $this->futureDateOnWeekday(3));
+        Barangay::findOrFail($payload['barangay_id'])->update(['latitude' => null, 'longitude' => null]);
+
+        $this->actingAs($client)->postJson('/api/bookings', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('barangay_id');
+        $this->assertDatabaseCount('bookings', 0);
+    }
+
+    public function test_client_cannot_book_in_an_inactive_barangay(): void
+    {
+        [, , $service] = $this->verifiedProviderWithService();
+        $client = User::factory()->client()->create();
+        $payload = $this->bookingPayload($service, $this->futureDateOnWeekday(3));
+        Barangay::findOrFail($payload['barangay_id'])->update(['is_active' => false]);
+
+        $this->actingAs($client)->postJson('/api/bookings', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('barangay_id');
+        $this->assertDatabaseCount('bookings', 0);
     }
 
     public function test_client_can_book_with_cash_settlement_without_a_provider_payment_method(): void

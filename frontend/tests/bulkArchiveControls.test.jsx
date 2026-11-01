@@ -27,7 +27,11 @@ describe('admin bulk archive selection', () => {
     render(<Harness />);
 
     await user.click(screen.getByRole('checkbox', { name: 'Select all visible records' }));
-    await user.click(screen.getByRole('button', { name: 'Archive selected (2)' }));
+    const archive = screen.getByRole('button', { name: 'Archive selected (2)' });
+    expect(archive.textContent).toBe('');
+    expect(archive.querySelector('svg')).toBeInTheDocument();
+    expect(archive).not.toHaveClass('bg-red-600');
+    await user.click(archive);
     expect(bulkArchiveApi.archive).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Archive selected', exact: true }));
