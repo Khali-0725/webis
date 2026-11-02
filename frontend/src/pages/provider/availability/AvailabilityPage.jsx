@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Modal } from '@/components/ui/Modal';
@@ -151,23 +152,16 @@ export default function AvailabilityPage() {
     <div className="space-y-5">
       {notice && <Alert tone={notice.tone}>{notice.message}</Alert>}
 
-      <Card title="Holiday Exclusions">
-        <label className="flex items-center gap-3 text-sm font-medium text-ink"><input type="checkbox" checked={Boolean(holidaysQuery.data?.exclude_all_holidays)} disabled={holidaysQuery.isPending || holidayMutation.isPending} onChange={(event) => holidayMutation.mutate({ enabled: event.target.checked, confirmed: false })} className="h-5 w-5 rounded border-line text-navy-700" /> Exclude All Holidays</label>
-        <p className="mt-2 text-xs text-ink-muted">Blocks new bookings on configured Philippine national regular and special non-working days. Existing bookings stay scheduled.</p>
-        <label className="mt-4 block text-sm text-ink-muted">Calendar year<select value={holidayYear} onChange={(event) => setHolidayYear(Number(event.target.value))} className="ml-2 h-9 rounded-lg border border-line bg-white px-2 text-ink"><option value={2026}>2026</option><option value={2027}>2027</option></select></label>
-        {holidaysQuery.data && <div className="mt-3 max-h-36 overflow-y-auto text-xs text-ink-muted">{holidaysQuery.data.calendar_available ? holidaysQuery.data.dates.map((holiday) => <span key={holiday.date} className="mr-3 inline-block py-1">{holiday.date} · {holiday.name}</span>) : 'No configured calendar for this year.'}</div>}
-      </Card>
-      <ConfirmDialog open={confirmHolidays} onClose={() => setConfirmHolidays(false)} onConfirm={() => holidayMutation.mutate({ enabled: true, confirmed: true })} title="Exclude holidays despite existing bookings?" description={holidayMutation.error?.message} confirmLabel="Exclude future holiday slots" loading={holidayMutation.isPending}>
-        <p className="text-sm text-ink-muted">Existing bookings will remain scheduled. New bookings on the listed holidays will be blocked.</p>
-      </ConfirmDialog>
-
-      <Card title="Weekly Availability">
+      <Card title="Availability">
+        <p className="mb-6 text-sm text-ink-muted">Set your regular days and hours, then add dates when you cannot accept bookings. Clients see only available time slots.</p>
+        <section aria-labelledby="weekly-hours-heading">
+          <h3 id="weekly-hours-heading" className="mb-3 text-base font-semibold text-navy-800">Weekly days and times</h3>
         <form onSubmit={handleRulesSubmit} className="space-y-3">
           {DAYS.map((day, index) => {
             const row = rows[index];
             return (
-              <div key={day.value} className="grid min-w-0 grid-cols-2 items-center gap-3 border-b border-line pb-3 sm:grid-cols-[auto_1fr_1fr_1fr]">
-                <label className="col-span-2 flex items-center gap-2 text-sm font-medium text-ink sm:col-span-1">
+              <div key={day.value} className="min-w-0 rounded-lg border border-line p-3">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink">
                   <input
                     type="checkbox"
                     checked={row.enabled}
@@ -176,6 +170,8 @@ export default function AvailabilityPage() {
                   />
                   {day.label}
                 </label>
+                <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-3">
+                <label className="grid min-w-0 gap-1 text-xs text-ink-muted">From
                 <input
                   type="time"
                   disabled={!row.enabled}
@@ -183,6 +179,8 @@ export default function AvailabilityPage() {
                   onChange={(event) => updateRow(index, { start_time: event.target.value })}
                   className="h-9 min-w-0 rounded-lg border border-line bg-white px-2 text-sm text-ink disabled:bg-slate-50 disabled:text-ink-muted"
                 />
+                </label>
+                <label className="grid min-w-0 gap-1 text-xs text-ink-muted">Until
                 <input
                   type="time"
                   disabled={!row.enabled}
@@ -190,6 +188,8 @@ export default function AvailabilityPage() {
                   onChange={(event) => updateRow(index, { end_time: event.target.value })}
                   className="h-9 min-w-0 rounded-lg border border-line bg-white px-2 text-sm text-ink disabled:bg-slate-50 disabled:text-ink-muted"
                 />
+                </label>
+                <label className="grid min-w-0 gap-1 text-xs text-ink-muted">Slot length
                 <select
                   disabled={!row.enabled}
                   value={row.slot_minutes}
@@ -202,6 +202,8 @@ export default function AvailabilityPage() {
                     </option>
                   ))}
                 </select>
+                </label>
+                </div>
               </div>
             );
           })}
@@ -210,9 +212,11 @@ export default function AvailabilityPage() {
             Save weekly availability
           </Button>
         </form>
-      </Card>
+        </section>
 
-      <Card title="Date-specific Exceptions">
+        <section aria-labelledby="unavailable-dates-heading" className="mt-8 border-t border-line pt-6">
+          <h3 id="unavailable-dates-heading" className="mb-1 text-base font-semibold text-navy-800">Unavailable dates</h3>
+          <p className="mb-4 text-sm text-ink-muted">Block a full date or set different available hours for that date. Existing bookings stay scheduled.</p>
         <form onSubmit={handleExceptionSubmit} className="mb-5 grid gap-3 border-b border-line pb-5 sm:grid-cols-2">
           <Input
             label="Date"
@@ -224,14 +228,14 @@ export default function AvailabilityPage() {
           />
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-ink">Type</label>
+            <label className="mb-1.5 block text-sm font-medium text-ink">Availability on this date</label>
             <select
               value={exceptionClosed ? 'closed' : 'partial'}
               onChange={(event) => setExceptionClosed(event.target.value === 'closed')}
               className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink"
             >
-              <option value="closed">Fully closed</option>
-              <option value="partial">Special hours</option>
+              <option value="closed">Unavailable all day</option>
+              <option value="partial">Custom available hours</option>
             </select>
           </div>
 
@@ -262,43 +266,51 @@ export default function AvailabilityPage() {
 
           <div className="flex items-end">
             <Button type="submit" loading={createExceptionMutation.isPending}>
-              Add exception
+              Add date
             </Button>
           </div>
         </form>
 
         {exceptionsQuery.data?.length === 0 && (
-          <EmptyState title="No exceptions" description="Add a date above to close a specific day or set special hours." />
+          <EmptyState title="No unavailable dates" description="Add a date above to block a day or set custom hours." />
         )}
 
         {exceptionsQuery.data?.length > 0 && (
           <ul className="divide-y divide-line">
             {exceptionsQuery.data.map((exception) => (
-              <li key={exception.id} className="flex items-center justify-between py-3 text-sm">
-                <div>
+              <li key={exception.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                <div className="min-w-0 break-words">
                   <p className="font-medium text-ink">
-                    {exception.date} — {exception.is_closed ? 'Closed' : `${exception.start_time}–${exception.end_time}`}
+                    {exception.date} — {exception.is_closed ? 'Unavailable all day' : `Available ${exception.start_time}–${exception.end_time}`}
                   </p>
                   {exception.reason && <p className="text-xs text-ink-muted">{exception.reason}</p>}
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="subtle" onClick={() => setEditingException(exception)}>
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
+                  <IconActionButton icon="edit" label={`Edit ${exception.date}`} onClick={() => setEditingException(exception)} />
+                  <IconActionButton
+                    icon="trash"
+                    label={`Remove ${exception.date}`}
                     onClick={() => deleteExceptionMutation.mutate(exception.id)}
                     loading={deleteExceptionMutation.isPending && deleteExceptionMutation.variables === exception.id}
-                  >
-                    Remove
-                  </Button>
+                  />
                 </div>
               </li>
             ))}
           </ul>
         )}
+        </section>
+
+        <section aria-labelledby="holiday-exclusions-heading" className="mt-8 border-t border-line pt-6">
+          <h3 id="holiday-exclusions-heading" className="mb-3 text-base font-semibold text-navy-800">Holiday exclusions</h3>
+          <label className="flex items-center gap-3 text-sm font-medium text-ink"><input type="checkbox" checked={Boolean(holidaysQuery.data?.exclude_all_holidays)} disabled={holidaysQuery.isPending || holidayMutation.isPending} onChange={(event) => holidayMutation.mutate({ enabled: event.target.checked, confirmed: false })} className="h-5 w-5 rounded border-line text-navy-700" /> Exclude all holidays</label>
+          <p className="mt-2 text-xs text-ink-muted">Blocks new bookings on configured Philippine national regular and special non-working days. Existing bookings stay scheduled.</p>
+          <label className="mt-4 block text-sm text-ink-muted">Calendar year<select value={holidayYear} onChange={(event) => setHolidayYear(Number(event.target.value))} className="ml-2 h-9 rounded-lg border border-line bg-white px-2 text-ink"><option value={2026}>2026</option><option value={2027}>2027</option></select></label>
+          {holidaysQuery.data && <div className="mt-3 max-h-36 overflow-y-auto text-xs text-ink-muted">{holidaysQuery.data.calendar_available ? holidaysQuery.data.dates.map((holiday) => <span key={holiday.date} className="mr-3 inline-block py-1">{holiday.date} · {holiday.name}</span>) : 'No configured calendar for this year.'}</div>}
+        </section>
       </Card>
+      <ConfirmDialog open={confirmHolidays} onClose={() => setConfirmHolidays(false)} onConfirm={() => holidayMutation.mutate({ enabled: true, confirmed: true })} title="Exclude holidays despite existing bookings?" description={holidayMutation.error?.message} confirmLabel="Exclude future holiday slots" loading={holidayMutation.isPending}>
+        <p className="text-sm text-ink-muted">Existing bookings will remain scheduled. New bookings on the listed holidays will be blocked.</p>
+      </ConfirmDialog>
 
       {editingException && (
         <ExceptionEditor

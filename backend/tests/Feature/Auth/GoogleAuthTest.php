@@ -124,7 +124,8 @@ class GoogleAuthTest extends TestCase
 
         $this->postJson('/api/auth/google', ['credential' => 'fake-jwt'])
             ->assertForbidden()
-            ->assertJsonPath('success', false);
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'This account has been suspended. Please contact the WEBIS administrator.');
 
         $this->assertGuest();
     }

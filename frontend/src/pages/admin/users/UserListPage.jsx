@@ -1,10 +1,11 @@
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Icon } from '@/components/ui/Icon';
+import { IconActionButton } from '@/components/ui/IconActionButton';
+import { IconActionLink } from '@/components/ui/IconActionLink';
 import { Select } from '@/components/ui/Select';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
@@ -204,7 +205,7 @@ export default function UserListPage() {
 
       {!isPending && !isError && users.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <ResponsiveTable className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
                 <th className="py-2 pr-4 font-medium">Name</th>
@@ -233,70 +234,46 @@ export default function UserListPage() {
                   <td className="py-3">
                     {u.deleted_at ? (
                       <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => act(() => userApi.restore(u.id), 'User restored.', 'Failed to restore user.')}
-                        >
-                          Restore
-                        </Button>
-                        <Button size="sm" variant="subtle" className="h-9 w-9 p-0" aria-label={`Delete permanently ${u.full_name}`} title={`Delete permanently ${u.full_name}`} onClick={() => { setPendingPermanentDelete(u); setDeleteConfirmation(''); }}>
-                          <Icon name="trash" className="h-4 w-4" />
-                        </Button>
+                        <IconActionButton icon="restore" label={`Restore ${u.full_name}`} onClick={() => act(() => userApi.restore(u.id), 'User restored.', 'Failed to restore user.')} />
+                        <IconActionButton icon="trash" label={`Delete permanently ${u.full_name}`} onClick={() => { setPendingPermanentDelete(u); setDeleteConfirmation(''); }} />
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        <Link to={`/admin/audit-logs?user_id=${u.id}`}>
-                          <Button size="sm" variant="outline">History</Button>
-                        </Link>
-                        <Button size="sm" variant="subtle" onClick={() => setEditor({ mode: 'edit', user: u })}>
-                          Edit
-                        </Button>
+                        <IconActionLink to={`/admin/audit-logs?user_id=${u.id}`} icon="clipboard" label={`History for ${u.full_name}`} />
+                        <IconActionButton icon="edit" label={`Edit ${u.full_name}`} onClick={() => setEditor({ mode: 'edit', user: u })} />
                         {u.status === 'active' ? (
-                          <Button
-                            size="sm"
-                            variant="subtle"
+                          <IconActionButton
+                            icon="pause"
+                            label={`Suspend ${u.full_name}`}
                             disabled={u.id === me?.id}
                             onClick={() => setPendingAccountAction({ user: u, kind: 'suspend' })}
-                          >
-                            Suspend
-                          </Button>
+                          />
                         ) : u.status === 'suspended' ? (
-                          <Button
-                            size="sm"
-                            variant="success"
+                          <IconActionButton
+                            icon="check"
+                            label={`Activate ${u.full_name}`}
                             onClick={() => act(() => userApi.activate(u.id), 'User activated.', 'Failed to activate user.')}
-                          >
-                            Activate
-                          </Button>
+                          />
                         ) : (
-                          <Button size="sm" variant="success" onClick={() => setPendingAccountAction({ user: u, kind: 'restore' })}>
-                            Restore access
-                          </Button>
+                          <IconActionButton icon="restore" label={`Restore access for ${u.full_name}`} onClick={() => setPendingAccountAction({ user: u, kind: 'restore' })} />
                         )}
                         {u.status !== 'terminated' && u.id !== me?.id && (
-                          <Button size="sm" variant="subtle" className="h-9 w-9 p-0" aria-label={`Terminate ${u.full_name}`} title={`Terminate ${u.full_name}`} onClick={() => setPendingAccountAction({ user: u, kind: 'terminate' })}>
-                            <Icon name="terminate" className="h-4 w-4" />
-                          </Button>
+                          <IconActionButton icon="terminate" label={`Terminate ${u.full_name}`} onClick={() => setPendingAccountAction({ user: u, kind: 'terminate' })} />
                         )}
-                        <Button
-                          size="sm"
-                          variant="subtle"
-                          className="h-9 w-9 p-0"
-                          aria-label={`Delete ${u.full_name}`}
+                        <IconActionButton
+                          icon="trash"
+                          label={`Delete ${u.full_name}`}
                           disabled={u.id === me?.id}
                           title={u.id === me?.id ? 'You cannot delete your own account here' : `Delete ${u.full_name}`}
                           onClick={() => setPendingDelete(u)}
-                        >
-                          <Icon name="trash" className="h-4 w-4" />
-                        </Button>
+                        />
                       </div>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         </div>
       )}
 

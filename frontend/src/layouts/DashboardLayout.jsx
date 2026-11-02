@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { notificationApi } from '@/services/api/notificationApi';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { ROLES } from '@/constants';
+import { dashboardBackLink } from '@/utils/dashboardBackLink';
 
 /**
  * The shell used by all three portals: fixed navy sidebar on desktop, a
@@ -27,8 +28,9 @@ export function DashboardLayout({ title }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
   const [lastPath, setLastPath] = useState(location.pathname);
-  const showDashboardLink = user?.home_path && location.pathname !== user.home_path
-    && !(role === ROLES.PROVIDER && user.provider_verification_status !== 'approved');
+  const backLink = role === ROLES.PROVIDER && user?.provider_verification_status !== 'approved'
+    ? null
+    : dashboardBackLink(location.pathname, user?.home_path);
 
   // Close the drawer whenever the route changes - including on browser
   // back/forward, which no click handler would catch.
@@ -81,9 +83,9 @@ export function DashboardLayout({ title }) {
         </div>
       )}
 
-      <div className="lg:pl-60 print:pl-0">
+      <div className="min-w-0 lg:pl-60 print:pl-0">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line bg-white px-4 sm:px-6 print:hidden">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
@@ -93,7 +95,7 @@ export function DashboardLayout({ title }) {
             >
               <Icon name="menu" />
             </button>
-            <h1 className="font-display text-lg font-semibold text-navy-800">{title}</h1>
+            <h1 className="min-w-0 truncate font-display text-lg font-semibold text-navy-800">{title}</h1>
           </div>
 
           <div className="flex items-center gap-3">
@@ -139,10 +141,10 @@ export function DashboardLayout({ title }) {
           </div>
         </header>
 
-        <main id="main" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 print:max-w-none print:p-0">
-          {showDashboardLink && (
-            <Link to={user.home_path} className="mb-4 inline-flex min-h-10 items-center text-sm font-medium text-navy-700 hover:underline print:hidden">
-              ← Back to Dashboard
+        <main id="main" className="mx-auto min-w-0 max-w-7xl px-4 py-6 sm:px-6 print:max-w-none print:p-0">
+          {backLink && (
+            <Link to={backLink.to} className="mb-4 inline-flex min-h-10 items-center text-sm font-medium text-navy-700 hover:underline print:hidden">
+              ← {backLink.label}
             </Link>
           )}
           <Outlet />

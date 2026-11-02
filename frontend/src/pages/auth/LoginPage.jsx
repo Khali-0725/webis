@@ -25,6 +25,7 @@ export default function LoginPage() {
   const login = useLogin();
   const googleAuth = useGoogleAuth();
   const [formError, setFormError] = useState(null);
+  const [appealEligible, setAppealEligible] = useState(false);
   const resetNotice = Boolean(location.state?.resetSuccess);
   const sessionEndedMessage = useAuthStore((state) => state.sessionEndedMessage);
 
@@ -40,6 +41,7 @@ export default function LoginPage() {
 
   const onSubmit = async (values) => {
     setFormError(null);
+    setAppealEligible(false);
 
     try {
       const user = await login.mutateAsync(values);
@@ -47,6 +49,7 @@ export default function LoginPage() {
 
       navigate(intended || ROLE_HOME[user.role] || '/', { replace: true });
     } catch (error) {
+      setAppealEligible(error?.status === 403 && /has been suspended/i.test(error?.message ?? ''));
       // Field-level messages from the server win over the generic banner.
       const serverErrors = error?.errors ?? {};
       let attached = false;
@@ -65,6 +68,7 @@ export default function LoginPage() {
   const handleGoogleCredential = useCallback(
     async (credential) => {
       setFormError(null);
+      setAppealEligible(false);
 
       try {
         const user = await googleAuth.mutateAsync({ credential });
@@ -72,6 +76,7 @@ export default function LoginPage() {
 
         navigate(intended || ROLE_HOME[user.role] || '/', { replace: true });
       } catch (error) {
+        setAppealEligible(error?.status === 403 && /has been suspended/i.test(error?.message ?? ''));
         setFormError(error?.message ?? 'Unable to continue with Google right now.');
       }
     },
@@ -116,7 +121,7 @@ export default function LoginPage() {
           icon={<Icon name="user" className="h-4 w-4" />}
           error={errors.email?.message}
           required
-          {...register('email')}
+          {...register('email', { onChange: () => setAppealEligible(false) })}
         />
 
         <Input
@@ -135,7 +140,7 @@ export default function LoginPage() {
             Forgot password?
           </Link>
         </div>
-        <Link to="/appeal" className="block text-sm font-medium text-brand hover:underline">Appeal an account suspension</Link>
+        {appealEligible && <Link to="/appeal" className="block text-sm font-medium text-brand hover:underline">Appeal an account suspension</Link>}
 
         <Button type="submit" fullWidth loading={isSubmitting || login.isPending}>
           Login

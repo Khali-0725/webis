@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useQuery } from '@tanstack/react-query';
 import { Card, StatCard } from '@/components/ui/Card';
 import { LineChart } from '@/components/ui/LineChart';
@@ -134,7 +135,7 @@ export default function AnalyticsPage() {
         )}
         {payments.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <ResponsiveTable className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
                   <th className="py-2 pr-4 font-medium">Status</th>
@@ -151,7 +152,7 @@ export default function AnalyticsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </Card>

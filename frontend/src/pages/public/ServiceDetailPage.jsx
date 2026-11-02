@@ -214,6 +214,7 @@ function BookingRequestForm({ service, onClose }) {
             <label htmlFor="booking-date" className="mb-1.5 block text-sm font-medium text-ink">
               Date
             </label>
+            <p className="mb-2 text-xs text-ink-muted">Choose a date to see the provider&apos;s available times. Excluded times cannot be booked.</p>
             <input
               id="booking-date"
               type="date"
@@ -233,7 +234,7 @@ function BookingRequestForm({ service, onClose }) {
               <p className="mb-1.5 text-sm font-medium text-ink">Available time slots</p>
               {slotsQuery.isPending && <p className="text-xs text-ink-muted">Loading slots…</p>}
               {slotsQuery.isSuccess && slotsQuery.data.length === 0 && (
-                <p className="text-xs text-ink-muted">No free slots on this date. Try another day.</p>
+                <p className="text-xs text-ink-muted">The provider is unavailable or fully booked on this date. Try another day.</p>
               )}
               <div className="flex flex-wrap gap-2">
                 {slotsQuery.data?.map((slot) => (

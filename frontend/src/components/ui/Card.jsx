@@ -11,15 +11,15 @@ export function Card({ title, action, className, children, ...props }) {
 
 export function CardHeader({ title, action, className }) {
   return (
-    <header className={cn('flex items-center justify-between px-5 py-4', className)}>
-      <h2 className="text-base font-semibold text-navy-800">{title}</h2>
+    <header className={cn('flex min-w-0 flex-wrap items-center justify-between gap-2 px-5 py-4', className)}>
+      <h2 className="min-w-0 break-words text-base font-semibold text-navy-800">{title}</h2>
       {action}
     </header>
   );
 }
 
 export function CardBody({ className, children }) {
-  return <div className={cn('px-5 pb-5', className)}>{children}</div>;
+  return <div className={cn('min-w-0 px-5 pb-5', className)}>{children}</div>;
 }
 
 /**

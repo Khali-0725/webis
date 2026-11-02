@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -105,7 +106,7 @@ export default function ProviderListPage() {
       {!isPending && !isError && providers.length > 0 && (
         <div className="overflow-x-auto">
           <BulkArchiveControls resource="providers" rows={providers} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onArchived={(count) => { invalidate(); setNotice({ tone: 'success', message: `${count} provider profile${count === 1 ? '' : 's'} archived.` }); }} />
-          <table className="w-full text-left text-sm">
+          <ResponsiveTable className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
                 <th className="py-2 pr-3"><span className="sr-only">Select</span></th>
@@ -150,7 +151,7 @@ export default function ProviderListPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         </div>
       )}
 

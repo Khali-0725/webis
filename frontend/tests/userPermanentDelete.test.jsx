@@ -64,7 +64,7 @@ describe('admin user trash', () => {
     await user.click(screen.getByRole('button', { name: 'Confirm permanent deletion' }));
 
     expect(await screen.findByText(/Unable to delete this account/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Restore Deleted Provider' })).toBeInTheDocument();
   });
 
   it('uses accessible neutral icons for terminate and delete while preventing self-deletion', async () => {

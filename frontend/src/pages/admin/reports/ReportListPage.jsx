@@ -1,7 +1,8 @@
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -122,7 +123,7 @@ export default function ReportListPage() {
       {!isPending && !isError && reports.length > 0 && (
         <div className="overflow-x-auto">
           <BulkArchiveControls resource="reports" rows={reports} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onArchived={(count) => { invalidate(); setNotice({ tone: 'success', message: `${count} report${count === 1 ? '' : 's'} archived.` }); }} />
-          <table className="w-full text-left text-sm">
+          <ResponsiveTable className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
                 <th className="py-2 pr-3"><span className="sr-only">Select</span></th>
@@ -159,16 +160,12 @@ export default function ReportListPage() {
                       onRestore={(row) => restoreMutation.mutate(row.id)}
                       extra={
                         <>
-                          <Button size="sm" variant="outline" onClick={() => setViewing(r)}>View details</Button>
+                          <IconActionButton icon="eye" label={`View report ${r.id}`} onClick={() => setViewing(r)} />
                           {(r.status === 'open' || r.status === 'reviewing') && (
                           <>
-                            {r.status === 'open' && <Button size="sm" variant="outline" onClick={() => chooseDecision(r, 'reviewing')}>Acknowledge</Button>}
-                            <Button size="sm" variant="success" onClick={() => chooseDecision(r, 'resolved')}>
-                              Resolve
-                            </Button>
-                            <Button size="sm" variant="subtle" onClick={() => chooseDecision(r, 'dismissed')}>
-                              Dismiss
-                            </Button>
+                            {r.status === 'open' && <IconActionButton icon="flag" label={`Acknowledge report ${r.id}`} onClick={() => chooseDecision(r, 'reviewing')} />}
+                            <IconActionButton icon="check" label={`Resolve report ${r.id}`} onClick={() => chooseDecision(r, 'resolved')} />
+                            <IconActionButton icon="close" label={`Dismiss report ${r.id}`} onClick={() => chooseDecision(r, 'dismissed')} />
                           </>
                           )}
                         </>
@@ -178,7 +175,7 @@ export default function ReportListPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         </div>
       )}
 

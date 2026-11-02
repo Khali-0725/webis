@@ -1,8 +1,10 @@
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
+import { IconActionLink } from '@/components/ui/IconActionLink';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
@@ -65,14 +67,14 @@ export default function BookingListPage() {
 
       {!isPending && !isError && data.items.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <ResponsiveTable className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
                 <th className="py-2 pr-4 font-medium">Service</th>
                 <th className="py-2 pr-4 font-medium">Provider</th>
                 <th className="py-2 pr-4 font-medium">Date &amp; time</th>
                 <th className="py-2 pr-4 font-medium">Status</th>
-                <th className="py-2 font-medium" />
+                <th className="py-2 font-medium"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -87,14 +89,12 @@ export default function BookingListPage() {
                     <StatusBadge status={booking.status} />
                   </td>
                   <td className="py-3">
-                    <Link to={`/client/bookings/${booking.id}`} className="text-sm font-medium text-brand hover:underline">
-                      View
-                    </Link>
+                    <IconActionLink to={`/client/bookings/${booking.id}`} icon="eye" label={`View booking ${booking.booking_code ?? booking.id}`} />
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         </div>
       )}
 

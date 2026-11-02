@@ -152,7 +152,11 @@ class AuthService
 
             $user = $this->registerWithGoogle($google, UserRole::from($role));
         } elseif (! $user->canAccessAccount()) {
-            throw DomainException::forbidden('This account cannot sign in. Please contact the WEBIS administrator.');
+            throw DomainException::forbidden(
+                $user->getRawOriginal('terminated_at') !== null
+                    ? 'This account has been terminated. Please contact the WEBIS administrator.'
+                    : 'This account has been suspended. Please contact the WEBIS administrator.'
+            );
         } elseif ($user->google_id === null) {
             // First "Continue with Google" on a pre-existing password
             // account - link it rather than blocking on "email taken".

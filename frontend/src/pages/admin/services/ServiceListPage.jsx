@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -102,7 +103,7 @@ export default function ServiceListPage() {
       {!isPending && !isError && services.length > 0 && (
         <div className="overflow-x-auto">
           <BulkArchiveControls resource="services" rows={services} selectedIds={selectedIds} onSelectionChange={setSelectedIds} onArchived={(count) => { invalidate(); setNotice({ tone: 'success', message: `${count} service${count === 1 ? '' : 's'} archived.` }); }} />
-          <table className="w-full text-left text-sm">
+          <ResponsiveTable className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
                 <th className="py-2 pr-3"><span className="sr-only">Select</span></th>
@@ -143,7 +144,7 @@ export default function ServiceListPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         </div>
       )}
 

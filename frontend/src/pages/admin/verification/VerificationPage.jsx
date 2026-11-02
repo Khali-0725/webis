@@ -1,8 +1,8 @@
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/States';
-import { Icon } from '@/components/ui/Icon';
 import { VerificationDocumentPreview } from '@/components/verification/VerificationDocumentPreview';
 import { verificationApi } from '@/services/api/verificationApi';
 
@@ -110,7 +109,7 @@ export default function AdminVerificationPage() {
       {selectedPending.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-navy-50 p-3 text-sm">
           <span>{selectedPending.length} pending document(s) selected</span>
-          <Button size="sm" onClick={() => setAction({ kind: 'bulk', decision: 'approve', ids: selectedPending })}>Bulk Accept</Button>
+          <IconActionButton icon="check" label={`Accept ${selectedPending.length} selected documents`} onClick={() => setAction({ kind: 'bulk', decision: 'approve', ids: selectedPending })} />
           <IconActionButton icon="close" label={`Decline ${selectedPending.length} selected documents`} onClick={() => setAction({ kind: 'bulk', decision: 'reject', ids: selectedPending })} />
         </div>
       )}
@@ -145,10 +144,9 @@ export default function AdminVerificationPage() {
                     <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2">
                       <span>{doc.document_type.replaceAll('_', ' ')} · {doc.original_name} · {doc.status}</span>
                       <span className="flex flex-wrap gap-2">
-                        <button type="button" onClick={() => setPreviewDocument(doc)} aria-label={`View ${doc.original_name}`}
-                          className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-navy-700 hover:bg-navy-50"><Icon name="eye" className="h-4 w-4" /> View</button>
+                        <IconActionButton icon="eye" label={`View ${doc.original_name}`} onClick={() => setPreviewDocument(doc)} />
                         {doc.status === 'pending' && <>
-                          <Button size="sm" variant="success" onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })}>Approve</Button>
+                          <IconActionButton icon="check" label={`Approve ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })} />
                           <IconActionButton icon="close" label={`Decline ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })} />
                         </>}
                       </span>
@@ -157,7 +155,7 @@ export default function AdminVerificationPage() {
                 </ul>
               )}
               {profile.verification_status !== 'approved' && profile.required_documents.government_id === 'approved' && profile.required_documents.business_permit === 'approved' && (
-                <Button className="mt-3" size="sm" onClick={() => setAction({ kind: 'provider', providerId: profile.id })}>Verify provider</Button>
+                <IconActionButton className="mt-3" icon="shield" label={`Verify provider ${profile.owner_name}`} onClick={() => setAction({ kind: 'provider', providerId: profile.id })} />
               )}
             </div>
           ))}
@@ -165,10 +163,14 @@ export default function AdminVerificationPage() {
       )}
       {!isPending && !isError && documents.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left text-sm">
+          <label className="mb-3 inline-flex min-h-10 items-center gap-2 text-sm text-ink">
+            <input type="checkbox" aria-label="Select all pending documents on this page" checked={allSelected}
+              onChange={(event) => setSelected(event.target.checked ? pendingIds : [])} disabled={pendingIds.length === 0} />
+            Select all pending documents on this page
+          </label>
+          <ResponsiveTable className="w-full min-w-[700px] text-left text-sm">
             <thead><tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
-              <th className="py-2 pr-3"><input type="checkbox" aria-label="Select all pending documents on this page" checked={allSelected}
-                onChange={(event) => setSelected(event.target.checked ? pendingIds : [])} disabled={pendingIds.length === 0} /></th>
+              <th className="py-2 pr-3"><span className="sr-only">Select</span></th>
               <th className="py-2 pr-3">Provider</th><th className="py-2 pr-3">Document</th>
               <th className="py-2 pr-3">Status</th><th className="py-2">Actions</th>
             </tr></thead>
@@ -183,20 +185,19 @@ export default function AdminVerificationPage() {
                   <td className="py-3 pr-3">{doc.document_type.replaceAll('_', ' ')}<div className="text-xs text-ink-muted">{doc.original_name}</div></td>
                   <td className="py-3 pr-3"><Badge tone={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'danger' : 'warning'}>{doc.status}</Badge></td>
                   <td className="py-3"><div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => setPreviewDocument(doc)} aria-label={`View ${doc.original_name}`}
-                      className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-navy-700 hover:bg-navy-50"><Icon name="eye" className="h-4 w-4" /> View</button>
+                    <IconActionButton icon="eye" label={`View ${doc.original_name}`} onClick={() => setPreviewDocument(doc)} />
                     {doc.status === 'pending' && <>
-                      <Button size="sm" variant="success" onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })}>Approve</Button>
+                      <IconActionButton icon="check" label={`Approve ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })} />
                       <IconActionButton icon="close" label={`Decline ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })} />
                     </>}
                     {doc.status === 'approved' && doc.provider_verification_status !== 'approved' && (
-                      <Button size="sm" onClick={() => setAction({ kind: 'provider', providerId: doc.provider.id })}>Verify provider</Button>
+                      <IconActionButton icon="shield" label={`Verify provider ${doc.provider.user_full_name}`} onClick={() => setAction({ kind: 'provider', providerId: doc.provider.id })} />
                     )}
                   </div></td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         </div>
       )}
       <Pagination meta={data?.meta} onChange={(next) => { setPage(next); setSelected([]); }} />

@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, StatCard } from '@/components/ui/Card';
@@ -44,10 +45,10 @@ export default function EarningsPage() {
         {transactionsQuery.isError && <ErrorState description={transactionsQuery.error?.message} onRetry={() => transactionsQuery.refetch()} />}
         {transactionsQuery.data && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <ResponsiveTable className="w-full text-left text-sm">
               <thead><tr className="border-b border-line"><th className="py-2">Booking</th><th>Service</th><th>Verified</th><th className="text-right">Amount</th></tr></thead>
               <tbody>{transactionsQuery.data.map((row) => <tr key={row.id} className="border-b border-line"><td className="py-2">{row.booking_code}</td><td>{row.service}</td><td>{new Date(row.verified_at).toLocaleDateString('en-PH')}</td><td className="text-right">{peso(row.amount)}</td></tr>)}</tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </Card>

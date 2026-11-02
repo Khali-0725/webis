@@ -101,6 +101,7 @@ describe('LoginPage', () => {
     expect(
       await screen.findByText('These credentials do not match our records.'),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /appeal an account suspension/i })).not.toBeInTheDocument();
   });
 
   it('shows a banner for a non-field failure such as a suspended account', async () => {
@@ -118,5 +119,17 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Login' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/suspended/i);
+    expect(screen.getByRole('link', { name: /appeal an account suspension/i })).toHaveAttribute('href', '/appeal');
+  });
+
+  it('does not offer an appeal to a terminated account', async () => {
+    authApi.login.mockRejectedValue({ status: 403, message: 'This account has been terminated.', errors: {} });
+    const user = userEvent.setup();
+    renderWithProviders(<LoginPage />);
+    await user.type(screen.getByLabelText(/email address/i), 'ended@webis.test');
+    await user.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'Password123');
+    await user.click(screen.getByRole('button', { name: 'Login' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/terminated/i);
+    expect(screen.queryByRole('link', { name: /appeal an account suspension/i })).not.toBeInTheDocument();
   });
 });

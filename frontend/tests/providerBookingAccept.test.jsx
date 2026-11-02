@@ -30,7 +30,9 @@ describe('provider booking acceptance', () => {
     const user = userEvent.setup();
     renderWithProviders(<BookingListPage />);
 
-    await user.click(await screen.findByRole('button', { name: 'Accept', exact: true }));
+    const accept = await screen.findByRole('button', { name: 'Accept booking 42' });
+    expect(accept.textContent).toBe('');
+    await user.click(accept);
     expect(bookingApi.accept).not.toHaveBeenCalled();
     expect(screen.getByText('Are you sure you want to accept this booking?')).toBeInTheDocument();
     expect(screen.getByText(/Alex Client · Plumbing repair/)).toBeInTheDocument();
@@ -38,7 +40,7 @@ describe('provider booking acceptance', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(bookingApi.accept).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: 'Accept', exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Accept booking 42' }));
     await user.click(screen.getByRole('button', { name: 'Accept Booking' }));
     await waitFor(() => expect(bookingApi.accept).toHaveBeenCalledTimes(1));
     expect(bookingApi.accept.mock.calls[0][0]).toBe(42);

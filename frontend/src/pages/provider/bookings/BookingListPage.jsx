@@ -1,9 +1,9 @@
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { IconActionButton } from '@/components/ui/IconActionButton';
+import { IconActionLink } from '@/components/ui/IconActionLink';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -143,7 +143,7 @@ export default function BookingListPage() {
 
       {!isPending && !isError && data.items.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <ResponsiveTable className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
                 <th className="py-2 pr-4 font-medium">Client</th>
@@ -168,16 +168,15 @@ export default function BookingListPage() {
                     <div className="flex gap-2">
                       {booking.status === 'pending' && (
                         <>
-                          <Button
-                            size="sm"
+                          <IconActionButton
+                            icon="check"
+                            label={`Accept booking ${booking.booking_code ?? booking.id}`}
                             onClick={() => {
                               acceptMutation.reset();
                               setBookingToAccept(booking);
                             }}
                             loading={acceptMutation.isPending && acceptMutation.variables === booking.id}
-                          >
-                            Accept
-                          </Button>
+                          />
                           <IconActionButton
                             icon="close"
                             label={`Reject booking ${booking.booking_code ?? booking.id}`}
@@ -186,17 +185,13 @@ export default function BookingListPage() {
                           />
                         </>
                       )}
-                      <Link to={`/provider/bookings/${booking.id}`}>
-                        <Button size="sm" variant="outline">
-                          View
-                        </Button>
-                      </Link>
+                      <IconActionLink to={`/provider/bookings/${booking.id}`} icon="eye" label={`View booking ${booking.booking_code ?? booking.id}`} />
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         </div>
       )}
 
