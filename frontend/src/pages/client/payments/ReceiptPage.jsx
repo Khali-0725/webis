@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { paymentApi } from '@/services/api/paymentApi';
+import { createReceiptPdf } from '@/utils/pdfDownloads';
 
 const display = (value) => value || '—';
 const money = (value) => value == null ? '—' : `₱${Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -42,24 +43,17 @@ export default function ReceiptPage() {
   ];
 
   const download = () => {
-    const contents = ['WEBIS Payment Receipt', designation, ...fields.map(([label, value]) => `${label}: ${display(value)}`),
-      `Printed: ${date(new Date().toISOString())}`].join('\n');
-    const url = URL.createObjectURL(new Blob([contents], { type: 'text/plain;charset=utf-8' }));
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${receipt.receipt_id}.txt`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    const filename = String(receipt.receipt_id || 'WEBIS-receipt').replace(/[^a-zA-Z0-9_-]/g, '-');
+    createReceiptPdf(receipt, fields, designation).save(`${filename}.pdf`);
   };
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-4 flex flex-wrap gap-2 print:hidden">
+      <div className="mb-4 flex flex-wrap gap-2">
         <Link to={`/client/bookings/${id}`}><Button variant="outline">Back to booking</Button></Link>
-        <Button onClick={() => window.print()}>Print or save as PDF</Button>
-        <Button variant="outline" onClick={download}>Download copy</Button>
+        <Button onClick={download}>Download PDF</Button>
       </div>
-      <Card className="print:border-0 print:shadow-none">
+      <Card>
         <div className="border-b border-line pb-5">
           <p className="font-display text-2xl font-bold text-navy-800">WEBIS</p>
           <p className="text-sm text-ink-muted">Booking payment record</p>

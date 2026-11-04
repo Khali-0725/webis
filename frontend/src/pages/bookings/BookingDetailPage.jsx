@@ -126,7 +126,7 @@ function PaymentSection({ booking, isClient, isProvider, isAdmin }) {
         </Alert>
       )}
 
-      {isClient && <Link to={`/client/bookings/${booking.id}/receipt`} className="mb-4 inline-block text-sm font-semibold text-brand hover:underline">View or print receipt</Link>}
+      {isClient && <Link to={`/client/bookings/${booking.id}/receipt`} className="mb-4 inline-block text-sm font-semibold text-brand hover:underline">View or download receipt</Link>}
 
       <div className="grid gap-6 md:grid-cols-2">
         <div>
