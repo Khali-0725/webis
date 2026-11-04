@@ -1,5 +1,5 @@
 import { NavLink, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { cn } from '@/utils/cn';
 import { Icon } from '@/components/ui/Icon';
 import { Logo } from '@/components/ui/Logo';
@@ -16,47 +16,43 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
  */
 const NAV = {
   [ROLES.CLIENT]: [
-    { to: '/client/dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { to: '/search', label: 'Search Services', icon: 'search' },
-    { to: '/client/bookings', label: 'My Bookings', icon: 'bookings' },
-    { to: '/client/messages', label: 'Messages', icon: 'message' },
-    { to: '/client/reviews', label: 'Reviews', icon: 'star' },
-    { to: '/client/reports', label: 'My Reports', icon: 'flag' },
-    { to: '/profile', label: 'Profile', icon: 'user', disabled: false },
-    { to: '/', label: 'Home', icon: 'home', end: true },
+    { to: '/client/dashboard', label: 'Dashboard', icon: 'dashboard', group: 'Overview' },
+    { to: '/client/search', label: 'Search Services', icon: 'search', group: 'Services' },
+    { to: '/client/bookings', label: 'My Bookings', icon: 'bookings', group: 'Activity' },
+    { to: '/client/messages', label: 'Messages', icon: 'message', group: 'Activity' },
+    { to: '/client/reviews', label: 'Reviews', icon: 'star', group: 'Activity' },
+    { to: '/client/reports', label: 'My Reports', icon: 'flag', group: 'Activity' },
   ],
   [ROLES.PROVIDER]: [
-    { to: '/provider/dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { to: '/provider/profile', label: 'Business Profile', icon: 'user' },
-    { to: '/provider/verification', label: 'Verification', icon: 'shield' },
-    { to: '/provider/bookings', label: 'Bookings', icon: 'bookings' },
-    { to: '/provider/availability', label: 'Availability', icon: 'calendar' },
-    { to: '/provider/services', label: 'Services', icon: 'wrench' },
-    { to: '/provider/payment-methods', label: 'Payment Methods', icon: 'wallet' },
-    { to: '/provider/messages', label: 'Messages', icon: 'message' },
-    { to: '/provider/earnings', label: 'Earnings', icon: 'wallet' },
-    { to: '/provider/reviews', label: 'Reviews', icon: 'star' },
-    { to: '/provider/reports', label: 'My Reports', icon: 'flag' },
-    { to: '/profile', label: 'Profile', icon: 'user', disabled: false },
+    { to: '/provider/dashboard', label: 'Dashboard', icon: 'dashboard', group: 'Overview' },
+    { to: '/provider/profile', label: 'Business Profile', icon: 'user', group: 'Business' },
+    { to: '/provider/verification', label: 'Verification', icon: 'shield', group: 'Business' },
+    { to: '/provider/availability', label: 'Availability', icon: 'calendar', group: 'Business' },
+    { to: '/provider/services', label: 'Services', icon: 'wrench', group: 'Business' },
+    { to: '/provider/payment-methods', label: 'Payment Methods', icon: 'wallet', group: 'Business' },
+    { to: '/provider/bookings', label: 'Bookings', icon: 'bookings', group: 'Work' },
+    { to: '/provider/messages', label: 'Messages', icon: 'message', group: 'Work' },
+    { to: '/provider/earnings', label: 'Earnings', icon: 'wallet', group: 'Work' },
+    { to: '/provider/reviews', label: 'Reviews', icon: 'star', group: 'Feedback' },
+    { to: '/provider/reports', label: 'My Reports', icon: 'flag', group: 'Feedback' },
   ],
   [ROLES.ADMIN]: [
-    { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { to: '/admin/users', label: 'Users', icon: 'users' },
-    { to: '/admin/appeals', label: 'Appeals', icon: 'flag' },
-    { to: '/admin/reviews', label: 'Reviews', icon: 'star' },
-    { to: '/admin/verification', label: 'Verifications', icon: 'shield' },
-    { to: '/admin/providers', label: 'Providers', icon: 'shield' },
-    { to: '/admin/categories', label: 'Categories', icon: 'tag' },
-    { to: '/admin/services', label: 'Services', icon: 'wrench' },
-    { to: '/admin/barangays', label: 'Barangays', icon: 'pin' },
-    { to: '/admin/bookings', label: 'Bookings', icon: 'bookings' },
-    { to: '/admin/payments', label: 'Payments', icon: 'wallet' },
-    { to: '/admin/violations', label: 'Chat Violations', icon: 'flag' },
-    { to: '/admin/reports', label: 'Reports', icon: 'flag' },
-    { to: '/admin/audit-logs', label: 'Audit Logs', icon: 'clipboard' },
-    { to: '/admin/analytics', label: 'Analytics', icon: 'chart' },
-    { to: '/admin/settings', label: 'Platform Settings', icon: 'settings' },
-    { to: '/profile', label: 'Profile', icon: 'user', disabled: false },
+    { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard', group: 'Overview' },
+    { to: '/admin/analytics', label: 'Analytics', icon: 'chart', group: 'Overview' },
+    { to: '/admin/users', label: 'Users', icon: 'users', group: 'People' },
+    { to: '/admin/providers', label: 'Providers', icon: 'shield', group: 'People' },
+    { to: '/admin/verification', label: 'Verifications', icon: 'shield', group: 'People' },
+    { to: '/admin/appeals', label: 'Appeals', icon: 'flag', group: 'People' },
+    { to: '/admin/categories', label: 'Categories', icon: 'tag', group: 'Services' },
+    { to: '/admin/services', label: 'Services', icon: 'wrench', group: 'Services' },
+    { to: '/admin/barangays', label: 'Barangays', icon: 'pin', group: 'Services' },
+    { to: '/admin/bookings', label: 'Bookings', icon: 'bookings', group: 'Operations' },
+    { to: '/admin/payments', label: 'Payments', icon: 'wallet', group: 'Operations' },
+    { to: '/admin/reviews', label: 'Reviews', icon: 'star', group: 'Moderation' },
+    { to: '/admin/violations', label: 'Chat Violations', icon: 'flag', group: 'Moderation' },
+    { to: '/admin/reports', label: 'Reports', icon: 'flag', group: 'Moderation' },
+    { to: '/admin/audit-logs', label: 'Audit Logs', icon: 'clipboard', group: 'System' },
+    { to: '/admin/settings', label: 'Platform Settings', icon: 'settings', group: 'System' },
   ],
 };
 
@@ -94,8 +90,12 @@ export function Sidebar({ onNavigate }) {
 
       <nav aria-label="Main navigation" className="mt-5 flex-1 overflow-y-auto px-3 pb-4">
         <ul className="space-y-1">
-          {items.map((item) => (
-            <li key={item.to}>
+          {items.map((item, index) => (
+            <Fragment key={item.to}>
+              {item.group !== items[index - 1]?.group && (
+                <li className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-white/50">{item.group}</li>
+              )}
+              <li>
               {item.disabled ? (
                 <span
                   aria-disabled="true"
@@ -128,7 +128,8 @@ export function Sidebar({ onNavigate }) {
                   )}
                 </NavLink>
               )}
-            </li>
+              </li>
+            </Fragment>
           ))}
         </ul>
       </nav>

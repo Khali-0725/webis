@@ -127,7 +127,7 @@ export function DashboardLayout({ title }) {
                 <Icon name="bell" />
               </button>
             )}
-            <div className="flex items-center gap-2">
+            <Link to="/profile" aria-label="Open profile settings" title="Profile settings" className="flex min-w-0 items-center gap-2 rounded-lg p-1 hover:bg-canvas">
               <Avatar
                 initials={user?.initials}
                 name={user?.full_name}
@@ -137,7 +137,7 @@ export function DashboardLayout({ title }) {
               <span className="hidden text-sm font-medium text-ink sm:block">
                 {user?.full_name}
               </span>
-            </div>
+            </Link>
           </div>
         </header>
 

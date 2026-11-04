@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RowActions } from '@/components/ui/RowActions';
 import { TrashToggle, DeletedBadge } from '@/components/ui/TrashToggle';
+import { AdminRecordFilters } from '@/components/ui/AdminRecordFilters';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { bookingApi } from '@/services/api/bookingApi';
@@ -23,9 +24,7 @@ export default function AdminBookingListPage() {
   const [providerId, setProviderId] = useState('');
   const [providerSearch, setProviderSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [sort, setSort] = useState('newest');
+  const [recordFilters, setRecordFilters] = useState({ sort: 'newest', start_date: '', end_date: '' });
   const [trashed, setTrashed] = useState('');
   const [page, setPage] = useState(1);
   const [notice, setNotice] = useState(null);
@@ -34,8 +33,8 @@ export default function AdminBookingListPage() {
     ...(status ? { status } : {}), ...(trashed ? { trashed } : {}),
     ...(providerId ? { provider_id: providerId } : {}),
     ...(categoryId ? { category_id: categoryId } : {}),
-    ...(startDate ? { start_date: startDate } : {}),
-    ...(endDate ? { end_date: endDate } : {}), sort, page,
+    ...(recordFilters.start_date ? { start_date: recordFilters.start_date } : {}),
+    ...(recordFilters.end_date ? { end_date: recordFilters.end_date } : {}), sort: recordFilters.sort, page,
   };
 
   const { data, isPending, isError, error, refetch } = useQuery({
@@ -80,10 +79,10 @@ export default function AdminBookingListPage() {
         </Alert>
       )}
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <AdminRecordFilters value={recordFilters} dateFieldLabel="Scheduled" onChange={(patch) => { setRecordFilters((current) => ({ ...current, ...patch })); setPage(1); }}>
         <select
           aria-label="Filter by status"
-          className="h-10 rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"
+          className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none sm:w-36"
           value={status}
           onChange={(e) => {
             setStatus(e.target.value);
@@ -96,22 +95,17 @@ export default function AdminBookingListPage() {
             </option>
           ))}
         </select>
-        <div className="flex min-w-48 flex-col gap-1">
-          <input aria-label="Search providers" placeholder="Search provider name" value={providerSearch} onChange={(e) => { setProviderSearch(e.target.value); setProviderId(''); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-3 text-sm" />
-          <select aria-label="Filter by provider" value={providerId} onChange={(e) => { setProviderId(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-3 text-sm">
-            <option value="">All providers</option>
-            {(providerMatches?.items ?? []).map((provider) => <option key={provider.id} value={provider.id}>{provider.business_name || provider.owner?.full_name || `Provider ${provider.id}`}</option>)}
-          </select>
-          {providerSearchError && <span className="text-xs text-red-700">Provider search failed. Try again.</span>}
-        </div>
-        <select aria-label="Filter by category" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-3 text-sm">
+        <input aria-label="Search providers" placeholder="Search provider name" value={providerSearch} onChange={(e) => { setProviderSearch(e.target.value); setProviderId(''); setPage(1); }} className="h-10 w-full min-w-0 rounded-lg border border-line bg-white px-3 text-sm placeholder:text-ink-soft sm:min-w-40 sm:flex-1" />
+        <select aria-label="Filter by provider" value={providerId} onChange={(e) => { setProviderId(e.target.value); setPage(1); }} className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm sm:w-40">
+          <option value="">All providers</option>
+          {(providerMatches?.items ?? []).map((provider) => <option key={provider.id} value={provider.id}>{provider.business_name || provider.owner?.full_name || `Provider ${provider.id}`}</option>)}
+        </select>
+        <select aria-label="Filter by category" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1); }} className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm sm:w-40">
           <option value="">All categories</option>
           {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
         </select>
-        <label className="flex items-center gap-1 text-xs text-ink-muted">From <input type="date" value={startDate} max={endDate || undefined} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-2 text-sm" /></label>
-        <label className="flex items-center gap-1 text-xs text-ink-muted">To <input type="date" value={endDate} min={startDate || undefined} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-2 text-sm" /></label>
-        <select aria-label="Sort bookings" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }} className="h-10 rounded-lg border border-line bg-white px-3 text-sm"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select>
-      </div>
+      </AdminRecordFilters>
+      {providerSearchError && <p className="mb-4 text-xs text-red-700">Provider search failed. Try again.</p>}
 
       {isPending && <LoadingState label="Loading bookings…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}

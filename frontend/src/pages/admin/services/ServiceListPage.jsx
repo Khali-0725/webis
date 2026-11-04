@@ -77,8 +77,10 @@ export default function ServiceListPage() {
         </Alert>
       )}
 
-      <div className="mb-4">
-        <Input
+      <AdminRecordFilters value={recordFilters} inTrash={trashed === 'only'} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }}>
+        <input
+          aria-label="Search by title"
+          className="h-10 w-full min-w-0 rounded-lg border border-line bg-white px-3 text-sm text-ink placeholder:text-ink-soft focus:border-navy-500 focus:outline-none sm:min-w-44 sm:flex-1"
           placeholder="Search by title"
           value={search}
           onChange={(e) => {
@@ -86,9 +88,7 @@ export default function ServiceListPage() {
             setPage(1);
           }}
         />
-      </div>
-
-      <AdminRecordFilters value={recordFilters} inTrash={trashed === 'only'} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }} />
+      </AdminRecordFilters>
 
       {isPending && <LoadingState label="Loading services…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}

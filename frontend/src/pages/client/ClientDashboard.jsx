@@ -60,7 +60,7 @@ export default function ClientDashboard() {
               title="No bookings yet"
               description="Search for a service and send a booking request to see it here."
               action={
-                <Link to="/search">
+                <Link to="/client/search">
                   <Button size="sm">Search services</Button>
                 </Link>
               }

@@ -107,6 +107,12 @@ export function AppRoutes() {
 
         {/* Client portal */}
         <Route element={<ProtectedRoute allow={[ROLES.CLIENT]} />}>
+          <Route path="client/search" element={<DashboardLayout title="Search Services" />}>
+            <Route index element={<SearchResultsPage />} />
+          </Route>
+          <Route path="client/services/:id" element={<DashboardLayout title="Service Details" />}>
+            <Route index element={<ServiceDetailPage />} />
+          </Route>
           <Route path="client" element={<DashboardLayout title="Dashboard" />}>
             <Route path="dashboard" element={<ClientDashboard />} />
           </Route>

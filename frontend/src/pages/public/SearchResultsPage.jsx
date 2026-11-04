@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
@@ -21,6 +22,8 @@ function formatPrice(service) {
 }
 
 export default function SearchResultsPage() {
+  const { pathname } = useLocation();
+  const servicePath = pathname.startsWith('/client/') ? '/client/services' : '/services';
   const [searchParams, setSearchParams] = useSearchParams();
 
   const params = useMemo(() => {
@@ -67,10 +70,10 @@ export default function SearchResultsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+    <div className="mx-auto min-w-0 max-w-7xl px-4 py-10 sm:px-6">
       <h1 className="font-display text-2xl font-bold text-navy-800">Browse services</h1>
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="mt-6 grid min-w-0 gap-8 xl:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="space-y-5">
           <div>
             <label htmlFor="filter-category" className="mb-1.5 block text-sm font-medium text-ink">
@@ -140,7 +143,7 @@ export default function SearchResultsPage() {
           </div>
         </aside>
 
-        <div>
+        <div className="min-w-0">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-ink-muted">
               {meta ? `${meta.total} service${meta.total === 1 ? '' : 's'} found` : ''}
@@ -170,42 +173,39 @@ export default function SearchResultsPage() {
           )}
 
           {!isPending && !isError && services.length > 0 && (
-            <ul className="space-y-4">
-              {services.map((service) => (
-                <li key={service.id} className="webis-card p-5">
-                  <Link to={`/services/${service.id}`} className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-brand">
-                        {service.category?.name}
-                      </p>
-                      <h3 className="mt-1 font-display text-lg font-semibold text-navy-800">
-                        {service.title}
-                      </h3>
-                      <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{service.description}</p>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-                        <span>{service.provider?.business_name}</span>
-                        <VerifiedBadge verified={service.provider?.is_verified} />
-                        {service.provider?.base_barangay && (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span>{service.provider.base_barangay.name}</span>
-                          </>
-                        )}
-                        {service.provider?.rating_count > 0 && (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <Badge tone="success">★ {service.provider.rating_avg}</Badge>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <p className="whitespace-nowrap font-display text-lg font-bold text-navy-800">
-                      {formatPrice(service)}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div className="min-w-0 overflow-x-auto rounded-xl border border-line bg-white">
+              <ResponsiveTable aria-label="Browse services" className="w-full table-fixed text-left text-sm">
+                <thead className="border-b border-line bg-canvas text-xs uppercase tracking-wide text-ink-muted">
+                  <tr>
+                    <th className="w-[30%] px-4 py-3 font-medium">Service</th>
+                    <th className="w-[22%] px-4 py-3 font-medium">Provider</th>
+                    <th className="w-[14%] px-4 py-3 font-medium">Category</th>
+                    <th className="w-[14%] px-4 py-3 font-medium">Barangay</th>
+                    <th className="w-[20%] px-4 py-3 text-right font-medium">Price</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {services.map((service) => (
+                    <tr key={service.id}>
+                      <td className="min-w-0 px-4 py-4 align-top">
+                        <Link to={`${servicePath}/${service.id}`} className="break-words font-semibold text-navy-800 hover:underline">{service.title}</Link>
+                        <p className="mt-1 line-clamp-2 break-words text-xs text-ink-muted">{service.description}</p>
+                      </td>
+                      <td className="min-w-0 px-4 py-4 align-top">
+                        <span className="break-words">{service.provider?.business_name || 'Provider'}</span>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <VerifiedBadge verified={service.provider?.is_verified} />
+                          {service.provider?.rating_count > 0 && <Badge tone="success">★ {service.provider.rating_avg}</Badge>}
+                        </div>
+                      </td>
+                      <td className="break-words px-4 py-4 align-top text-ink-muted">{service.category?.name || '—'}</td>
+                      <td className="break-words px-4 py-4 align-top text-ink-muted">{service.provider?.base_barangay?.name || '—'}</td>
+                      <td className="break-words px-4 py-4 text-right align-top font-semibold text-navy-800 [overflow-wrap:anywhere]">{formatPrice(service)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </ResponsiveTable>
+            </div>
           )}
 
           <Pagination meta={meta} onChange={goToPage} />

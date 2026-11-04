@@ -75,10 +75,10 @@ export default function ProviderListPage() {
         </Alert>
       )}
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+      <AdminRecordFilters value={recordFilters} inTrash={inTrash} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }}>
         <select
           aria-label="Filter by verification status"
-          className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"
+          className="h-10 w-full min-w-0 rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none sm:w-56"
           value={filters.verification_status}
           onChange={(e) => updateFilter({ verification_status: e.target.value })}
         >
@@ -88,10 +88,8 @@ export default function ProviderListPage() {
             </option>
           ))}
         </select>
-        <Input placeholder="Search business name" value={filters.search} onChange={(e) => updateFilter({ search: e.target.value })} />
-      </div>
-
-      <AdminRecordFilters value={recordFilters} inTrash={inTrash} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }} />
+        <input aria-label="Search business name" className="h-10 w-full min-w-0 rounded-lg border border-line bg-white px-3 text-sm text-ink placeholder:text-ink-soft focus:border-navy-500 focus:outline-none sm:min-w-44 sm:flex-1" placeholder="Search business name" value={filters.search} onChange={(e) => updateFilter({ search: e.target.value })} />
+      </AdminRecordFilters>
 
       {isPending && <LoadingState label="Loading providers…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}
