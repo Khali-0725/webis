@@ -28,6 +28,7 @@ const PATHS = {
   clipboard:
     'M9 4h6v3H9zM7 5H6a1 1 0 00-1 1v14a1 1 0 001 1h12a1 1 0 001-1V6a1 1 0 00-1-1h-1',
   flag: 'M5 21V4M5 4h12l-2 4 2 4H5',
+  warning: 'M12 3L2 21h20L12 3zM12 9v6M12 18h.01',
   menu: 'M4 7h16M4 12h16M4 17h16',
   close: 'M6 6l12 12M18 6L6 18',
   terminate: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0110-7.7M17 16l5 5M22 16l-5 5',

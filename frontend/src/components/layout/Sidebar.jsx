@@ -49,7 +49,7 @@ const NAV = {
     { to: '/admin/bookings', label: 'Bookings', icon: 'bookings', group: 'Operations' },
     { to: '/admin/payments', label: 'Payments', icon: 'wallet', group: 'Operations' },
     { to: '/admin/reviews', label: 'Reviews', icon: 'star', group: 'Moderation' },
-    { to: '/admin/violations', label: 'Chat Violations', icon: 'flag', group: 'Moderation' },
+    { to: '/admin/violations', label: 'Chat Violations', icon: 'warning', group: 'Moderation' },
     { to: '/admin/reports', label: 'Reports', icon: 'flag', group: 'Moderation' },
     { to: '/admin/audit-logs', label: 'Audit Logs', icon: 'clipboard', group: 'System' },
     { to: '/admin/settings', label: 'Platform Settings', icon: 'settings', group: 'System' },
