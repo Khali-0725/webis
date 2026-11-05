@@ -41,9 +41,9 @@ class SettingsManagementTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_clear_the_public_announcement(): void
+    public function test_super_admin_can_clear_the_public_announcement(): void
     {
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
         SystemSetting::create(['key' => 'platform.announcement', 'value' => 'Old notice']);
 
         $this->actingAs($admin)
@@ -58,7 +58,7 @@ class SettingsManagementTest extends TestCase
 
     public function test_invalid_announcement_shows_its_field_error_without_saving_other_settings(): void
     {
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
 
         $this->actingAs($admin)
             ->putJson('/api/admin/settings', [

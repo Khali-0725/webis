@@ -27,10 +27,11 @@ class AdminRecordFiltersTest extends TestCase
         $this->travelTo(now()->setDate(2026, 3, 2));
         $older->delete();
 
+        $super = User::factory()->superAdmin()->create();
         $this->withSession(['webis.last_user_activity' => now()->timestamp])
-            ->actingAs($admin)->getJson('/api/admin/users?trashed=only&role=client&sort=newest')
+            ->actingAs($super)->getJson('/api/admin/users?trashed=only&role=client&sort=newest')
             ->assertOk()->assertJsonPath('data.0.id', $older->id)->assertJsonPath('data.1.id', $newer->id);
-        $this->actingAs($admin)->getJson('/api/admin/users?trashed=only&role=client&sort=oldest&start_date=2026-03-01&end_date=2026-03-01')
+        $this->actingAs($super)->getJson('/api/admin/users?trashed=only&role=client&sort=oldest&start_date=2026-03-01&end_date=2026-03-01')
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $newer->id);
 
         $this->travelBack();

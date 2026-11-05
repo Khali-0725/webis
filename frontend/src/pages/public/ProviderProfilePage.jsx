@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
@@ -37,6 +37,8 @@ function RatingDistribution({ distribution, total }) {
 
 export default function ProviderProfilePage() {
   const { id } = useParams();
+  const { pathname } = useLocation();
+  const servicePath = pathname.startsWith('/client/') ? '/client/services' : '/services';
   const [reviewsPage, setReviewsPage] = useState(1);
 
   const {
@@ -121,7 +123,7 @@ export default function ProviderProfilePage() {
         <ul className="mt-4 space-y-3">
           {provider.services.map((service) => (
             <li key={service.id}>
-              <Link to={`/services/${service.id}`} className="webis-card flex items-center justify-between p-4">
+              <Link to={`${servicePath}/${service.id}`} className="webis-card flex items-center justify-between p-4">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-brand">
                     {service.category?.name}

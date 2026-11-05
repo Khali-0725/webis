@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateServiceRequest;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
 use App\Support\AdminRecordFilters;
+use App\Support\ArchiveAccess;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
 use App\Support\TrashFilter;
@@ -43,6 +44,7 @@ class ServiceController extends Controller
 
     public function show(Service $service): JsonResponse
     {
+        ArchiveAccess::record($service);
         return ApiResponse::ok(new ServiceResource($service->load(['category', 'providerProfile.user'])));
     }
 
@@ -89,6 +91,7 @@ class ServiceController extends Controller
 
     public function restore(Request $request, Service $service): JsonResponse
     {
+        ArchiveAccess::restore($request);
         if (! $service->trashed()) {
             throw DomainException::conflict('This service is not deleted.');
         }

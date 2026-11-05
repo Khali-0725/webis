@@ -22,7 +22,7 @@ beforeEach(() => {
   publicApi.searchServices.mockResolvedValue({ items: [], meta: { total: 0 } });
 });
 
-it('groups admin destinations and removes account Profile from the sidebar', () => {
+it('groups admin destinations and keeps Profile out of the main navigation', () => {
   setSession(makeUser({ role: 'admin', home_path: '/admin/dashboard' }));
   renderWithProviders(<Sidebar />);
   const nav = screen.getByRole('navigation', { name: 'Main navigation' });
@@ -36,11 +36,12 @@ it('groups admin destinations and removes account Profile from the sidebar', () 
   expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
 });
 
-it('makes the top-right profile picture the account Profile link', () => {
+it('makes the sidebar identity the only account Profile link', () => {
   setSession(makeUser({ role: 'client', home_path: '/client/dashboard' }));
   renderWithProviders(<DashboardLayout title="Dashboard" />);
 
-  expect(screen.getByRole('link', { name: 'Open profile settings' })).toHaveAttribute('href', '/profile');
+  expect(screen.getByRole('link', { name: 'My profile' })).toHaveAttribute('href', '/profile');
+  expect(screen.queryByRole('link', { name: 'Open profile settings' })).not.toBeInTheDocument();
 });
 
 it('removes Home and sends client Search Services to the client portal', () => {
@@ -51,7 +52,8 @@ it('removes Home and sends client Search Services to the client portal', () => {
   expect(within(nav).getByRole('link', { name: 'Search Services' })).toHaveAttribute('href', '/client/search');
   expect(within(nav).queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
   expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'WEBIS home' })).toHaveAttribute('href', '/');
+  expect(screen.getByRole('link', { name: 'WEBIS dashboard' })).toHaveAttribute('href', '/client/dashboard');
+  expect(screen.getByRole('link', { name: 'My profile' })).toHaveAttribute('href', '/profile');
 });
 
 it('renders client search and service detail inside dashboard routes', async () => {

@@ -14,6 +14,8 @@ final class TrashFilter
 {
     public static function apply(Builder $query, Request $request): Builder
     {
+        ArchiveAccess::listing($request);
+
         return match ($request->string('trashed')->toString()) {
             'only' => $query->onlyTrashed(),
             'with' => $query->withTrashed(),

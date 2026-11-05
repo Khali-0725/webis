@@ -34,13 +34,15 @@ class ServiceManagementTest extends TestCase
         [$user, $profile] = $this->verifiedProviderWithProfile();
         $category = ServiceCategory::factory()->create();
 
+        $providerDescription = 'I inspect the leak, replace damaged fittings, and test the pipe before leaving.';
         $response = $this->actingAs($user)->postJson('/api/provider/services', [
             'service_category_id' => $category->id,
             'title' => 'Emergency pipe repair',
-            'description' => str_repeat('Reliable plumbing service. ', 3),
+            'description' => $providerDescription,
             'pricing_type' => 'fixed',
             'price' => 500,
-        ])->assertStatus(201);
+        ])->assertStatus(201)
+            ->assertJsonPath('data.description', $providerDescription);
 
         $serviceId = $response->json('data.id');
 

@@ -68,7 +68,7 @@ export default function ProviderListPage() {
   });
 
   return (
-    <Card title="Providers" action={<TrashToggle value={filters.trashed} onChange={(trashed) => updateFilter({ trashed })} />}>
+    <Card title="Providers" action={<TrashToggle superAdminOnly value={filters.trashed} onChange={(trashed) => updateFilter({ trashed })} />}>
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}

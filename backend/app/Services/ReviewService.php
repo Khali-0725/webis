@@ -44,23 +44,6 @@ class ReviewService
         });
     }
 
-    public function reply(Review $review, string $replyText): Review
-    {
-        $review->forceFill([
-            'provider_reply' => $replyText,
-            'replied_at' => now(),
-        ])->save();
-
-        return $review->fresh();
-    }
-
-    public function removeReply(Review $review): Review
-    {
-        $review->forceFill(['provider_reply' => null, 'replied_at' => null])->save();
-
-        return $review->fresh();
-    }
-
     public function setVisibility(Review $review, bool $visible): Review
     {
         return DB::transaction(function () use ($review, $visible) {

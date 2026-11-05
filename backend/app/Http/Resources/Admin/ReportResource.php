@@ -4,6 +4,7 @@ namespace App\Http\Resources\Admin;
 
 use App\Models\Report;
 use App\Models\ProviderProfile;
+use App\Services\ProviderReportThreshold;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +25,9 @@ class ReportResource extends JsonResource
             'reportable_type' => $this->reportable_type === ProviderProfile::class
                 ? 'Provider' : class_basename($this->reportable_type),
             'reportable_id' => $this->reportable_id,
+            'suspension_review' => $this->target_user_id
+                ? app(ProviderReportThreshold::class)->forTargetUserId($this->target_user_id, $request)
+                : null,
             'reason' => $this->reason->value,
             'reason_label' => $this->reason->label(),
             'details' => $this->details,

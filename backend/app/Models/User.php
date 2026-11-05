@@ -27,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'phone',
+        'address_line',
         'avatar_path',
         'barangay_id',
     ];
@@ -53,7 +54,8 @@ class User extends Authenticatable implements MustVerifyEmail
     // Role helpers
     public function isClient(): bool { return $this->role === UserRole::Client; }
     public function isProvider(): bool { return $this->role === UserRole::Provider; }
-    public function isAdmin(): bool { return $this->role === UserRole::Admin; }
+    public function isAdmin(): bool { return in_array($this->role, [UserRole::Admin, UserRole::SuperAdmin], true); }
+    public function isSuperAdmin(): bool { return $this->role === UserRole::SuperAdmin; }
     public function isActive(): bool { return $this->status === UserStatus::Active; }
     public function canAccessAccount(): bool
     {

@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\StoreServiceCategoryRequest;
 use App\Http\Requests\Admin\UpdateServiceCategoryRequest;
 use App\Http\Resources\ServiceCategoryResource;
 use App\Support\AdminRecordFilters;
+use App\Support\ArchiveAccess;
 use App\Models\ServiceCategory;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
@@ -28,6 +29,7 @@ class ServiceCategoryController extends Controller
 
     public function show(ServiceCategory $category): JsonResponse
     {
+        ArchiveAccess::record($category);
         return ApiResponse::ok(new ServiceCategoryResource($category));
     }
 
@@ -95,6 +97,7 @@ class ServiceCategoryController extends Controller
 
     public function restore(Request $request, ServiceCategory $category): JsonResponse
     {
+        ArchiveAccess::restore($request);
         if (! $category->trashed()) {
             throw DomainException::conflict('This category is not deleted.');
         }

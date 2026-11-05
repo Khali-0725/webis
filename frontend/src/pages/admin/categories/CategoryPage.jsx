@@ -104,7 +104,7 @@ export default function CategoryPage() {
         </form>
       </Card>
 
-      <Card title="Service Categories" action={<TrashToggle value={trashed} onChange={setTrashed} />}>
+      <Card title="Service Categories" action={<TrashToggle superAdminOnly value={trashed} onChange={setTrashed} />}>
         <AdminRecordFilters value={recordFilters} inTrash={trashed === 'only'} onChange={(patch) => setRecordFilters({ ...recordFilters, ...patch })} />
         {isPending && <LoadingState label="Loading categories…" />}
         {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}

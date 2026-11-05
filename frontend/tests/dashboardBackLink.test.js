@@ -17,4 +17,22 @@ describe('dashboard back link', () => {
       to: '/provider/dashboard', label: 'Back to Dashboard',
     });
   });
+
+  it('returns nested service and message screens to their parent modules', () => {
+    expect(dashboardBackLink('/provider/services/42/edit', '/provider/dashboard')).toEqual({
+      to: '/provider/services', label: 'Back to services',
+    });
+    expect(dashboardBackLink('/client/messages/7', '/client/dashboard')).toEqual({
+      to: '/client/messages', label: 'Back to messages',
+    });
+  });
+
+  it('returns client search details to the search module', () => {
+    expect(dashboardBackLink('/client/providers/5', '/client/dashboard')).toEqual({
+      to: '/client/providers', label: 'Back to providers',
+    });
+    expect(dashboardBackLink('/client/services/9', '/client/dashboard')).toEqual({
+      to: '/client/search', label: 'Back to search',
+    });
+  });
 });

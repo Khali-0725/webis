@@ -13,11 +13,11 @@ vi.mock('@/services/api/publicApi', () => ({
   publicApi: { listBarangays: vi.fn() },
 }));
 
-describe('admin user trash', () => {
+describe('super administrator user archive', () => {
   beforeEach(() => {
     resetSession();
     vi.clearAllMocks();
-    setSession(makeUser({ role: 'admin' }));
+    setSession(makeUser({ role: 'super_admin' }));
     publicApi.listBarangays.mockResolvedValue([]);
     userApi.list.mockImplementation(async (params) => ({
       items: params.trashed === 'only' ? [{
@@ -68,6 +68,7 @@ describe('admin user trash', () => {
   });
 
   it('uses accessible neutral icons for terminate and delete while preventing self-deletion', async () => {
+    setSession(makeUser({ role: 'admin' }));
     const user = userEvent.setup();
     userApi.list.mockResolvedValue({
       items: [
@@ -91,5 +92,13 @@ describe('admin user trash', () => {
     await user.click(terminate);
     expect(screen.getByRole('button', { name: 'Terminate account' })).not.toHaveClass('bg-red-600');
     expect(screen.getByText('Terminate Target User?')).toBeInTheDocument();
+  });
+
+  it('does not offer archive access or permanent deletion to an Administrator', async () => {
+    setSession(makeUser({ role: 'admin' }));
+    renderWithProviders(<UserListPage />);
+
+    expect(screen.queryByRole('button', { name: 'Trash' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Delete permanently/ })).not.toBeInTheDocument();
   });
 });

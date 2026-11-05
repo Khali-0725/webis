@@ -41,6 +41,9 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address_line: user?.address_line || '',
   });
 
   // Re-seed the form whenever a *different* user record arrives (e.g. after
@@ -52,6 +55,9 @@ export default function ProfilePage() {
     setFormData({
       first_name: user.first_name || '',
       last_name: user.last_name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      address_line: user.address_line || '',
     });
   }
 
@@ -61,9 +67,11 @@ export default function ProfilePage() {
     setSavingProfile(true);
 
     try {
-      await profileApi.updateProfile(formData);
+      const result = await profileApi.updateProfile(formData);
       await refreshUser();
-      setNotice({ tone: 'success', message: 'Profile updated successfully.' });
+      setNotice({ tone: 'success', message: result.email_verified === false && formData.email !== user?.email
+        ? 'Profile saved. Check your new email address for a verification link.'
+        : 'Profile updated successfully.' });
     } catch (error) {
       setNotice({ tone: 'error', message: error?.message ?? 'Failed to update profile.' });
     } finally {
@@ -99,7 +107,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <Card title="Profile Settings" className="mx-auto mt-10 max-w-md">
+    <Card title="My Profile" className="mx-auto mt-6 max-w-xl">
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}
@@ -109,13 +117,39 @@ export default function ProfilePage() {
       <form onSubmit={handleProfileSubmit} className="space-y-4">
         <Input
           label="First Name"
+          required
           value={formData.first_name}
           onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
         />
         <Input
           label="Last Name"
+          required
           value={formData.last_name}
           onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+        />
+        <Input
+          label="Email address"
+          type="email"
+          autoComplete="email"
+          required
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          hint="Changing your email requires verification."
+        />
+        <Input
+          label="Contact number"
+          type="tel"
+          autoComplete="tel"
+          value={formData.phone}
+          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          placeholder="09171234567"
+        />
+        <Input
+          label="Address"
+          autoComplete="street-address"
+          value={formData.address_line}
+          onChange={(e) => setFormData({ ...formData, address_line: e.target.value })}
+          placeholder="House number, street, barangay"
         />
         <Button type="submit" loading={savingProfile}>
           Save changes

@@ -361,7 +361,7 @@ function BookingReportSection({ booking, isClient }) {
 
 /**
  * One review per completed booking (§17 / R-34..R-36): the client rates and
- * writes it, the provider may reply and may hide it. Only ever shown once
+ * writes it. Only ever shown once
  * the booking is Completed - reviewing earlier is a 403 the backend already
  * enforces, so the client-side gate here is purely "don't show a form that
  * would just fail."
@@ -370,8 +370,6 @@ function ReviewSection({ booking, isClient, isProvider }) {
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
-  const [replyText, setReplyText] = useState('');
-  const [showReplyForm, setShowReplyForm] = useState(false);
   const [notice, setNotice] = useState(null);
 
   const { data: review, isPending } = useQuery({
@@ -388,16 +386,6 @@ function ReviewSection({ booking, isClient, isProvider }) {
       setNotice({ tone: 'success', message: 'Review submitted. Thank you!' });
     },
     onError: (error) => setNotice({ tone: 'error', message: error?.message ?? 'Failed to submit your review.' }),
-  });
-
-  const replyMutation = useMutation({
-    mutationFn: () => reviewApi.reply(review.id, replyText),
-    onSuccess: () => {
-      invalidate();
-      setShowReplyForm(false);
-      setNotice({ tone: 'success', message: 'Reply posted.' });
-    },
-    onError: (error) => setNotice({ tone: 'error', message: error?.message ?? 'Failed to post your reply.' }),
   });
 
   if (booking.status !== 'completed') {
@@ -468,30 +456,6 @@ function ReviewSection({ booking, isClient, isProvider }) {
             </div>
           )}
 
-          {isProvider && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
-              {!review.provider_reply && !showReplyForm && (
-                <Button size="sm" variant="outline" onClick={() => setShowReplyForm(true)}>
-                  Reply
-                </Button>
-              )}
-            </div>
-          )}
-
-          {isProvider && showReplyForm && (
-            <div className="space-y-2">
-              <textarea
-                rows={2}
-                value={replyText}
-                onChange={(event) => setReplyText(event.target.value)}
-                placeholder="Write a reply to this review"
-                className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-navy-500 focus:outline-none"
-              />
-              <Button size="sm" loading={replyMutation.isPending} onClick={() => replyMutation.mutate()}>
-                Post reply
-              </Button>
-            </div>
-          )}
         </div>
       )}
     </Card>

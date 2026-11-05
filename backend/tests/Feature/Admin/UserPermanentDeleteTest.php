@@ -25,10 +25,10 @@ class UserPermanentDeleteTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_purge_a_trashed_account_and_reuse_its_email(): void
+    public function test_super_admin_can_purge_a_trashed_account_and_reuse_its_email(): void
     {
         Storage::fake('local');
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
         $user = User::factory()->client()->create([
             'email' => 'reusable@example.com',
             'avatar_path' => 'avatars/old.png',
@@ -52,7 +52,7 @@ class UserPermanentDeleteTest extends TestCase
     public function test_purge_removes_unused_provider_setup_and_private_files(): void
     {
         Storage::fake('local');
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
         $user = User::factory()->provider()->create();
         $profile = ProviderProfile::factory()->create(['user_id' => $user->id]);
         $service = Service::factory()->create(['provider_profile_id' => $profile->id]);
@@ -77,7 +77,7 @@ class UserPermanentDeleteTest extends TestCase
 
     public function test_purge_requires_exact_delete_confirmation(): void
     {
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
         $user = User::factory()->client()->create();
         $user->delete();
 
@@ -96,7 +96,7 @@ class UserPermanentDeleteTest extends TestCase
 
     public function test_file_cleanup_failure_is_reported_and_paths_remain_recoverable(): void
     {
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
         $user = User::factory()->client()->create(['avatar_path' => 'avatars/failed.png']);
         $user->delete();
         $disk = \Mockery::mock(FilesystemAdapter::class);
@@ -115,7 +115,7 @@ class UserPermanentDeleteTest extends TestCase
     public function test_purge_removes_shared_client_history_but_preserves_unrelated_history(): void
     {
         Storage::fake('local');
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
         $user = User::factory()->client()->create();
         $otherClient = User::factory()->client()->create();
         $provider = User::factory()->provider()->create();
@@ -164,7 +164,7 @@ class UserPermanentDeleteTest extends TestCase
     public function test_purge_removes_provider_history_without_deleting_the_client(): void
     {
         Storage::fake('local');
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
         $provider = User::factory()->provider()->create();
         $client = User::factory()->client()->create();
         $profile = ProviderProfile::factory()->create(['user_id' => $provider->id]);
@@ -200,9 +200,9 @@ class UserPermanentDeleteTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $client->id]);
     }
 
-    public function test_purge_refuses_active_accounts_and_non_admins(): void
+    public function test_purge_refuses_active_accounts_and_non_super_admins(): void
     {
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
         $user = User::factory()->client()->create();
 
         $this->actingAs($admin)

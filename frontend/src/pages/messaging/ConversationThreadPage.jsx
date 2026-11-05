@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -36,7 +36,6 @@ const QUICK_REPLIES = {
 
 export default function ConversationThreadPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { role } = useAuth();
   const [body, setBody] = useState('');
@@ -158,8 +157,8 @@ export default function ConversationThreadPage() {
   );
 
   return (
-    <Card title="Conversation">
-      <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto rounded-lg border border-line bg-slate-50 p-4">
+    <Card title="Conversation" className="flex h-[calc(100dvh-12rem)] min-h-80 flex-col overflow-hidden" bodyClassName="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-lg border border-line bg-slate-50 p-4">
         {messages.length === 0 && (
           <p className="text-center text-sm text-ink-muted">No messages yet. Say hello!</p>
         )}
@@ -188,7 +187,7 @@ export default function ConversationThreadPage() {
                 )}
               >
                 {message.body}
-                {message.is_automated && <p className="mt-1 text-[11px] italic opacity-75">Automatic greeting</p>}
+                {message.is_automated && <p className="mt-1 text-[11px] italic opacity-75">Automatic reply</p>}
                 {message.is_flagged && (
                   <p className="mt-1 text-[11px] italic opacity-80">Flagged for review</p>
                 )}
@@ -252,7 +251,7 @@ export default function ConversationThreadPage() {
       )}
 
       {QUICK_REPLIES[role]?.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex shrink-0 gap-2 overflow-x-auto pb-1">
           {QUICK_REPLIES[role].map((reply) => (
             <button
               key={reply}
@@ -261,7 +260,7 @@ export default function ConversationThreadPage() {
                 setBody(reply);
                 setConfirmPrompt(null);
               }}
-              className="rounded-full border border-line bg-white px-3 py-1.5 text-xs text-ink-muted transition-colors hover:border-navy-300 hover:text-ink"
+              className="shrink-0 rounded-full border border-line bg-white px-3 py-1.5 text-xs text-ink-muted transition-colors hover:border-navy-300 hover:text-ink"
             >
               {reply}
             </button>
@@ -269,7 +268,7 @@ export default function ConversationThreadPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
+      <form onSubmit={handleSubmit} className="mt-3 flex shrink-0 gap-2">
         <input
           type="text"
           value={body}
@@ -313,9 +312,6 @@ export default function ConversationThreadPage() {
         <p className="text-sm text-ink">{prohibitedError}</p>
       </Modal>
 
-      <Button variant="subtle" className="mt-3" onClick={() => navigate(-1)}>
-        Back
-      </Button>
     </Card>
   );
 }

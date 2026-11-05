@@ -103,7 +103,7 @@ export default function BarangayPage() {
         </form>
       </Card>
 
-      <Card title="Barangays" action={<TrashToggle value={trashed} onChange={setTrashed} />}>
+      <Card title="Barangays" action={<TrashToggle superAdminOnly value={trashed} onChange={setTrashed} />}>
         <AdminRecordFilters value={recordFilters} inTrash={trashed === 'only'} onChange={(patch) => setRecordFilters({ ...recordFilters, ...patch })} />
         {isPending && <LoadingState label="Loading barangays…" />}
         {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}

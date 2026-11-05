@@ -1,12 +1,17 @@
 import { cn } from '@/utils/cn';
 import { Badge } from './Badge';
+import { useAuth } from '@/hooks/useAuth';
+import { ROLES } from '@/constants';
 
 /**
  * Switches a list between its live records and its trash (soft-deleted
  * rows). `value` is '' for live or 'only' for trash - the same string the
  * API's `?trashed=` filter takes, so pages pass it straight through.
  */
-export function TrashToggle({ value, onChange, className }) {
+export function TrashToggle({ value, onChange, className, superAdminOnly = false }) {
+  const { role } = useAuth();
+  if (superAdminOnly && role !== ROLES.SUPER_ADMIN) return null;
+
   const options = [
     { value: '', label: 'Active' },
     { value: 'only', label: 'Trash' },

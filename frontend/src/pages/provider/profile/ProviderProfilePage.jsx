@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
@@ -14,6 +15,7 @@ import { providerApi } from '@/services/api/providerApi';
 import { publicApi } from '@/services/api/publicApi';
 import { queryKeys } from '@/services/api/queryClient';
 import { todayLocal } from '@/utils/date';
+import { VERIFICATION_STATUS_META } from '@/constants';
 
 const EMPTY_WORK_EXPERIENCE_FORM = {
   role_title: '',
@@ -186,6 +188,11 @@ export default function ProviderProfilePage() {
       )}
 
       <Card title="Business Profile">
+        <div className="mb-4 flex items-center gap-2">
+          <Badge tone={VERIFICATION_STATUS_META[profileQuery.data.verification_status]?.tone ?? 'neutral'}>
+            {profileQuery.data.verification_status === 'approved' ? '✓ Verified provider' : VERIFICATION_STATUS_META[profileQuery.data.verification_status]?.label ?? 'Verification unavailable'}
+          </Badge>
+        </div>
         <form onSubmit={handleProfileSubmit} className="space-y-4">
           <Input
             label="Business Name"
@@ -195,15 +202,17 @@ export default function ProviderProfilePage() {
 
           <div>
             <label htmlFor="bio" className="mb-1.5 block text-sm font-medium text-ink">
-              Bio
+              Business description
             </label>
             <textarea
               id="bio"
               rows={4}
               value={form.bio}
               onChange={(event) => setForm({ ...form, bio: event.target.value })}
+              placeholder="Tell clients what you do, the work you specialize in, and your experience."
               className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-navy-500 focus:outline-none"
             />
+            <p className="mt-1 text-xs text-ink-muted">This appears on your public provider profile.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

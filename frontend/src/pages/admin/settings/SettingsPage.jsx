@@ -13,7 +13,6 @@ const KNOWN_KEYS = [
   { key: 'platform.name', label: 'Platform name', defaultValue: 'WEBIS' },
   { key: 'booking.min_lead_hours', label: 'Minimum booking lead time (hours)', defaultValue: '24' },
   { key: 'booking.max_advance_days', label: 'Maximum booking advance (days)', defaultValue: '30' },
-  { key: 'platform.announcement', label: 'Public announcement (leave blank to hide)', defaultValue: '' },
 ];
 
 export default function SettingsPage() {

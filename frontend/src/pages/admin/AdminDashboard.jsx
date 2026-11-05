@@ -7,6 +7,7 @@ import { LoadingState, ErrorState } from '@/components/ui/States';
 import { useAuth } from '@/hooks/useAuth';
 import { analyticsApi } from '@/services/api/admin/analyticsApi';
 import { queryKeys } from '@/services/api/queryClient';
+import { ROLES } from '@/constants';
 
 const QUICK_LINKS = [
   { to: '/admin/users', label: 'Manage users' },
@@ -32,7 +33,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-5">
-      <Alert tone="warning" title={`Signed in as ${user?.full_name} (administrator).`}>
+      <Alert tone="warning" title={`Signed in as ${user?.full_name} (${user?.role === ROLES.SUPER_ADMIN ? 'super administrator' : 'administrator'}).`}>
         Every figure below is a live database aggregate — none of it is hard-coded.
       </Alert>
 

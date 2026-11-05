@@ -19,10 +19,10 @@ import { userApi } from '@/services/api/admin/userApi';
 import { publicApi } from '@/services/api/publicApi';
 import { fieldError } from '@/services/api/client';
 import { queryKeys } from '@/services/api/queryClient';
-import { ROLE_LABELS } from '@/constants';
+import { ROLE_LABELS, ROLES } from '@/constants';
 import { useAuth } from '@/hooks/useAuth';
 
-const ROLE_OPTIONS = ['', 'client', 'provider', 'admin'];
+const ROLE_OPTIONS = ['', ROLES.CLIENT, ROLES.PROVIDER, ROLES.ADMIN, ROLES.SUPER_ADMIN];
 const STATUS_OPTIONS = ['', 'active', 'suspended', 'terminated'];
 
 const EMPTY_FORM = {
@@ -50,6 +50,7 @@ function formFromUser(user) {
 export default function UserListPage() {
   const queryClient = useQueryClient();
   const { user: me } = useAuth();
+  const isSuperAdmin = me?.role === ROLES.SUPER_ADMIN;
   const [filters, setFilters] = useState({ role: '', status: '', search: '', trashed: '' });
   const [recordFilters, setRecordFilters] = useState({ sort: 'newest', start_date: '', end_date: '' });
   const [page, setPage] = useState(1);
@@ -158,7 +159,7 @@ export default function UserListPage() {
       )}
 
       <div className="mb-4 grid gap-3 sm:grid-cols-[auto_1fr_1fr_1fr]">
-        <TrashToggle value={filters.trashed} onChange={(trashed) => updateFilter({ trashed })} />
+        <TrashToggle superAdminOnly value={filters.trashed} onChange={(trashed) => updateFilter({ trashed })} />
         <select
           aria-label="Filter by role"
           className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"
@@ -199,7 +200,7 @@ export default function UserListPage() {
       {!isPending && !isError && users.length === 0 && (
         <EmptyState
           title={inTrash ? 'Trash is empty' : 'No users found'}
-          description={inTrash ? 'Deleted users will appear here until restored or permanently deleted.' : 'Try adjusting the filters above.'}
+          description={inTrash ? `Deleted users will appear here until restored${isSuperAdmin ? ' or permanently deleted' : ''}.` : 'Try adjusting the filters above.'}
         />
       )}
 
@@ -235,7 +236,7 @@ export default function UserListPage() {
                     {u.deleted_at ? (
                       <div className="flex flex-wrap gap-2">
                         <IconActionButton icon="restore" label={`Restore ${u.full_name}`} onClick={() => act(() => userApi.restore(u.id), 'User restored.', 'Failed to restore user.')} />
-                        <IconActionButton icon="trash" label={`Delete permanently ${u.full_name}`} onClick={() => { setPendingPermanentDelete(u); setDeleteConfirmation(''); }} />
+                        {isSuperAdmin && <IconActionButton icon="trash" label={`Delete permanently ${u.full_name}`} onClick={() => { setPendingPermanentDelete(u); setDeleteConfirmation(''); }} />}
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
@@ -313,7 +314,7 @@ export default function UserListPage() {
           bookings, payments and messages stay on record. You can restore it later.
         </p>
       </ConfirmDialog>
-      <ConfirmDialog
+      {isSuperAdmin && <ConfirmDialog
         open={Boolean(pendingPermanentDelete)}
         onClose={() => {
           setPendingPermanentDelete(null);
@@ -340,7 +341,7 @@ export default function UserListPage() {
           autoComplete="off"
           className="mt-4"
         />
-      </ConfirmDialog>
+      </ConfirmDialog>}
       <ConfirmDialog
         open={Boolean(pendingAccountAction)}
         onClose={() => { setPendingAccountAction(null); setAccountActionError(null); }}
@@ -426,7 +427,7 @@ function UserEditor({ mode, user, barangays, isSelf, onClose, onSaved }) {
           disabled={isSelf}
           hint={isSelf ? 'You cannot change your own role.' : undefined}
           error={fieldError(err, 'role')}
-          options={Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }))}
+          options={Object.entries(ROLE_LABELS).filter(([value]) => value !== ROLES.SUPER_ADMIN).map(([value, label]) => ({ value, label }))}
         />
         <Select
           label="Barangay"

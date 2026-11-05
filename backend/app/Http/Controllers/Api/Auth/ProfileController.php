@@ -13,11 +13,19 @@ class ProfileController extends Controller
     public function update(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();
-        $user->update($request->validated());
+        $values = $request->validated();
+        $emailChanged = isset($values['email']) && $values['email'] !== $user->email;
+        if ($emailChanged) {
+            $values['email_verified_at'] = null;
+        }
+        $user->forceFill($values)->save();
+        if ($emailChanged) {
+            $user->sendEmailVerificationNotification();
+        }
 
         return ApiResponse::ok(
             new UserResource($user->fresh()),
-            'Profile updated successfully.'
+            $emailChanged ? 'Profile updated. Verify your new email address.' : 'Profile updated successfully.'
         );
     }
 }

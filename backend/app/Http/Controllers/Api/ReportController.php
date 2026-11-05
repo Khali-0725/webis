@@ -12,6 +12,7 @@ use App\Models\Report;
 use App\Models\User;
 use App\Notifications\AccountEventNotification;
 use App\Support\Api\ApiResponse;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,21 +43,36 @@ class ReportController extends Controller
 
     public function store(StoreReportRequest $request): JsonResponse
     {
-        $report = DB::transaction(function () use ($request): Report {
-            $type = $request->reportableModelClass();
-            $target = $type === User::class ? User::withTrashed() : $type::query();
-            if (! $target->whereKey($request->validated('reportable_id'))->lockForUpdate()->first(['id'])) {
-                throw DomainException::unprocessable('This record is not available for your report.');
-            }
+        try {
+            $report = DB::transaction(function () use ($request): Report {
+                $type = $request->reportableModelClass();
+                $target = $type === User::class ? User::withTrashed() : $type::query();
+                $target = $target->whereKey($request->validated('reportable_id'))->lockForUpdate()->first();
+                if (! $target) {
+                    throw DomainException::unprocessable('This record is not available for your report.');
+                }
 
-            return Report::create([
-                'reporter_id' => $request->user()->id,
-                'reportable_type' => $type,
-                'reportable_id' => $request->validated('reportable_id'),
-                'reason' => $request->validated('reason'),
-                'details' => $request->validated('details'),
-            ]);
-        });
+                $targetUserId = Report::targetUserIdFor($target, $request->user());
+                if (! $targetUserId || $targetUserId === $request->user()->id) {
+                    throw DomainException::unprocessable('This record is not available for your report.');
+                }
+                if (Report::withTrashed()->where('reporter_id', $request->user()->id)
+                    ->where('target_user_id', $targetUserId)->exists()) {
+                    throw DomainException::conflict('You have already reported this person.');
+                }
+
+                return Report::create([
+                    'reporter_id' => $request->user()->id,
+                    'target_user_id' => $targetUserId,
+                    'reportable_type' => $type,
+                    'reportable_id' => $request->validated('reportable_id'),
+                    'reason' => $request->validated('reason'),
+                    'details' => $request->validated('details'),
+                ]);
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw DomainException::conflict('You have already reported this person.');
+        }
         User::where('role', UserRole::Admin->value)->where('status', 'active')->get()
             ->each(fn (User $admin) => $admin->notify(new AccountEventNotification(
                 'report.submitted', 'A new report was submitted for review.', '/admin/reports',

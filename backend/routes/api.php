@@ -64,6 +64,7 @@ Route::post('/appeals/status', [SuspensionAppealController::class, 'mine'])->mid
 Route::get('/announcement', fn () => ApiResponse::ok([
     'text' => SystemSetting::getValue('platform.announcement', ''),
 ]))->name('api.announcement');
+Route::get('/faqs', [App\Http\Controllers\Api\Public\FaqController::class, 'index'])->name('api.faqs.index');
 
 Route::get('/files/avatar/{user}', [FileController::class, 'avatar'])
     ->name('api.files.avatar');
@@ -215,7 +216,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // -----------------------------------------------------------------------
     // Bookings - shared between clients and providers, scoped by BookingPolicy
     // -----------------------------------------------------------------------
-    Route::prefix('bookings')->name('api.bookings.')->middleware('role:client,provider,admin')->group(function () {
+    Route::prefix('bookings')->name('api.bookings.')->middleware('role:client,provider,admin,super_admin')->group(function () {
         Route::post('/', [BookingController::class, 'store'])
             ->middleware('throttle:writes')
             ->name('store');
@@ -223,7 +224,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
         Route::patch('/{booking}', [BookingController::class, 'update'])->name('update');
         Route::delete('/{booking}', [BookingController::class, 'destroy'])->name('destroy');
-        Route::post('/{booking}/restore', [BookingController::class, 'restore'])->withTrashed()->name('restore');
+        Route::post('/{booking}/restore', [BookingController::class, 'restore'])->middleware('role:super_admin')->withTrashed()->name('restore');
         Route::get('/{booking}/location', [BookingController::class, 'location'])->name('location');
         Route::post('/{booking}/accept', [BookingController::class, 'accept'])->name('accept');
         Route::post('/{booking}/reject', [BookingController::class, 'reject'])->name('reject');
@@ -256,26 +257,18 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     });
 
     // -----------------------------------------------------------------------
-    // Providers can reply to their own reviews. Visibility moderation is
-    // restricted to the audited administrator endpoint below.
+    // Review visibility moderation is restricted to the audited
+    // administrator endpoint below.
     // -----------------------------------------------------------------------
-    Route::prefix('reviews')->name('api.reviews.')->group(function () {
-        Route::middleware('role:provider')->group(function () {
-            Route::post('/{review}/reply', [ReviewController::class, 'reply'])->name('reply');
-            Route::delete('/{review}/reply', [ReviewController::class, 'removeReply'])->name('reply.destroy');
-        });
-
-    });
-
     // -----------------------------------------------------------------------
     // Payments - shared between clients, providers and admin, scoped by PaymentPolicy
     // -----------------------------------------------------------------------
-    Route::prefix('payments')->name('api.payments.')->middleware('role:client,provider,admin')->group(function () {
+    Route::prefix('payments')->name('api.payments.')->middleware('role:client,provider,admin,super_admin')->group(function () {
         Route::get('/', [PaymentController::class, 'index'])->name('index');
         Route::post('/{payment}/verify', [PaymentController::class, 'verify'])->name('verify');
         Route::post('/{payment}/reject', [PaymentController::class, 'reject'])->name('reject');
         Route::delete('/{payment}', [PaymentController::class, 'destroy'])->name('destroy');
-        Route::post('/{payment}/restore', [PaymentController::class, 'restore'])->withTrashed()->name('restore');
+        Route::post('/{payment}/restore', [PaymentController::class, 'restore'])->middleware('role:super_admin')->withTrashed()->name('restore');
     });
 
     // -----------------------------------------------------------------------
@@ -312,7 +305,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // -----------------------------------------------------------------------
     // Admin
     // -----------------------------------------------------------------------
-    Route::prefix('admin')->name('api.admin.')->middleware('role:admin')->group(function () {
+    Route::prefix('admin')->name('api.admin.')->middleware('role:admin,super_admin')->group(function () {
         Route::get('/ping', fn () => response()->json(['success' => true]));
         Route::post('/records/{resource}/bulk-archive', BulkArchiveController::class)
             ->whereIn('resource', ['services', 'providers', 'reports', 'chat-violations', 'reviews'])
@@ -323,18 +316,20 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/users/{user}', [UserController::class, 'show'])->withTrashed()->name('users.show');
         Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-        Route::delete('/users/{user}/permanent', [UserController::class, 'destroyPermanently'])->withTrashed()->name('users.destroy-permanently');
-        Route::post('/users/{user}/restore', [UserController::class, 'restore'])->withTrashed()->name('users.restore');
+        Route::delete('/users/{user}/permanent', [UserController::class, 'destroyPermanently'])->middleware('role:super_admin')->withTrashed()->name('users.destroy-permanently');
+        Route::post('/users/{user}/restore', [UserController::class, 'restore'])->middleware('role:super_admin')->withTrashed()->name('users.restore');
         Route::patch('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
         Route::patch('/users/{user}/terminate', [UserController::class, 'terminate'])->name('users.terminate');
         Route::patch('/users/{user}/restore-terminated', [UserController::class, 'restoreTerminated'])->name('users.restore-terminated');
         Route::get('/appeals', [SuspensionAppealController::class, 'index'])->name('appeals.index');
         Route::patch('/appeals/{appeal}', [SuspensionAppealController::class, 'decide'])->name('appeals.decide');
-        Route::get('/reviews', [App\Http\Controllers\Api\Admin\ReviewController::class, 'index'])->name('reviews.index');
-        Route::patch('/reviews/{review}/visibility', [App\Http\Controllers\Api\Admin\ReviewController::class, 'visibility'])->name('reviews.visibility');
-        Route::delete('/reviews/{review}', [App\Http\Controllers\Api\Admin\ReviewController::class, 'archive'])->name('reviews.archive');
-        Route::post('/reviews/{review}/restore', [App\Http\Controllers\Api\Admin\ReviewController::class, 'restore'])->withTrashed()->name('reviews.restore');
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/reviews', [App\Http\Controllers\Api\Admin\ReviewController::class, 'index'])->name('reviews.index');
+            Route::patch('/reviews/{review}/visibility', [App\Http\Controllers\Api\Admin\ReviewController::class, 'visibility'])->name('reviews.visibility');
+            Route::delete('/reviews/{review}', [App\Http\Controllers\Api\Admin\ReviewController::class, 'archive'])->name('reviews.archive');
+            Route::post('/reviews/{review}/restore', [App\Http\Controllers\Api\Admin\ReviewController::class, 'restore'])->withTrashed()->name('reviews.restore');
+        });
 
         // Verification routes
         Route::get('/verification/documents', [VerificationController::class, 'index'])->name('verification.index');
@@ -351,14 +346,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::patch('/categories/{category}/toggle', [App\Http\Controllers\Api\Admin\ServiceCategoryController::class, 'toggle'])->name('categories.toggle');
         Route::get('/categories/{category}', [App\Http\Controllers\Api\Admin\ServiceCategoryController::class, 'show'])->withTrashed()->name('categories.show');
         Route::delete('/categories/{category}', [App\Http\Controllers\Api\Admin\ServiceCategoryController::class, 'destroy'])->name('categories.destroy');
-        Route::post('/categories/{category}/restore', [App\Http\Controllers\Api\Admin\ServiceCategoryController::class, 'restore'])->withTrashed()->name('categories.restore');
+        Route::post('/categories/{category}/restore', [App\Http\Controllers\Api\Admin\ServiceCategoryController::class, 'restore'])->middleware('role:super_admin')->withTrashed()->name('categories.restore');
 
         // Providers (oversight/drill-down)
         Route::get('/providers', [App\Http\Controllers\Api\Admin\ProviderController::class, 'index'])->name('providers.index');
         Route::get('/providers/{providerProfile}', [App\Http\Controllers\Api\Admin\ProviderController::class, 'show'])->withTrashed()->name('providers.show');
         Route::patch('/providers/{providerProfile}', [App\Http\Controllers\Api\Admin\ProviderController::class, 'update'])->name('providers.update');
         Route::delete('/providers/{providerProfile}', [App\Http\Controllers\Api\Admin\ProviderController::class, 'destroy'])->name('providers.destroy');
-        Route::post('/providers/{providerProfile}/restore', [App\Http\Controllers\Api\Admin\ProviderController::class, 'restore'])->withTrashed()->name('providers.restore');
+        Route::post('/providers/{providerProfile}/restore', [App\Http\Controllers\Api\Admin\ProviderController::class, 'restore'])->middleware('role:super_admin')->withTrashed()->name('providers.restore');
 
         // Services
         Route::get('/services', [App\Http\Controllers\Api\Admin\ServiceController::class, 'index'])->name('services.index');
@@ -366,7 +361,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/services/{service}', [App\Http\Controllers\Api\Admin\ServiceController::class, 'show'])->withTrashed()->name('services.show');
         Route::patch('/services/{service}', [App\Http\Controllers\Api\Admin\ServiceController::class, 'update'])->name('services.update');
         Route::delete('/services/{service}', [App\Http\Controllers\Api\Admin\ServiceController::class, 'destroy'])->name('services.destroy');
-        Route::post('/services/{service}/restore', [App\Http\Controllers\Api\Admin\ServiceController::class, 'restore'])->withTrashed()->name('services.restore');
+        Route::post('/services/{service}/restore', [App\Http\Controllers\Api\Admin\ServiceController::class, 'restore'])->middleware('role:super_admin')->withTrashed()->name('services.restore');
 
         // Barangays
         Route::get('/barangays', [App\Http\Controllers\Api\Admin\BarangayController::class, 'index'])->name('barangays.index');
@@ -375,7 +370,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::patch('/barangays/{barangay}/toggle', [App\Http\Controllers\Api\Admin\BarangayController::class, 'toggle'])->name('barangays.toggle');
         Route::get('/barangays/{barangay}', [App\Http\Controllers\Api\Admin\BarangayController::class, 'show'])->withTrashed()->name('barangays.show');
         Route::delete('/barangays/{barangay}', [App\Http\Controllers\Api\Admin\BarangayController::class, 'destroy'])->name('barangays.destroy');
-        Route::post('/barangays/{barangay}/restore', [App\Http\Controllers\Api\Admin\BarangayController::class, 'restore'])->withTrashed()->name('barangays.restore');
+        Route::post('/barangays/{barangay}/restore', [App\Http\Controllers\Api\Admin\BarangayController::class, 'restore'])->middleware('role:super_admin')->withTrashed()->name('barangays.restore');
 
         // Chat violations - per §9.3, never exposes the surrounding conversation
         Route::get('/chat-violations', [ChatViolationController::class, 'index'])->name('chat-violations.index');
@@ -384,14 +379,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/chat-violations/{violation}/suspend', [ChatViolationController::class, 'suspend'])->name('chat-violations.suspend');
         Route::post('/chat-violations/{violation}/dismiss', [ChatViolationController::class, 'dismiss'])->name('chat-violations.dismiss');
         Route::delete('/chat-violations/{violation}', [ChatViolationController::class, 'destroy'])->name('chat-violations.destroy');
-        Route::post('/chat-violations/{violation}/restore', [ChatViolationController::class, 'restore'])->withTrashed()->name('chat-violations.restore');
+        Route::post('/chat-violations/{violation}/restore', [ChatViolationController::class, 'restore'])->middleware('role:super_admin')->withTrashed()->name('chat-violations.restore');
 
         // Reports
         Route::get('/reports', [App\Http\Controllers\Api\Admin\ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/{report}', [App\Http\Controllers\Api\Admin\ReportController::class, 'show'])->withTrashed()->name('reports.show');
         Route::post('/reports/{report}/resolve', [App\Http\Controllers\Api\Admin\ReportController::class, 'resolve'])->name('reports.resolve');
         Route::delete('/reports/{report}', [App\Http\Controllers\Api\Admin\ReportController::class, 'destroy'])->name('reports.destroy');
-        Route::post('/reports/{report}/restore', [App\Http\Controllers\Api\Admin\ReportController::class, 'restore'])->withTrashed()->name('reports.restore');
+        Route::post('/reports/{report}/restore', [App\Http\Controllers\Api\Admin\ReportController::class, 'restore'])->middleware('role:super_admin')->withTrashed()->name('reports.restore');
 
         // Audit logs
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
@@ -399,6 +394,13 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         // Settings
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+
+        Route::middleware('role:super_admin')->group(function () {
+            Route::get('/faqs', [App\Http\Controllers\Api\Admin\FaqController::class, 'index'])->name('faqs.index');
+            Route::post('/faqs', [App\Http\Controllers\Api\Admin\FaqController::class, 'store'])->name('faqs.store');
+            Route::patch('/faqs/{faq}', [App\Http\Controllers\Api\Admin\FaqController::class, 'update'])->name('faqs.update');
+            Route::delete('/faqs/{faq}', [App\Http\Controllers\Api\Admin\FaqController::class, 'destroy'])->name('faqs.destroy');
+        });
 
         // Analytics
         Route::prefix('analytics')->name('analytics.')->group(function () {

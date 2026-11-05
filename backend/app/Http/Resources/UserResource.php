@@ -28,6 +28,9 @@ class UserResource extends JsonResource
             'initials' => $this->initials,
             'email' => $this->email,
             'phone' => $this->phone,
+            // A just-created User passed to actingAs() may not have nullable
+            // database defaults loaded yet. Read the loaded attribute safely.
+            'address_line' => $this->resource->getAttributes()['address_line'] ?? null,
             // Relative, not url() - see the comment on qr_image_url in
             // ProviderPaymentMethodResource for why.
             'avatar_url' => $this->avatar_path ? '/api/files/avatar/'.$this->id.'?t='.$this->updated_at->timestamp : null,

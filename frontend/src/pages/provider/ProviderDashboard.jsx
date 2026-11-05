@@ -186,13 +186,13 @@ export default function ProviderDashboard() {
         <Card>
           <CardHeader
             title="Verification"
-            action={
+            action={verification?.label !== 'Verified' ? (
               <Link to="/provider/verification">
                 <Button size="sm" variant="outline">
-                  {verification?.label === 'Verified' ? 'View' : 'Upload documents'}
+                  Upload documents
                 </Button>
               </Link>
-            }
+            ) : null}
           />
           <CardBody>
             {profileQuery.isPending && <LoadingState label="Loading status…" />}

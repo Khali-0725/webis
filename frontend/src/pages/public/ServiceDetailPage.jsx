@@ -391,6 +391,7 @@ export default function ServiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, role } = useAuth();
+  const providerPath = role === ROLES.CLIENT ? '/client/providers' : '/providers';
   const [showForm, setShowForm] = useState(false);
   const [messageError, setMessageError] = useState(null);
 
@@ -463,7 +464,7 @@ export default function ServiceDetailPage() {
           <div className="border-t border-line pt-4">
             <p className="text-xs text-ink-muted">Provider</p>
             <Link
-              to={`/providers/${provider?.id ?? ''}`}
+              to={`${providerPath}/${provider?.id ?? ''}`}
               className="mt-1 block font-semibold text-navy-800 hover:text-brand"
             >
               {provider?.business_name}

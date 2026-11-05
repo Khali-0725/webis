@@ -10,8 +10,9 @@ import { createReceiptPdf, createEarningsPdf } from '@/utils/pdfDownloads';
 import { renderWithProviders } from './utils';
 
 const save = vi.fn();
+const receiptBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
 vi.mock('@/utils/pdfDownloads', () => ({
-  createReceiptPdf: vi.fn(() => ({ save })),
+  createReceiptPdf: vi.fn(() => ({ output: () => receiptBlob })),
   createEarningsPdf: vi.fn(() => ({ save })),
 }));
 vi.mock('@/services/api/paymentApi', () => ({ paymentApi: { receipt: vi.fn() } }));
@@ -22,6 +23,9 @@ vi.mock('@/components/ui/LineChart', () => ({ LineChart: () => null }));
 
 beforeEach(() => {
   vi.clearAllMocks();
+  Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:webis-receipt') });
+  Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 });
 
 it('downloads one PDF receipt without a print or text action', async () => {
@@ -39,7 +43,8 @@ it('downloads one PDF receipt without a print or text action', async () => {
   expect(screen.queryByRole('button', { name: 'Download copy' })).not.toBeInTheDocument();
   await userEvent.setup().click(download);
   expect(createReceiptPdf).toHaveBeenCalledWith(expect.objectContaining({ receipt_id: 'REC-204' }), expect.any(Array), 'Verified Payment');
-  expect(save).toHaveBeenCalledExactlyOnceWith('REC-204.pdf');
+  expect(URL.createObjectURL).toHaveBeenCalledWith(receiptBlob);
+  expect(screen.getByRole('link', { name: 'Open PDF' })).toHaveAttribute('href', 'blob:webis-receipt');
 });
 
 it('downloads earnings for the selected date range after transactions load', async () => {

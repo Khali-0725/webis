@@ -29,6 +29,10 @@ class BulkArchiveController extends Controller
 
     public function __invoke(Request $request, string $resource, ReviewService $reviews): JsonResponse
     {
+        if ($resource === 'reviews' && $request->user()->isSuperAdmin()) {
+            throw DomainException::forbidden('You are not allowed to archive these records.');
+        }
+
         if (! isset(self::TYPES[$resource])) {
             abort(404);
         }

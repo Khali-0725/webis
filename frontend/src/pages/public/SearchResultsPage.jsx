@@ -24,6 +24,7 @@ function formatPrice(service) {
 export default function SearchResultsPage() {
   const { pathname } = useLocation();
   const servicePath = pathname.startsWith('/client/') ? '/client/services' : '/services';
+  const providerPath = pathname.startsWith('/client/') ? '/client/providers' : '/providers';
   const [searchParams, setSearchParams] = useSearchParams();
 
   const params = useMemo(() => {
@@ -192,7 +193,7 @@ export default function SearchResultsPage() {
                         <p className="mt-1 line-clamp-2 break-words text-xs text-ink-muted">{service.description}</p>
                       </td>
                       <td className="min-w-0 px-4 py-4 align-top">
-                        <span className="break-words">{service.provider?.business_name || 'Provider'}</span>
+                        <Link to={`${providerPath}/${service.provider?.id}`} className="break-words text-navy-800 hover:underline">{service.provider?.business_name || 'Provider'}</Link>
                         <div className="mt-1 flex flex-wrap gap-1">
                           <VerifiedBadge verified={service.provider?.is_verified} />
                           {service.provider?.rating_count > 0 && <Badge tone="success">★ {service.provider.rating_avg}</Badge>}

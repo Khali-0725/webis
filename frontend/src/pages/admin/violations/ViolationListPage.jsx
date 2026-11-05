@@ -58,7 +58,7 @@ export default function ViolationListPage() {
   });
 
   return (
-    <Card title="Chat Moderation Cases" action={<TrashToggle value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} />}>
+    <Card title="Chat Moderation Cases" action={<TrashToggle superAdminOnly value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} />}>
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}

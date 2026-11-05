@@ -23,8 +23,8 @@ it('puts weekly hours and unavailable dates in one availability module', async (
   availabilityApi.listExceptions.mockResolvedValue([]);
   renderWithProviders(<AvailabilityPage />);
 
-  expect(await screen.findByRole('heading', { name: 'Availability' })).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'Weekly days and times' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Weekly days and times' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Unavailable dates' })).toBeInTheDocument();
   expect(screen.getByLabelText('Monday')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Save weekly availability' })).toBeInTheDocument();
 });

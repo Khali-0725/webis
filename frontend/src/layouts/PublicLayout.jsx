@@ -7,9 +7,6 @@ import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/hooks/useAuth';
 
 const LINKS = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/search', label: 'Services' },
-  { to: '/providers', label: 'Providers' },
   { to: '/about', label: 'About' },
   { to: '/contact', label: 'Contact' },
 ];

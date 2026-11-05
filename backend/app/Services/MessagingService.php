@@ -140,9 +140,43 @@ class MessagingService
                 'messages',
                 ['conversation_id' => $conversation->id],
             );
+
+            if ($sender->isClient() && ! $automated && ($reply = $this->automaticReply($conversation, $body))) {
+                $provider = User::withTrashed()->find($conversation->provider_user_id);
+                if ($provider) {
+                    try {
+                        $this->send($conversation, $provider, $reply, false, true);
+                    } catch (\Throwable $exception) {
+                        report($exception);
+                    }
+                }
+            }
         }
 
         return $outcome;
+    }
+
+    private function automaticReply(Conversation $conversation, string $body): ?string
+    {
+        $question = trim($body);
+
+        if (preg_match('/^(hi|hello|hey|kumusta|kamusta|magandang araw)[!.?]*$/iu', $question)) {
+            return 'Hello! Thanks for your message. Ask about availability or leave your question here.';
+        }
+
+        if (! preg_match('/\b(is (this|the|your) service available|are you available|available pa|may available|may slot)\b/iu', $question)) {
+            return null;
+        }
+
+        $provider = User::withTrashed()->find($conversation->provider_user_id);
+        $profile = $provider?->providerProfile;
+        $available = $provider?->canAccessAccount()
+            && $profile?->isVerified()
+            && $profile->is_accepting_bookings;
+
+        return $available
+            ? 'The provider is currently accepting bookings. Please check an available time slot before booking.'
+            : 'The provider is currently unavailable. Please check again later.';
     }
 
     /**

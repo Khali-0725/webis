@@ -57,7 +57,7 @@ export default function AdminPaymentListPage() {
   });
 
   return (
-    <Card title="All Payments" action={<TrashToggle value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} />}>
+    <Card title="All Payments" action={<TrashToggle superAdminOnly value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} />}>
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}

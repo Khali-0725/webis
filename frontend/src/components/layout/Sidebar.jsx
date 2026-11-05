@@ -6,7 +6,7 @@ import { Logo } from '@/components/ui/Logo';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuth, useLogout } from '@/hooks/useAuth';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
-import { ROLES } from '@/constants';
+import { ROLE_LABELS, ROLES } from '@/constants';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 /**
@@ -18,6 +18,7 @@ const NAV = {
   [ROLES.CLIENT]: [
     { to: '/client/dashboard', label: 'Dashboard', icon: 'dashboard', group: 'Overview' },
     { to: '/client/search', label: 'Search Services', icon: 'search', group: 'Services' },
+    { to: '/client/providers', label: 'Search Providers', icon: 'users', group: 'Services' },
     { to: '/client/bookings', label: 'My Bookings', icon: 'bookings', group: 'Activity' },
     { to: '/client/messages', label: 'Messages', icon: 'message', group: 'Activity' },
     { to: '/client/reviews', label: 'Reviews', icon: 'star', group: 'Activity' },
@@ -56,10 +57,16 @@ const NAV = {
   ],
 };
 
+NAV[ROLES.SUPER_ADMIN] = [
+  ...NAV[ROLES.ADMIN].filter((item) => item.to !== '/admin/reviews'),
+  { to: '/admin/cms', label: 'Content Management', icon: 'clipboard', group: 'System' },
+];
+
 const PORTAL_LABEL = {
   [ROLES.CLIENT]: 'Client Portal',
   [ROLES.PROVIDER]: 'Provider Portal',
   [ROLES.ADMIN]: 'Admin Portal',
+  [ROLES.SUPER_ADMIN]: 'Super Admin Portal',
 };
 
 export function Sidebar({ onNavigate }) {
@@ -75,17 +82,9 @@ export function Sidebar({ onNavigate }) {
   return (
     <div className="flex h-full flex-col bg-navy-800 text-white">
       <div className="px-5 py-5">
-        <Link to="/" onClick={onNavigate} aria-label="WEBIS home">
+        <Link to={user.home_path} onClick={onNavigate} aria-label="WEBIS dashboard">
           <Logo variant="light" sublabel={PORTAL_LABEL[user.role]} showMark={false} />
         </Link>
-      </div>
-
-      <div className="mx-3 flex items-center gap-3 rounded-lg bg-white/5 px-3 py-3">
-        <Avatar initials={user.initials} name={user.full_name} src={user.avatar_url} size="md" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{user.full_name}</p>
-          <p className="truncate text-[11px] text-white/60">{user.role_label}</p>
-        </div>
       </div>
 
       <nav aria-label="Main navigation" className="mt-5 flex-1 overflow-y-auto px-3 pb-4">
@@ -133,6 +132,25 @@ export function Sidebar({ onNavigate }) {
           ))}
         </ul>
       </nav>
+
+      <div className="border-t border-white/10 px-3 py-3">
+        <NavLink
+          to="/profile"
+          onClick={onNavigate}
+          aria-label="My profile"
+          className={({ isActive }) => cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-white/10',
+            isActive && 'bg-navy-600',
+          )}
+        >
+          <Avatar src={user.avatar_url} initials={user.initials} name={user.full_name} size="sm" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-white">{user.full_name}</span>
+            <span className="block truncate text-xs text-white/60">{user.role_label ?? ROLE_LABELS[user.role]}</span>
+          </span>
+          <Icon name="chevronRight" className="h-4 w-4 text-white/50" />
+        </NavLink>
+      </div>
 
       <div className="border-t border-white/10 p-3">
         <button

@@ -23,6 +23,7 @@ use App\Models\SuspensionAppeal;
 use App\Models\User;
 use App\Services\AccountSuspensionService;
 use App\Support\AdminRecordFilters;
+use App\Support\ArchiveAccess;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
 use App\Support\TrashFilter;
@@ -45,6 +46,10 @@ class UserController extends Controller
         ]);
 
         $query = TrashFilter::apply(User::query(), $request);
+
+        if (! $request->user()->isSuperAdmin()) {
+            $query->whereNotIn('role', [UserRole::Admin->value, UserRole::SuperAdmin->value]);
+        }
 
         if (! empty($validated['role'])) {
             $query->where('role', $validated['role']);
@@ -71,6 +76,8 @@ class UserController extends Controller
 
     public function show(User $user): JsonResponse
     {
+        $this->authorize('view', $user);
+        ArchiveAccess::record($user);
         $data = (new UserResource($user))->resolve();
 
         if ($user->isClient()) {
@@ -130,6 +137,7 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
+        $this->authorize('manage', $user);
         $data = $request->validated();
 
         DB::transaction(function () use ($user, $data, $request) {
@@ -141,10 +149,6 @@ class UserController extends Controller
 
             if (array_key_exists('role', $data)) {
                 $role = UserRole::from($data['role']);
-
-                if ($user->id === $request->user()->id && $role !== UserRole::Admin) {
-                    throw DomainException::forbidden('You cannot remove your own administrator role.');
-                }
 
                 $user->role = $role;
 
@@ -163,6 +167,7 @@ class UserController extends Controller
 
     public function suspend(Request $request, User $user, AccountSuspensionService $suspensions): JsonResponse
     {
+        $this->authorize('manage', $user);
         if ($user->id === $request->user()->id || $user->terminated_at !== null) {
             throw DomainException::forbidden('This account cannot be suspended.');
         }
@@ -181,6 +186,7 @@ class UserController extends Controller
 
     public function activate(Request $request, User $user): JsonResponse
     {
+        $this->authorize('manage', $user);
         if ($user->terminated_at !== null) {
             throw DomainException::conflict('A terminated account requires a separate restoration decision.');
         }
@@ -193,6 +199,7 @@ class UserController extends Controller
 
     public function terminate(Request $request, User $user): JsonResponse
     {
+        $this->authorize('manage', $user);
         if ($user->id === $request->user()->id || $user->terminated_at !== null) {
             throw DomainException::forbidden('This account cannot be terminated.');
         }
@@ -213,6 +220,7 @@ class UserController extends Controller
 
     public function restoreTerminated(Request $request, User $user): JsonResponse
     {
+        $this->authorize('manage', $user);
         if ($user->terminated_at === null) {
             throw DomainException::conflict('This account is not terminated.');
         }
@@ -237,6 +245,7 @@ class UserController extends Controller
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
+        $this->authorize('manage', $user);
         if ($user->id === $request->user()->id) {
             throw DomainException::forbidden('You cannot delete your own account from here.');
         }
@@ -250,6 +259,8 @@ class UserController extends Controller
 
     public function restore(Request $request, User $user): JsonResponse
     {
+        $this->authorize('manage', $user);
+        ArchiveAccess::restore($request);
         if (! $user->trashed()) {
             throw DomainException::conflict('This user is not deleted.');
         }
@@ -263,6 +274,7 @@ class UserController extends Controller
 
     public function destroyPermanently(Request $request, User $user): JsonResponse
     {
+        $this->authorize('forceDelete', $user);
         if (! $user->trashed()) {
             throw DomainException::conflict('Move this user to Trash before deleting permanently.');
         }

@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\StoreBarangayRequest;
 use App\Http\Requests\Admin\UpdateBarangayRequest;
 use App\Http\Resources\BarangayResource;
 use App\Support\AdminRecordFilters;
+use App\Support\ArchiveAccess;
 use App\Models\Barangay;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
@@ -26,6 +27,7 @@ class BarangayController extends Controller
 
     public function show(Barangay $barangay): JsonResponse
     {
+        ArchiveAccess::record($barangay);
         return ApiResponse::ok(new BarangayResource($barangay));
     }
 
@@ -82,6 +84,7 @@ class BarangayController extends Controller
 
     public function restore(Request $request, Barangay $barangay): JsonResponse
     {
+        ArchiveAccess::restore($request);
         if (! $barangay->trashed()) {
             throw DomainException::conflict('This barangay is not deleted.');
         }

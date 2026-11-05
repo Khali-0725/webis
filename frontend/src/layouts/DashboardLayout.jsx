@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Icon } from '@/components/ui/Icon';
-import { Avatar } from '@/components/ui/Avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { notificationApi } from '@/services/api/notificationApi';
@@ -127,17 +126,6 @@ export function DashboardLayout({ title }) {
                 <Icon name="bell" />
               </button>
             )}
-            <Link to="/profile" aria-label="Open profile settings" title="Profile settings" className="flex min-w-0 items-center gap-2 rounded-lg p-1 hover:bg-canvas">
-              <Avatar
-                initials={user?.initials}
-                name={user?.full_name}
-                src={user?.avatar_url}
-                size="sm"
-              />
-              <span className="hidden text-sm font-medium text-ink sm:block">
-                {user?.full_name}
-              </span>
-            </Link>
           </div>
         </header>
 

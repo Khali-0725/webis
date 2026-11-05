@@ -10,6 +10,7 @@ use App\Http\Resources\Admin\ProviderProfileResource;
 use App\Http\Resources\ServiceResource;
 use App\Models\ProviderProfile;
 use App\Support\AdminRecordFilters;
+use App\Support\ArchiveAccess;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
 use App\Support\TrashFilter;
@@ -49,6 +50,7 @@ class ProviderController extends Controller
 
     public function show(ProviderProfile $providerProfile): JsonResponse
     {
+        ArchiveAccess::record($providerProfile);
         $providerProfile->load(['user', 'baseBarangay', 'skills', 'serviceAreas', 'verificationDocuments']);
 
         $data = (new ProviderProfileResource($providerProfile))->resolve();
@@ -93,6 +95,7 @@ class ProviderController extends Controller
 
     public function restore(Request $request, ProviderProfile $providerProfile): JsonResponse
     {
+        ArchiveAccess::restore($request);
         if (! $providerProfile->trashed()) {
             throw DomainException::conflict('This provider is not deleted.');
         }

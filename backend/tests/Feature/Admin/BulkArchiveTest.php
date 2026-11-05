@@ -12,7 +12,7 @@ class BulkArchiveTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_only_admin_can_bulk_archive_eligible_services_with_per_record_audit(): void
+    public function test_admin_can_bulk_soft_archive_eligible_services_with_per_record_audit(): void
     {
         $admin = User::factory()->admin()->create();
         $client = User::factory()->client()->create();
@@ -32,7 +32,7 @@ class BulkArchiveTest extends TestCase
 
     public function test_bulk_archive_is_atomic_when_selection_contains_an_ineligible_record(): void
     {
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->superAdmin()->create();
         $first = Service::factory()->create();
         $second = Service::factory()->create();
         $second->delete();
@@ -59,5 +59,17 @@ class BulkArchiveTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'review.archived', 'auditable_id' => $review->id]);
         $this->actingAs($admin)->postJson("/api/admin/reviews/{$review->id}/restore")
             ->assertOk()->assertJsonPath('data.is_visible', false);
+    }
+
+    public function test_super_admin_cannot_bulk_archive_reviews(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $review = Review::factory()->create();
+
+        $this->actingAs($super)->postJson('/api/admin/records/reviews/bulk-archive', [
+            'ids' => [$review->id], 'reason' => 'Contains personal details.',
+        ])->assertForbidden();
+
+        $this->assertNotSoftDeleted('reviews', ['id' => $review->id]);
     }
 }

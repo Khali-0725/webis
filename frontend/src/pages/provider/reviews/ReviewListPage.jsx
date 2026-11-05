@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { StarRating } from '@/components/ui/StarRating';
@@ -11,30 +10,11 @@ import { reviewApi } from '@/services/api/reviewApi';
 import { queryKeys } from '@/services/api/queryClient';
 
 export default function ReviewListPage() {
-  const queryClient = useQueryClient();
-  const [replyDrafts, setReplyDrafts] = useState({});
-  const [openReplyFor, setOpenReplyFor] = useState(null);
   const [page, setPage] = useState(1);
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.provider.reviews({ page }),
     queryFn: () => reviewApi.providerReviews({ page }),
-  });
-
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['provider', 'reviews'] });
-
-  const replyMutation = useMutation({
-    mutationFn: ({ id, text }) => reviewApi.reply(id, text),
-    onSuccess: (_, { id }) => {
-      invalidate();
-      setOpenReplyFor(null);
-      setReplyDrafts((current) => ({ ...current, [id]: '' }));
-    },
-  });
-
-  const removeReplyMutation = useMutation({
-    mutationFn: (id) => reviewApi.removeReply(id),
-    onSuccess: invalidate,
   });
 
   return (
@@ -72,57 +52,6 @@ export default function ReviewListPage() {
                 </div>
               )}
 
-              <div className="mt-2 flex flex-wrap gap-2">
-                {!review.provider_reply && openReplyFor !== review.id && (
-                  <Button size="sm" variant="outline" onClick={() => setOpenReplyFor(review.id)}>
-                    Reply
-                  </Button>
-                )}
-                {review.provider_reply && openReplyFor !== review.id && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setReplyDrafts((current) => ({ ...current, [review.id]: review.provider_reply }));
-                        setOpenReplyFor(review.id);
-                      }}
-                    >
-                      Edit reply
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="subtle"
-                      loading={removeReplyMutation.isPending && removeReplyMutation.variables === review.id}
-                      onClick={() => removeReplyMutation.mutate(review.id)}
-                    >
-                      Remove reply
-                    </Button>
-                  </>
-                )}
-              </div>
-
-              {openReplyFor === review.id && (
-                <div className="mt-2 space-y-2">
-                  <textarea
-                    rows={2}
-                    value={replyDrafts[review.id] ?? ''}
-                    onChange={(event) =>
-                      setReplyDrafts((current) => ({ ...current, [review.id]: event.target.value }))
-                    }
-                    placeholder="Write a reply"
-                    className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-navy-500 focus:outline-none"
-                  />
-                  <Button
-                    size="sm"
-                    loading={replyMutation.isPending}
-                    onClick={() => replyMutation.mutate({ id: review.id, text: replyDrafts[review.id] })}
-                    disabled={!replyDrafts[review.id]}
-                  >
-                    Post reply
-                  </Button>
-                </div>
-              )}
             </li>
           ))}
         </ul>

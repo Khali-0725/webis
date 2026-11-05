@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -29,6 +29,8 @@ function FitPins({ pins }) {
 }
 
 export default function ProviderMapPage() {
+  const { pathname } = useLocation();
+  const providerPath = pathname.startsWith('/client/') ? '/client/providers' : '/providers';
   const [municipality, setMunicipality] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const { data: barangays = [] } = useQuery({ queryKey: ['public', 'barangays'], queryFn: publicApi.listBarangays });
@@ -40,7 +42,7 @@ export default function ProviderMapPage() {
   return <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div><h1 className="font-display text-2xl font-bold text-navy-800">Provider map</h1><p className="mt-1 text-sm text-ink-muted">Browse verified providers by public service area.</p></div>
-      <Link to="/providers" className="text-sm font-semibold text-brand hover:underline">List view</Link>
+      <Link to={providerPath} className="text-sm font-semibold text-brand hover:underline">List view</Link>
     </div>
     <div className="my-5 flex flex-wrap gap-3">
       <label className="text-sm text-ink-muted">Municipality <select value={municipality} onChange={(e) => setMunicipality(e.target.value)} className="mt-1 block h-10 rounded-lg border border-line bg-white px-3 text-ink"><option value="">All municipalities</option>{municipalities.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
@@ -53,7 +55,7 @@ export default function ProviderMapPage() {
         <MapContainer center={[14.3292, 120.8553]} zoom={11} className="h-full w-full">
           <FitPins pins={pins} />
           <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {pins.map((pin) => <Marker key={`${pin.provider_id}-${pin.barangay}`} position={[Number(pin.latitude), Number(pin.longitude)]} icon={pinIcon}><Popup><strong>{pin.business_name}</strong><br />Serves {pin.barangay}, {pin.municipality}<br /><Link to={`/providers/${pin.provider_id}`}>View profile and services</Link></Popup></Marker>)}
+          {pins.map((pin) => <Marker key={`${pin.provider_id}-${pin.barangay}`} position={[Number(pin.latitude), Number(pin.longitude)]} icon={pinIcon}><Popup><strong>{pin.business_name}</strong><br />Serves {pin.barangay}, {pin.municipality}<br /><Link to={`${providerPath}/${pin.provider_id}`}>View profile and services</Link></Popup></Marker>)}
         </MapContainer>
       </div>
       <p className="mt-3 text-xs text-ink-muted">Pins use approximate barangay centers, not home addresses. A pin does not guarantee availability or safety; confirm details with the provider before booking.</p>

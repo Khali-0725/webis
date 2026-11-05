@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ReplyToReviewRequest;
 use App\Http\Requests\StoreReviewRequest;
 use App\Http\Resources\ReviewResource;
 use App\Models\Booking;
@@ -15,7 +14,7 @@ use Illuminate\Http\Request;
 
 /**
  * Not audience-namespaced: client, provider, and (for listing) admin all
- * touch the same `reviews` resource, scoped by ReviewPolicy/BookingPolicy -
+ * touch the same `reviews` resource, scoped by BookingPolicy -
  * same shape as BookingController/PaymentController/ConversationController.
  */
 class ReviewController extends Controller
@@ -78,27 +77,6 @@ class ReviewController extends Controller
             ->paginate(config('webis.pagination.default'));
 
         return ApiResponse::paginated($reviews, ReviewResource::class);
-    }
-
-    public function reply(ReplyToReviewRequest $request, Review $review): JsonResponse
-    {
-        $this->authorize('reply', $review);
-
-        $updated = $this->reviews->reply($review, $request->validated('provider_reply'));
-
-        return ApiResponse::ok(new ReviewResource($updated->load(['client', 'booking.service'])), 'Reply posted.');
-    }
-
-    /**
-     * DELETE /reviews/{review}/reply - the provider removes their reply.
-     */
-    public function removeReply(Request $request, Review $review): JsonResponse
-    {
-        $this->authorize('reply', $review);
-
-        $updated = $this->reviews->removeReply($review);
-
-        return ApiResponse::ok(new ReviewResource($updated->load(['client', 'booking.service'])), 'Reply removed.');
     }
 
 }

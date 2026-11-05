@@ -1,10 +1,10 @@
 import { cn } from '@/utils/cn';
 
-export function Card({ title, action, className, children, ...props }) {
+export function Card({ title, action, className, bodyClassName, children, ...props }) {
   return (
     <section className={cn('webis-card', className)} {...props}>
       {title && <CardHeader title={title} action={action} />}
-      {title ? <CardBody>{children}</CardBody> : children}
+      {title ? <CardBody className={bodyClassName}>{children}</CardBody> : children}
     </section>
   );
 }

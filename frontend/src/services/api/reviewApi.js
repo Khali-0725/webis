@@ -35,15 +35,4 @@ export const reviewApi = {
     return { items: unwrap(response), meta: unwrapMeta(response) };
   },
 
-  /** POST /api/reviews/{id}/reply */
-  async reply(reviewId, providerReply) {
-    const response = await api.post(`/reviews/${reviewId}/reply`, { provider_reply: providerReply });
-    return unwrap(response);
-  },
-
-  /** DELETE /api/reviews/{id}/reply - the provider removes their reply */
-  async removeReply(reviewId) {
-    const response = await api.delete(`/reviews/${reviewId}/reply`);
-    return unwrap(response);
-  },
 };

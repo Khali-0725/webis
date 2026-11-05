@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
@@ -9,6 +9,8 @@ import { publicApi } from '@/services/api/publicApi';
 import { queryKeys } from '@/services/api/queryClient';
 
 export default function ProvidersPage() {
+  const { pathname } = useLocation();
+  const providerPath = pathname.startsWith('/client/') ? '/client/providers' : '/providers';
   const [search, setSearch] = useState('');
   const [barangayId, setBarangayId] = useState('');
   const [municipality, setMunicipality] = useState('');
@@ -47,7 +49,7 @@ export default function ProvidersPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <div className="flex items-center justify-between gap-3"><h1 className="font-display text-2xl font-bold text-navy-800">Browse providers</h1><Link to="/providers/map" className="text-sm font-semibold text-brand hover:underline">Map view</Link></div>
+      <div className="flex items-center justify-between gap-3"><h1 className="font-display text-2xl font-bold text-navy-800">Browse providers</h1><Link to={`${providerPath}/map`} className="text-sm font-semibold text-brand hover:underline">Map view</Link></div>
       <p className="mt-1 text-sm text-ink-muted">
         Verified service providers on WEBIS, ranked by rating.
       </p>
@@ -90,7 +92,7 @@ export default function ProvidersPage() {
             {providers.map((provider) => (
               <li key={provider.id}>
                 <Link
-                  to={`/providers/${provider.id}`}
+                  to={`${providerPath}/${provider.id}`}
                   className="webis-card flex items-start justify-between gap-4 p-5"
                 >
                   <div>

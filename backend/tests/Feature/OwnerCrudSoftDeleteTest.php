@@ -210,15 +210,15 @@ class OwnerCrudSoftDeleteTest extends TestCase
         $this->actingAs($stranger)->deleteJson("/api/reviews/{$review->id}")->assertStatus(405);
     }
 
-    public function test_provider_can_remove_their_reply(): void
+    public function test_provider_cannot_remove_their_historical_reply(): void
     {
         [$user, $profile] = $this->provider();
         $review = Review::factory()->withReply()->create(['provider_profile_id' => $profile->id]);
 
         $this->actingAs($user)
             ->deleteJson("/api/reviews/{$review->id}/reply")
-            ->assertOk()
-            ->assertJsonPath('data.provider_reply', null);
+            ->assertStatus(405);
+        $this->assertSame($review->provider_reply, $review->fresh()->provider_reply);
     }
 
     // ------------------------------------------------------------ Messages

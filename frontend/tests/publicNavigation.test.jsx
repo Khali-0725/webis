@@ -10,7 +10,7 @@ function Harness() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route path="/" element={<p>Public home</p>} />
-        <Route path="/providers" element={<p>Provider directory</p>} />
+        <Route path="/about" element={<p>About WEBIS</p>} />
       </Route>
       <Route path="/provider/dashboard" element={<p>Provider dashboard</p>} />
     </Routes>
@@ -20,15 +20,16 @@ function Harness() {
 describe('public mobile navigation', () => {
   beforeEach(() => resetSession());
 
-  it('lets a visitor reach the provider directory and closes after navigation', async () => {
+  it('lets a visitor reach About and closes after navigation', async () => {
     setSession(null);
     const user = userEvent.setup();
     renderWithProviders(<Harness />);
     await user.click(screen.getByRole('button', { name: 'Open public navigation' }));
     const menu = screen.getByRole('navigation', { name: 'Mobile primary' });
     expect(within(menu).getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/login');
-    await user.click(within(menu).getByRole('link', { name: 'Providers' }));
-    expect(await screen.findByText('Provider directory')).toBeInTheDocument();
+    expect(within(menu).queryByRole('link', { name: /services|providers/i })).not.toBeInTheDocument();
+    await user.click(within(menu).getByRole('link', { name: 'About' }));
+    expect(await screen.findByText('About WEBIS')).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Mobile primary' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open public navigation' })).toHaveAttribute('aria-expanded', 'false');
   });

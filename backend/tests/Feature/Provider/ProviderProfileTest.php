@@ -23,10 +23,12 @@ class ProviderProfileTest extends TestCase
         $this->actingAs($user)
             ->patchJson('/api/provider/profile', [
                 'business_name' => 'Josh Plumbing Services',
+                'bio' => 'I repair residential plumbing and explain each job before work begins.',
                 'base_barangay_id' => $barangay->id,
             ])
             ->assertOk()
-            ->assertJsonPath('data.business_name', 'Josh Plumbing Services');
+            ->assertJsonPath('data.business_name', 'Josh Plumbing Services')
+            ->assertJsonPath('data.bio', 'I repair residential plumbing and explain each job before work begins.');
     }
 
     public function test_provider_can_set_birthdate_and_opt_into_public_age(): void

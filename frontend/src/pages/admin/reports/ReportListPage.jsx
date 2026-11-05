@@ -83,7 +83,7 @@ export default function ReportListPage() {
   };
 
   return (
-    <Card title="Reports" action={<TrashToggle value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} />}>
+    <Card title="Reports" action={<TrashToggle superAdminOnly value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} />}>
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}
@@ -149,6 +149,7 @@ export default function ReportListPage() {
                   <td className="py-3 pr-4">
                     <span className="inline-flex flex-wrap items-center gap-1.5">
                       <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>{r.status_label}</Badge>
+                      {r.suspension_review?.eligible && <Badge tone="warning">Suspension review eligible</Badge>}
                       <DeletedBadge deletedAt={r.deleted_at} />
                     </span>
                   </td>
@@ -188,6 +189,11 @@ export default function ReportListPage() {
           <p><strong>Reason:</strong> {viewing.reason_label}</p>
           <p className="whitespace-pre-wrap"><strong>Explanation:</strong> {viewing.details}</p>
           <p><strong>Status:</strong> {viewing.status_label}</p>
+          {viewing.suspension_review && (
+            <p><strong>Provider reports:</strong> {viewing.suspension_review.reporting_clients} of {viewing.suspension_review.completed_clients} completed clients reported.
+              {viewing.suspension_review.eligible && ' Suspension review eligible; an administrator must decide.'}
+            </p>
+          )}
           {viewing.handling_notes && <p className="whitespace-pre-wrap"><strong>Admin notes:</strong> {viewing.handling_notes}</p>}
         </div>}
       </Modal>

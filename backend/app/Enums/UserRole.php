@@ -3,17 +3,18 @@
 namespace App\Enums;
 
 /**
- * The three primary WEBIS roles.
+ * The four primary WEBIS roles.
  *
  * Roles are mutually exclusive and fixed, so they live in a single column on
  * `users` rather than a roles/role_user pivot. A user can never change their
- * own role - only an administrator can, and that action is audited.
+ * own role; administrator account changes require Super Admin and are audited.
  */
 enum UserRole: string
 {
     case Client = 'client';
     case Provider = 'provider';
     case Admin = 'admin';
+    case SuperAdmin = 'super_admin';
 
     public function label(): string
     {
@@ -21,6 +22,7 @@ enum UserRole: string
             self::Client => 'Client',
             self::Provider => 'Service Provider',
             self::Admin => 'Administrator',
+            self::SuperAdmin => 'Super Administrator',
         };
     }
 
@@ -51,6 +53,7 @@ enum UserRole: string
             self::Client => '/client/dashboard',
             self::Provider => '/provider/dashboard',
             self::Admin => '/admin/dashboard',
+            self::SuperAdmin => '/admin/dashboard',
         };
     }
 }

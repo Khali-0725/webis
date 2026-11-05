@@ -11,7 +11,12 @@ class StoreUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isAdmin() ?? false;
+        $actor = $this->user();
+        if (! $actor?->isAdmin()) {
+            return false;
+        }
+
+        return $this->input('role') !== UserRole::Admin->value || $actor->isSuperAdmin();
     }
 
     public function rules(): array
@@ -22,8 +27,8 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'string', 'email:rfc', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'regex:/^(\+?63|0)9\d{9}$/'],
             'barangay_id' => ['nullable', 'exists:barangays,id'],
-            // Unlike self-registration, an admin may create another admin.
-            'role' => ['required', Rule::in(UserRole::values())],
+            // Super Admin accounts are provisioned outside the public API.
+            'role' => ['required', Rule::in([UserRole::Client->value, UserRole::Provider->value, UserRole::Admin->value])],
             'password' => ['required', 'string', Password::min(8)->letters()->numbers()],
         ];
     }

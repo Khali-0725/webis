@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\ResolveReportRequest;
 use App\Http\Resources\Admin\ReportResource;
 use App\Models\Report;
 use App\Support\AdminRecordFilters;
+use App\Support\ArchiveAccess;
 use App\Notifications\AccountEventNotification;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
@@ -71,6 +72,8 @@ class ReportController extends Controller
 
     public function show(Report $report): JsonResponse
     {
+        ArchiveAccess::record($report);
+
         return ApiResponse::ok(new ReportResource($report->load(['reporter', 'handledByUser'])));
     }
 

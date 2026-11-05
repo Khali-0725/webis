@@ -75,11 +75,11 @@ class AdminCrudSoftDeleteTest extends TestCase
             ->assertOk()
             ->assertJsonMissing(['id' => $user->id]);
 
-        $this->actingAs($admin)->getJson('/api/admin/users?trashed=only')
+        $this->actingAs(User::factory()->superAdmin()->create())->getJson('/api/admin/users?trashed=only')
             ->assertOk()
             ->assertJsonFragment(['id' => $user->id]);
 
-        $this->actingAs($admin)->postJson("/api/admin/users/{$user->id}/restore")
+        $this->actingAs(User::factory()->superAdmin()->create())->postJson("/api/admin/users/{$user->id}/restore")
             ->assertOk()
             ->assertJsonPath('data.deleted_at', null);
 
@@ -124,10 +124,10 @@ class AdminCrudSoftDeleteTest extends TestCase
         $this->assertSoftDeleted('service_categories', ['id' => $category->id]);
 
         $this->actingAs($admin)->getJson('/api/admin/categories')->assertJsonMissing(['id' => $category->id]);
-        $this->actingAs($admin)->getJson('/api/admin/categories?trashed=only')->assertJsonFragment(['id' => $category->id]);
+        $this->actingAs(User::factory()->superAdmin()->create())->getJson('/api/admin/categories?trashed=only')->assertJsonFragment(['id' => $category->id]);
         $this->getJson('/api/service-categories')->assertJsonMissing(['id' => $category->id]);
 
-        $this->actingAs($admin)->postJson("/api/admin/categories/{$category->id}/restore")->assertOk();
+        $this->actingAs(User::factory()->superAdmin()->create())->postJson("/api/admin/categories/{$category->id}/restore")->assertOk();
         $this->assertDatabaseHas('service_categories', ['id' => $category->id, 'deleted_at' => null]);
     }
 
@@ -150,7 +150,7 @@ class AdminCrudSoftDeleteTest extends TestCase
         $this->actingAs($admin)->deleteJson("/api/admin/barangays/{$barangay->id}")->assertOk();
         $this->assertSoftDeleted('barangays', ['id' => $barangay->id]);
 
-        $this->actingAs($admin)->postJson("/api/admin/barangays/{$barangay->id}/restore")->assertOk();
+        $this->actingAs(User::factory()->superAdmin()->create())->postJson("/api/admin/barangays/{$barangay->id}/restore")->assertOk();
         $this->assertDatabaseHas('barangays', ['id' => $barangay->id, 'deleted_at' => null]);
     }
 
@@ -179,9 +179,9 @@ class AdminCrudSoftDeleteTest extends TestCase
         $this->actingAs($admin)->deleteJson("/api/admin/services/{$service->id}")->assertOk();
         $this->assertSoftDeleted('services', ['id' => $service->id]);
 
-        $this->actingAs($admin)->getJson('/api/admin/services?trashed=only')->assertJsonFragment(['id' => $service->id]);
+        $this->actingAs(User::factory()->superAdmin()->create())->getJson('/api/admin/services?trashed=only')->assertJsonFragment(['id' => $service->id]);
 
-        $this->actingAs($admin)->postJson("/api/admin/services/{$service->id}/restore")->assertOk();
+        $this->actingAs(User::factory()->superAdmin()->create())->postJson("/api/admin/services/{$service->id}/restore")->assertOk();
         $this->assertDatabaseHas('services', ['id' => $service->id, 'deleted_at' => null]);
     }
 
@@ -214,7 +214,7 @@ class AdminCrudSoftDeleteTest extends TestCase
         $this->assertSoftDeleted('provider_profiles', ['id' => $profile->id]);
         $this->getJson('/api/providers')->assertJsonMissing(['id' => $profile->id]);
 
-        $this->actingAs($admin)->postJson("/api/admin/providers/{$profile->id}/restore")->assertOk();
+        $this->actingAs(User::factory()->superAdmin()->create())->postJson("/api/admin/providers/{$profile->id}/restore")->assertOk();
         $this->assertDatabaseHas('provider_profiles', ['id' => $profile->id, 'deleted_at' => null]);
     }
 
@@ -229,9 +229,9 @@ class AdminCrudSoftDeleteTest extends TestCase
         $this->assertSoftDeleted('bookings', ['id' => $booking->id]);
         $this->assertDatabaseHas('audit_logs', ['action' => 'booking.deleted', 'auditable_id' => $booking->id]);
 
-        $this->actingAs($admin)->getJson('/api/bookings?trashed=only')->assertJsonFragment(['id' => $booking->id]);
+        $this->actingAs(User::factory()->superAdmin()->create())->getJson('/api/bookings?trashed=only')->assertJsonFragment(['id' => $booking->id]);
 
-        $this->actingAs($admin)->postJson("/api/bookings/{$booking->id}/restore")->assertOk();
+        $this->actingAs(User::factory()->superAdmin()->create())->postJson("/api/bookings/{$booking->id}/restore")->assertOk();
         $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'deleted_at' => null]);
     }
 
@@ -248,7 +248,7 @@ class AdminCrudSoftDeleteTest extends TestCase
         $this->actingAs($admin)->deleteJson("/api/payments/{$payment->id}")->assertOk();
         $this->assertSoftDeleted('payments', ['id' => $payment->id]);
 
-        $this->actingAs($admin)->postJson("/api/payments/{$payment->id}/restore")->assertOk();
+        $this->actingAs(User::factory()->superAdmin()->create())->postJson("/api/payments/{$payment->id}/restore")->assertOk();
         $this->assertDatabaseHas('payments', ['id' => $payment->id, 'deleted_at' => null]);
     }
 
@@ -268,9 +268,9 @@ class AdminCrudSoftDeleteTest extends TestCase
         $this->actingAs($admin)->deleteJson("/api/admin/reports/{$report->id}")->assertOk();
         $this->assertSoftDeleted('reports', ['id' => $report->id]);
 
-        $this->actingAs($admin)->getJson('/api/admin/reports?trashed=only')->assertJsonFragment(['id' => $report->id]);
+        $this->actingAs(User::factory()->superAdmin()->create())->getJson('/api/admin/reports?trashed=only')->assertJsonFragment(['id' => $report->id]);
 
-        $this->actingAs($admin)->postJson("/api/admin/reports/{$report->id}/restore")->assertOk();
+        $this->actingAs(User::factory()->superAdmin()->create())->postJson("/api/admin/reports/{$report->id}/restore")->assertOk();
         $this->assertDatabaseHas('reports', ['id' => $report->id, 'deleted_at' => null]);
     }
 
@@ -282,7 +282,7 @@ class AdminCrudSoftDeleteTest extends TestCase
         $this->actingAs($admin)->deleteJson("/api/admin/chat-violations/{$violation->id}")->assertOk();
         $this->assertSoftDeleted('chat_violations', ['id' => $violation->id]);
 
-        $this->actingAs($admin)->postJson("/api/admin/chat-violations/{$violation->id}/restore")->assertOk();
+        $this->actingAs(User::factory()->superAdmin()->create())->postJson("/api/admin/chat-violations/{$violation->id}/restore")->assertOk();
         $this->assertDatabaseHas('chat_violations', ['id' => $violation->id, 'deleted_at' => null]);
     }
 
@@ -290,7 +290,7 @@ class AdminCrudSoftDeleteTest extends TestCase
     {
         $category = ServiceCategory::factory()->create();
 
-        $this->actingAs($this->admin())
+        $this->actingAs(User::factory()->superAdmin()->create())
             ->postJson("/api/admin/categories/{$category->id}/restore")
             ->assertStatus(409);
     }

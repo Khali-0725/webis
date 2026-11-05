@@ -51,6 +51,7 @@ const ViolationDetailPage = lazy(() => import('@/pages/admin/violations/Violatio
 const ReportListPage = lazy(() => import('@/pages/admin/reports/ReportListPage'));
 const AuditLogPage = lazy(() => import('@/pages/admin/audit-logs/AuditLogPage'));
 const SettingsPage = lazy(() => import('@/pages/admin/settings/SettingsPage'));
+const CmsPage = lazy(() => import('@/pages/admin/cms/CmsPage'));
 const AnalyticsPage = lazy(() => import('@/pages/admin/analytics/AnalyticsPage'));
 
 const ClientBookingListPage = lazy(() => import('@/pages/client/bookings/BookingListPage'));
@@ -109,6 +110,15 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute allow={[ROLES.CLIENT]} />}>
           <Route path="client/search" element={<DashboardLayout title="Search Services" />}>
             <Route index element={<SearchResultsPage />} />
+          </Route>
+          <Route path="client/providers" element={<DashboardLayout title="Search Providers" />}>
+            <Route index element={<ProvidersPage />} />
+          </Route>
+          <Route path="client/providers/map" element={<DashboardLayout title="Provider Map" />}>
+            <Route index element={<ProviderMapPage />} />
+          </Route>
+          <Route path="client/providers/:id" element={<DashboardLayout title="Provider Details" />}>
+            <Route index element={<PublicProviderProfilePage />} />
           </Route>
           <Route path="client/services/:id" element={<DashboardLayout title="Service Details" />}>
             <Route index element={<ServiceDetailPage />} />
@@ -188,7 +198,7 @@ export function AppRoutes() {
         </Route>
 
         {/* Admin portal */}
-        <Route element={<ProtectedRoute allow={[ROLES.ADMIN]} />}>
+        <Route element={<ProtectedRoute allow={[ROLES.ADMIN, ROLES.SUPER_ADMIN]} />}>
           <Route path="admin" element={<DashboardLayout title="Dashboard" />}>
             <Route path="dashboard" element={<AdminDashboard />} />
           </Route>
@@ -199,7 +209,9 @@ export function AppRoutes() {
             <Route index element={<UserListPage />} />
           </Route>
           <Route path="admin/appeals" element={<DashboardLayout title="Suspension Appeals" />}><Route index element={<AppealListPage />} /></Route>
-          <Route path="admin/reviews" element={<DashboardLayout title="Review Records" />}><Route index element={<AdminReviewListPage />} /></Route>
+          <Route element={<ProtectedRoute allow={[ROLES.ADMIN]} />}>
+            <Route path="admin/reviews" element={<DashboardLayout title="Review Records" />}><Route index element={<AdminReviewListPage />} /></Route>
+          </Route>
           <Route path="admin/providers" element={<DashboardLayout title="Providers" />}>
             <Route index element={<ProviderListPage />} />
           </Route>
@@ -243,17 +255,21 @@ export function AppRoutes() {
         </Route>
 
         {/* Settings */}
-        <Route element={<ProtectedRoute allow={[ROLES.CLIENT, ROLES.PROVIDER, ROLES.ADMIN]} />}>
-          <Route path="profile" element={<DashboardLayout title="Profile Settings" />}>
+        <Route element={<ProtectedRoute allow={[ROLES.CLIENT, ROLES.PROVIDER, ROLES.ADMIN, ROLES.SUPER_ADMIN]} />}>
+          <Route path="profile" element={<DashboardLayout title="My Profile" />}>
             <Route index element={<ProfilePage />} />
           </Route>
         </Route>
 
         {/* Admin Verification */}
-        <Route element={<ProtectedRoute allow={[ROLES.ADMIN]} />}>
+        <Route element={<ProtectedRoute allow={[ROLES.ADMIN, ROLES.SUPER_ADMIN]} />}>
           <Route path="admin/verification" element={<DashboardLayout title="Verifications" />}>
             <Route index element={<AdminVerificationPage />} />
           </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allow={[ROLES.SUPER_ADMIN]} />}>
+          <Route path="admin/cms" element={<DashboardLayout title="Content Management" />}><Route index element={<CmsPage />} /></Route>
         </Route>
 
         {/* Provider Verification */}

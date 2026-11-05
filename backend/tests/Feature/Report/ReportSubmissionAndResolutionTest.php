@@ -60,7 +60,8 @@ class ReportSubmissionAndResolutionTest extends TestCase
     {
         $client = User::factory()->client()->create();
         $provider = ProviderProfile::factory()->verified()->create();
-        $service = Service::factory()->published()->create(['provider_profile_id' => $provider->id]);
+        $otherProvider = ProviderProfile::factory()->verified()->create();
+        $service = Service::factory()->published()->create(['provider_profile_id' => $otherProvider->id]);
 
         foreach ([['provider', $provider->id, ProviderProfile::class], ['service', $service->id, Service::class]] as [$type, $id, $model]) {
             $this->actingAs($client)->postJson('/api/reports', [
@@ -73,6 +74,127 @@ class ReportSubmissionAndResolutionTest extends TestCase
                 'reporter_id' => $client->id, 'reportable_type' => $model, 'reportable_id' => $id,
             ]);
         }
+    }
+
+    public function test_client_cannot_report_the_same_provider_through_another_route_or_after_withdrawing(): void
+    {
+        $client = User::factory()->client()->create();
+        $profile = ProviderProfile::factory()->verified()->create();
+        $service = Service::factory()->published()->create(['provider_profile_id' => $profile->id]);
+        $booking = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+
+        $id = $this->actingAs($client)->postJson('/api/reports', [
+            'reportable_type' => 'service', 'reportable_id' => $service->id,
+            'reason' => ReportReason::Other->value, 'details' => 'First report about this provider.',
+        ])->assertCreated()->json('data.id');
+
+        foreach ([['provider', $profile->id], ['booking', $booking->id], ['user', $profile->user_id]] as [$type, $targetId]) {
+            $this->actingAs($client)->postJson('/api/reports', [
+                'reportable_type' => $type, 'reportable_id' => $targetId,
+                'reason' => ReportReason::Other->value, 'details' => 'Repeated report about the same provider.',
+            ])->assertStatus(409);
+        }
+
+        $this->actingAs($client)->deleteJson("/api/reports/{$id}")->assertOk();
+        $this->actingAs($client)->postJson('/api/reports', [
+            'reportable_type' => 'user', 'reportable_id' => $profile->user_id,
+            'reason' => ReportReason::Other->value, 'details' => 'Repeated report after withdrawal.',
+        ])->assertStatus(409);
+        $this->assertSame(1, Report::withTrashed()->where('reporter_id', $client->id)->count());
+    }
+
+    public function test_provider_cannot_report_same_client_across_bookings_or_after_withdrawing(): void
+    {
+        $profile = ProviderProfile::factory()->verified()->create();
+        $client = User::factory()->client()->create();
+        $first = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+        $second = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+
+        $id = $this->actingAs($profile->user)->postJson('/api/reports', [
+            'reportable_type' => 'booking', 'reportable_id' => $first->id,
+            'reason' => ReportReason::NonPayment->value, 'details' => 'Client did not pay for the work.',
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAs($profile->user)->postJson('/api/reports', [
+            'reportable_type' => 'booking', 'reportable_id' => $second->id,
+            'reason' => ReportReason::Other->value, 'details' => 'Another complaint about the same client.',
+        ])->assertStatus(409);
+
+        $this->actingAs($profile->user)->deleteJson("/api/reports/{$id}")->assertOk();
+        $this->actingAs($profile->user)->postJson('/api/reports', [
+            'reportable_type' => 'user', 'reportable_id' => $client->id,
+            'reason' => ReportReason::Other->value, 'details' => 'Complaint after withdrawing the first one.',
+        ])->assertStatus(409);
+    }
+
+    public function test_admin_sees_suspension_review_eligibility_only_at_ten_reporters_and_eighty_five_percent(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $profile = ProviderProfile::factory()->verified()->create();
+        $reportIds = [];
+
+        for ($i = 0; $i < 20; $i++) {
+            $client = User::factory()->client()->create();
+            Booking::factory()->completed()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+            if ($i === 0) {
+                Booking::factory()->completed()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+            }
+            if ($i < 17) {
+                $reportIds[] = Report::create([
+                    'reporter_id' => $client->id,
+                    'target_user_id' => $profile->user_id,
+                    'reportable_type' => User::class,
+                    'reportable_id' => $profile->user_id,
+                    'reason' => ReportReason::Other,
+                    'details' => 'A completed client complaint.',
+                ])->id;
+            }
+        }
+
+        $this->actingAs($admin)->getJson("/api/admin/reports/{$reportIds[0]}")
+            ->assertOk()
+            ->assertJsonPath('data.suspension_review.eligible', true)
+            ->assertJsonPath('data.suspension_review.reporting_clients', 17)
+            ->assertJsonPath('data.suspension_review.completed_clients', 20);
+
+        Report::findOrFail($reportIds[0])->delete();
+        $this->actingAs($admin)->getJson("/api/admin/reports/{$reportIds[1]}")
+            ->assertOk()
+            ->assertJsonPath('data.suspension_review.eligible', false)
+            ->assertJsonPath('data.suspension_review.reporting_clients', 16)
+            ->assertJsonPath('data.suspension_review.completed_clients', 20);
+
+        $this->assertSame('active', $profile->user->fresh()->status->value);
+    }
+
+    public function test_admin_threshold_excludes_reporters_without_completed_bookings(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $profile = ProviderProfile::factory()->verified()->create();
+        $firstReport = null;
+
+        for ($i = 0; $i < 10; $i++) {
+            $client = User::factory()->client()->create();
+            $booking = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
+            if ($i < 9) {
+                $booking->forceFill(['status' => \App\Enums\BookingStatus::Completed])->save();
+            }
+            $report = Report::create([
+                'reporter_id' => $client->id,
+                'target_user_id' => $profile->user_id,
+                'reportable_type' => Booking::class,
+                'reportable_id' => $booking->id,
+                'reason' => ReportReason::Other,
+                'details' => 'Complaint about a booking.',
+            ]);
+            $firstReport ??= $report;
+        }
+
+        $this->actingAs($admin)->getJson("/api/admin/reports/{$firstReport->id}")
+            ->assertOk()
+            ->assertJsonPath('data.suspension_review.eligible', false)
+            ->assertJsonPath('data.suspension_review.reporting_clients', 9)
+            ->assertJsonPath('data.suspension_review.completed_clients', 9);
     }
 
     public function test_non_public_provider_cannot_be_reported_as_a_public_profile(): void
@@ -217,5 +339,25 @@ class ReportSubmissionAndResolutionTest extends TestCase
             'status' => ReportStatus::Dismissed->value,
             'handling_notes' => 'Attempted duplicate decision.',
         ])->assertStatus(409);
+    }
+
+    public function test_only_super_admin_can_view_an_archived_report(): void
+    {
+        $target = User::factory()->provider()->create();
+        $report = Report::create([
+            'reporter_id' => User::factory()->client()->create()->id,
+            'target_user_id' => $target->id,
+            'reportable_type' => User::class,
+            'reportable_id' => $target->id,
+            'reason' => ReportReason::Other,
+            'details' => 'An archived report for review.',
+        ]);
+        $report->delete();
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->getJson("/api/admin/reports/{$report->id}")->assertForbidden();
+        $this->actingAs(User::factory()->superAdmin()->create())
+            ->getJson("/api/admin/reports/{$report->id}")->assertOk()
+            ->assertJsonPath('data.id', $report->id);
     }
 }

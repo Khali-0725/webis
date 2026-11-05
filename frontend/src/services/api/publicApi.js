@@ -5,6 +5,10 @@ export const publicApi = {
     const response = await api.get('/announcement');
     return unwrap(response);
   },
+  async faqs() {
+    const response = await api.get('/faqs');
+    return unwrap(response) ?? [];
+  },
   /** GET /api/barangays */
   async listBarangays() {
     const response = await api.get('/barangays');

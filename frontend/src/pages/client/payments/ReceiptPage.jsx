@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -12,6 +13,10 @@ const date = (value) => value ? new Date(value).toLocaleString('en-PH', { timeZo
 
 export default function ReceiptPage() {
   const { id } = useParams();
+  const [pdfUrl, setPdfUrl] = useState(null);
+  useEffect(() => () => {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+  }, [pdfUrl]);
   const { data: receipt, isPending, isError, error, refetch } = useQuery({
     queryKey: ['payment-receipt', id],
     queryFn: () => paymentApi.receipt(id),
@@ -44,7 +49,15 @@ export default function ReceiptPage() {
 
   const download = () => {
     const filename = String(receipt.receipt_id || 'WEBIS-receipt').replace(/[^a-zA-Z0-9_-]/g, '-');
-    createReceiptPdf(receipt, fields, designation).save(`${filename}.pdf`);
+    const blob = createReceiptPdf(receipt, fields, designation).output('blob');
+    const url = URL.createObjectURL(blob);
+    setPdfUrl(url);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}.pdf`;
+    document.body.append(link);
+    link.click();
+    link.remove();
   };
 
   return (
@@ -52,6 +65,7 @@ export default function ReceiptPage() {
       <div className="mb-4 flex flex-wrap gap-2">
         <Link to={`/client/bookings/${id}`}><Button variant="outline">Back to booking</Button></Link>
         <Button onClick={download}>Download PDF</Button>
+        {pdfUrl && <a href={pdfUrl} target="_blank" rel="noreferrer" className="self-center text-sm font-semibold text-brand hover:underline">Open PDF</a>}
       </div>
       <Card>
         <div className="border-b border-line pb-5">

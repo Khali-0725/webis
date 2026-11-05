@@ -9,12 +9,14 @@ export const ROLES = Object.freeze({
   CLIENT: 'client',
   PROVIDER: 'provider',
   ADMIN: 'admin',
+  SUPER_ADMIN: 'super_admin',
 });
 
 export const ROLE_LABELS = Object.freeze({
   [ROLES.CLIENT]: 'Client',
   [ROLES.PROVIDER]: 'Service Provider',
   [ROLES.ADMIN]: 'Administrator',
+  [ROLES.SUPER_ADMIN]: 'Super Administrator',
 });
 
 export const USER_STATUS = Object.freeze({
@@ -27,6 +29,7 @@ export const ROLE_HOME = Object.freeze({
   [ROLES.CLIENT]: '/client/dashboard',
   [ROLES.PROVIDER]: '/provider/dashboard',
   [ROLES.ADMIN]: '/admin/dashboard',
+  [ROLES.SUPER_ADMIN]: '/admin/dashboard',
 });
 
 /**

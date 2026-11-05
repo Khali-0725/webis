@@ -11,7 +11,21 @@ class UpdateUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isAdmin() ?? false;
+        $actor = $this->user();
+        $target = $this->route('user');
+        if (! $actor?->isAdmin() || ! $target instanceof \App\Models\User) {
+            return false;
+        }
+
+        if ($target->isSuperAdmin()) {
+            return false;
+        }
+
+        if ($target->role === UserRole::Admin || $this->input('role') === UserRole::Admin->value) {
+            return $actor->isSuperAdmin();
+        }
+
+        return true;
     }
 
     public function rules(): array
@@ -24,7 +38,7 @@ class UpdateUserRequest extends FormRequest
             'email' => ['sometimes', 'required', 'string', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'phone' => ['sometimes', 'nullable', 'string', 'regex:/^(\+?63|0)9\d{9}$/'],
             'barangay_id' => ['sometimes', 'nullable', 'exists:barangays,id'],
-            'role' => ['sometimes', Rule::in(UserRole::values())],
+            'role' => ['sometimes', Rule::in([UserRole::Client->value, UserRole::Provider->value, UserRole::Admin->value])],
             'password' => ['sometimes', 'nullable', 'string', Password::min(8)->letters()->numbers()],
         ];
     }

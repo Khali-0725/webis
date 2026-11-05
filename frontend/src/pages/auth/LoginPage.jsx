@@ -140,7 +140,7 @@ export default function LoginPage() {
             Forgot password?
           </Link>
         </div>
-        {appealEligible && <Link to="/appeal" className="block text-sm font-medium text-brand hover:underline">Appeal an account suspension</Link>}
+        {appealEligible && <Link to="/appeal" className="block text-sm font-medium text-brand hover:underline">Appeal account</Link>}
 
         <Button type="submit" fullWidth loading={isSubmitting || login.isPending}>
           Login

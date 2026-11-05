@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Exceptions\DomainException;
 use App\Models\SystemSetting;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
@@ -33,6 +34,11 @@ class SettingsController extends Controller
             'settings.*.key' => ['required', Rule::in(self::KNOWN_KEYS)],
             'settings.*.value' => ['present'],
         ]);
+
+        if (! $request->user()->isSuperAdmin()
+            && array_intersect(['platform.announcement', 'platform.name'], array_column($data['settings'], 'key'))) {
+            throw DomainException::forbidden('Only a Super Administrator may change public content.');
+        }
 
         foreach ($data['settings'] as $index => $entry) {
             validator($data, [
