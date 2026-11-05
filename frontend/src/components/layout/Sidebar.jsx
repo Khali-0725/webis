@@ -87,7 +87,7 @@ export function Sidebar({ onNavigate }) {
         </Link>
       </div>
 
-      <nav aria-label="Main navigation" className="mt-5 flex-1 overflow-y-auto px-3 pb-4">
+      <nav aria-label="Main navigation" className="sidebar-scroll mt-2 min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         <ul className="space-y-1">
           {items.map((item, index) => (
             <Fragment key={item.to}>

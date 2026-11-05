@@ -20,9 +20,9 @@ export default function ProviderDetailPage() {
   if (isError) return <ErrorState description={error?.message} onRetry={() => refetch()} />;
 
   return (
-    <div className="space-y-5">
-      <Card title={provider.business_name}>
-        <dl className="grid gap-4 sm:grid-cols-2">
+    <div className="max-w-5xl space-y-3">
+      <Card title={provider.business_name || provider.owner?.full_name || 'Provider'} bodyClassName="!pb-4">
+        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-xs uppercase tracking-wide text-ink-muted">Owner</dt>
             <dd className="text-ink">{provider.owner?.full_name}</dd>
@@ -57,7 +57,8 @@ export default function ProviderDetailPage() {
         </dl>
       </Card>
 
-      <Card title="Services">
+      <div className="grid gap-3 lg:grid-cols-2">
+      <Card title="Services" bodyClassName="!pb-4">
         {provider.services?.length ? (
           <ul className="divide-y divide-line">
             {provider.services.map((s) => (
@@ -72,7 +73,7 @@ export default function ProviderDetailPage() {
         )}
       </Card>
 
-      <Card title="Verification Documents">
+      <Card title="Verification Documents" bodyClassName="!pb-4">
         {provider.verification_documents?.length ? (
           <ul className="divide-y divide-line">
             {provider.verification_documents.map((d) => (
@@ -88,6 +89,7 @@ export default function ProviderDetailPage() {
           <p className="text-sm text-ink-muted">No documents submitted.</p>
         )}
       </Card>
+      </div>
     </div>
   );
 }

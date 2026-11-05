@@ -19,13 +19,13 @@ use Illuminate\Support\Str;
 class PasswordService
 {
     /**
-     * Queue a reset-link notification for the given email, if an account
-     * exists. Silently no-ops otherwise - the caller must not use the
-     * return value to infer whether the account exists.
+     * Send a reset-link notification for the given email, if an account
+     * exists. Return the broker status so callers can detect delivery failure
+     * without exposing whether the account exists.
      */
-    public function sendResetLink(string $email): void
+    public function sendResetLink(string $email): string
     {
-        Password::sendResetLink(['email' => $email]);
+        return Password::sendResetLink(['email' => $email]);
     }
 
     /**
