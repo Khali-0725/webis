@@ -23,6 +23,7 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
 # Render provides $PORT at runtime - it is not known at build time, so the
 # app must bind to it in the start command, not bake a fixed port here.
 CMD php artisan migrate --force \
+    && php artisan user:bootstrap-super-admin \
     && php artisan storage:link \
     && php artisan config:cache \
     && php artisan serve --host 0.0.0.0 --port "${PORT:-10000}"
