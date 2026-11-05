@@ -24,8 +24,14 @@ class BootstrapSuperAdmin extends Command
             return self::SUCCESS;
         }
 
-        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 16) {
-            $this->error('Bootstrap requires a valid email and a password of at least 16 characters.');
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->error('Bootstrap email is missing or invalid.');
+
+            return self::FAILURE;
+        }
+
+        if (strlen($password) < 16) {
+            $this->error('Bootstrap password is missing or shorter than 16 characters.');
 
             return self::FAILURE;
         }
