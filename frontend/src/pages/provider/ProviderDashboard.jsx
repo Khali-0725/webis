@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ApiStatusCard } from '@/components/layout/ApiStatusCard';
 import { Alert } from '@/components/ui/Alert';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody, StatCard } from '@/components/ui/Card';
 import { LineChart } from '@/components/ui/LineChart';
@@ -201,7 +202,9 @@ export default function ProviderDashboard() {
             )}
             {verification && (
               <div className="flex items-center gap-3">
-                <Badge tone={verification.tone}>{verification.label}</Badge>
+                {verification.label === 'Verified'
+                  ? <VerifiedBadge verified />
+                  : <Badge tone={verification.tone}>{verification.label}</Badge>}
                 {profileQuery.data.rejection_reason && (
                   <p className="text-xs text-ink-muted">{profileQuery.data.rejection_reason}</p>
                 )}

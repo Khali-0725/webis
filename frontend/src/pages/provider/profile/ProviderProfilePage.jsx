@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { Button } from '@/components/ui/Button';
 import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
@@ -189,9 +190,11 @@ export default function ProviderProfilePage() {
 
       <Card title="Business Profile">
         <div className="mb-4 flex items-center gap-2">
-          <Badge tone={VERIFICATION_STATUS_META[profileQuery.data.verification_status]?.tone ?? 'neutral'}>
-            {profileQuery.data.verification_status === 'approved' ? '✓ Verified provider' : VERIFICATION_STATUS_META[profileQuery.data.verification_status]?.label ?? 'Verification unavailable'}
-          </Badge>
+          {profileQuery.data.verification_status === 'approved'
+            ? <VerifiedBadge verified />
+            : <Badge tone={VERIFICATION_STATUS_META[profileQuery.data.verification_status]?.tone ?? 'neutral'}>
+              {VERIFICATION_STATUS_META[profileQuery.data.verification_status]?.label ?? 'Verification unavailable'}
+            </Badge>}
         </div>
         <form onSubmit={handleProfileSubmit} className="space-y-4">
           <Input

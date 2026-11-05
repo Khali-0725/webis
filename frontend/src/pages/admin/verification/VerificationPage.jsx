@@ -7,6 +7,7 @@ import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/States';
@@ -129,7 +130,9 @@ export default function AdminVerificationPage() {
                   <Link to={`/admin/providers/${profile.id}`} className="font-semibold text-navy-700 hover:underline">{profile.owner_name}</Link>
                   <p className="text-sm text-ink-muted">{profile.business_name || 'Business name not set'}</p>
                 </div>
-                <Badge tone={profile.verification_status === 'approved' ? 'success' : profile.verification_status === 'rejected' ? 'danger' : 'warning'}>{profile.verification_status}</Badge>
+                {profile.verification_status === 'approved'
+                  ? <VerifiedBadge verified />
+                  : <Badge tone={profile.verification_status === 'rejected' ? 'danger' : 'warning'}>{profile.verification_status}</Badge>}
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-sm">
                 <span>Government ID: {profile.required_documents.government_id}</span>

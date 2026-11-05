@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { verificationApi } from '@/services/api/verificationApi';
 import { Badge } from '@/components/ui/Badge';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { useAuth } from '@/hooks/useAuth';
 import { VerificationDocumentPreview } from '@/components/verification/VerificationDocumentPreview';
@@ -73,9 +74,9 @@ export default function ProviderVerificationPage() {
       {statusQuery.data && (
         <div className="mb-5 rounded-lg bg-navy-50 p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-ink">
-            Overall status: <Badge tone={statusQuery.data.verification_status === 'approved' ? 'success' : statusQuery.data.verification_status === 'rejected' ? 'danger' : 'warning'}>
-              {statusQuery.data.verification_status}
-            </Badge>
+            Overall status: {statusQuery.data.verification_status === 'approved'
+              ? <VerifiedBadge verified />
+              : <Badge tone={statusQuery.data.verification_status === 'rejected' ? 'danger' : 'warning'}>{statusQuery.data.verification_status}</Badge>}
           </div>
           {statusQuery.data.rejection_reason && <p className="mt-2 text-sm text-ink-muted">Reason: {statusQuery.data.rejection_reason}</p>}
           <ul className="mt-3 space-y-1 text-sm text-ink-muted">
