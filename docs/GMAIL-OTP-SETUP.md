@@ -93,6 +93,13 @@ php artisan config:clear
 3. Ilagay ang code sa loob ng 10 minutes at mag-set ng bagong password.
 4. Subukang mag-login gamit ang bagong password.
 
+Pagkatapos ng successful reset, may hiwalay na **Your WEBIS password was changed**
+email na may sign-in button at paalala kung hindi ikaw ang nagpalit. Hindi kasama
+ang password o OTP sa confirmation. Kasama rin ito sa daily email quota, kaya
+karaniwang dalawang email ang isang kumpletong reset: OTP at confirmation.
+Successful pa rin ang password change kung pumalya ang confirmation email;
+naka-log ang delivery failure para ma-check.
+
 Huwag baguhin ang password ng ibang tao para mag-test. Gumamit ng sarili mong
 test account. Hindi kailangang Google account ang recipient, at hindi kailangang
 recipient mismo ang mag-authorize sa Google.

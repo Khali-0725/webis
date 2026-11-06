@@ -1561,3 +1561,26 @@ quota exhaustion and send failures. Changed PHP files pass Pint.
 Activation is separate from code validation: Google account permission, the
 shared secret, Google web deployment and Render configuration must be completed
 before claiming live OTP delivery works. No live-delivery claim is made here.
+
+**Activation verified:** the Google web app was deployed using the user's shared
+editor account, the matching secret was configured on Google and Render, and
+Render successfully deployed the HTTPS mail settings. The live Forgot Password
+request advanced to code entry, and the user confirmed receipt with a screenshot
+of the WEBIS OTP email. Local `.env` also uses the same HTTPS mailer; secrets are
+kept outside Git.
+
+**Follow-up — password change confirmation.** After a successful OTP password
+reset, `PasswordChangedNotification` sends a separate confirmation email with a
+sign-in link and instructions if the recipient did not make the change. It
+contains no password or OTP. `PasswordResetOtpService` schedules this with
+`DB::afterCommit`, so rejected or rolled-back resets send no confirmation. A
+notification delivery failure is logged without undoing the committed reset or
+returning a reset failure. No queue worker or Google script changes are needed.
+
+Validation: 409 backend tests passed (1,369 assertions). Coverage includes one
+confirmation per successful reset, no duplicate for a reused grant, no email for
+an expired grant or rolled-back transaction, correct frontend sign-in link,
+signed Google delivery, and successful password persistence when the confirmation
+hits the Google quota limit. The live confirmation email still requires a real
+password reset after deploying this follow-up; no real user's password was
+changed during automated verification.

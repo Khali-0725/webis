@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Exceptions\DomainException;
 use App\Models\User;
+use App\Notifications\PasswordChangedNotification;
 use App\Notifications\PasswordResetCodeNotification;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class PasswordResetOtpService
 {
@@ -87,6 +90,15 @@ class PasswordResetOtpService
             DB::table('password_reset_tokens')->where('email', $email)->delete();
             DB::table('sessions')->where('user_id', $user->id)->delete();
             event(new PasswordReset($user));
+
+            DB::afterCommit(function () use ($user): void {
+                try {
+                    $user->notify(new PasswordChangedNotification);
+                } catch (Throwable) {
+                    // A delivery failure must not turn a committed password change into a failed reset.
+                    Log::warning('Password change confirmation email delivery failed', ['user_id' => $user->id]);
+                }
+            });
         });
     }
 }

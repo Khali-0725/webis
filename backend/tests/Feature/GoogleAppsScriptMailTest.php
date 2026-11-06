@@ -17,10 +17,12 @@ class GoogleAppsScriptMailTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->freezeTime();
         config([
             'mail.default' => 'google_apps_script',
             'mail.mailers.google_apps_script.endpoint' => self::URL,
             'mail.mailers.google_apps_script.secret' => str_repeat('a', 64),
+            'webis.frontend_url' => 'https://webis.example',
         ]);
         Http::preventStrayRequests();
     }
@@ -51,7 +53,39 @@ class GoogleAppsScriptMailTest extends TestCase
             'password' => 'NewPassword123!', 'password_confirmation' => 'NewPassword123!',
         ])->assertOk();
         $this->assertTrue(Hash::check('NewPassword123!', $user->fresh()->password));
-        Http::assertSentCount(1);
+        Http::assertSentCount(2);
+        $confirmation = Http::recorded()[1][0];
+        $confirmationPayload = json_decode($confirmation['payload'], true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame($user->email, $confirmationPayload['to']);
+        $this->assertSame('Your WEBIS password was changed', $confirmationPayload['subject']);
+        $this->assertStringContainsString('changed successfully', $confirmationPayload['text']);
+        $this->assertStringContainsString('If you did not make this change', $confirmationPayload['text']);
+        $this->assertStringContainsString('https://webis.example/login', $confirmationPayload['html']);
+        $this->assertStringNotContainsString('NewPassword123!', $confirmation['payload']);
+        $this->assertStringNotContainsString($match[0], $confirmationPayload['text']);
+        $this->assertSame(hash_hmac('sha256', $confirmation['payload'], str_repeat('a', 64)), $confirmation['signature']);
+    }
+
+    public function test_confirmation_delivery_failure_does_not_undo_a_successful_password_reset(): void
+    {
+        Http::fake([self::URL => Http::sequence()
+            ->push(['ok' => true])
+            ->push(['ok' => false, 'error' => 'quota_exceeded'])]);
+        $user = User::factory()->create();
+        $this->postJson('/api/auth/forgot-password', ['email' => $user->email])->assertOk();
+        $payload = json_decode(Http::recorded()[0][0]['payload'], true, flags: JSON_THROW_ON_ERROR);
+        preg_match('/\b\d{6}\b/', $payload['text'], $match);
+        $grant = $this->postJson('/api/auth/verify-reset-code', ['email' => $user->email, 'code' => $match[0]])
+            ->assertOk()->json('data.grant');
+
+        $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email, 'grant' => $grant,
+            'password' => 'NewPassword123!', 'password_confirmation' => 'NewPassword123!',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('NewPassword123!', $user->fresh()->password));
+        $this->assertDatabaseMissing('password_reset_challenges', ['email' => $user->email]);
+        Http::assertSentCount(2);
     }
 
     public function test_google_rejection_returns_503_and_rolls_back_the_challenge(): void
