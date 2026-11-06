@@ -105,11 +105,4 @@ class User extends Authenticatable implements MustVerifyEmail
     public function auditLogs(): HasMany { return $this->hasMany(AuditLog::class, 'actor_id'); }
     public function clientPayments(): HasMany { return $this->hasMany(Payment::class, 'client_id'); }
 
-    /**
-     * Points the reset link at the React SPA rather than a Blade route.
-     */
-    public function sendPasswordResetNotification($token): void
-    {
-        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
-    }
 }

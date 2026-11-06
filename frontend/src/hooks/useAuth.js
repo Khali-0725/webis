@@ -104,6 +104,10 @@ export function useForgotPassword() {
   return useMutation({ mutationFn: authApi.forgotPassword });
 }
 
+export function useVerifyResetCode() {
+  return useMutation({ mutationFn: authApi.verifyResetCode });
+}
+
 export function useResetPassword() {
   return useMutation({ mutationFn: authApi.resetPassword });
 }

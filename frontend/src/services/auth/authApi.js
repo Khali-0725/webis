@@ -41,6 +41,13 @@ export const authApi = {
     return unwrap(response);
   },
 
+  /** POST /api/auth/verify-reset-code */
+  async verifyResetCode({ email, code }) {
+    const response = await api.post('/auth/verify-reset-code', { email, code });
+
+    return unwrap(response);
+  },
+
   /** POST /api/auth/reset-password */
   async resetPassword(payload) {
     const response = await api.post('/auth/reset-password', payload);

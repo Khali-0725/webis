@@ -110,6 +110,10 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
         ->middleware('throttle:auth')
         ->name('password.email');
 
+    Route::post('/verify-reset-code', [PasswordResetController::class, 'verifyCode'])
+        ->middleware('throttle:auth')
+        ->name('password.verify-code');
+
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])
         ->middleware('throttle:auth')
         ->name('password.update');
