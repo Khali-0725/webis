@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Mail\GoogleAppsScriptTransport;
 use App\Support\Api\ApiResponse;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +24,11 @@ class AppServiceProvider extends ServiceProvider
         $this->configureModels();
         $this->configureRateLimiting();
         $this->configureUrls();
+
+        Mail::extend('google_apps_script', fn (array $config) => new GoogleAppsScriptTransport(
+            (string) ($config['endpoint'] ?? ''),
+            (string) ($config['secret'] ?? ''),
+        ));
     }
 
     /**

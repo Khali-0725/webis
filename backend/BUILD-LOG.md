@@ -1531,3 +1531,33 @@ wasn't running when this was built; user still needs to run
   `frontend/src/utils/date.js`.
 
 Backend 295/295, frontend lint/tests(26/26)/build clean.
+
+### 2026-11-06 — Gmail delivery over HTTPS for Render Free
+
+Added the opt-in `google_apps_script` mail transport. It sends existing Laravel
+notification emails through a signed Google Apps Script web app, avoiding blocked
+SMTP ports and a paid sender domain. OTP generation, hashing, expiry, resend
+cooldown and reset grants remain in the existing password reset service.
+
+`app/Mail/GoogleAppsScriptTransport.php` signs timestamped payloads, requires a
+Google `/exec` endpoint and a 32-character minimum shared secret, and rejects
+HTTP errors, Google sign-in HTML and unsuccessful relay responses. It does not
+retry delivery automatically or log signed payloads. This transport supports
+individual notifications without attachments, CC or BCC; unsupported messages
+fail explicitly instead of silently dropping content.
+
+`docs/google-apps-script/Code.gs` validates signatures and request age, persists
+request IDs within the validity window to prevent duplicate sends, checks quota,
+and uses MailApp to send text and HTML from the deploying Google account.
+`docs/GMAIL-OTP-SETUP.md` covers Google permission, shared secret, web deployment,
+Render environment settings and live verification. Personal Google accounts
+currently have a 100-recipient/day Apps Script quota shared with other scripts.
+
+Validation: 407 backend tests passed (1,347 assertions), including 7 new HTTPS
+mailer/OTP integration tests. Four Node tests exercise the actual Google script
+with simulated Google services, including tampering, expired requests, replay,
+quota exhaustion and send failures. Changed PHP files pass Pint.
+
+Activation is separate from code validation: Google account permission, the
+shared secret, Google web deployment and Render configuration must be completed
+before claiming live OTP delivery works. No live-delivery claim is made here.

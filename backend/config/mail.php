@@ -37,6 +37,12 @@ return [
 
     'mailers' => [
 
+        'google_apps_script' => [
+            'transport' => 'google_apps_script',
+            'endpoint' => env('GOOGLE_APPS_SCRIPT_URL'),
+            'secret' => env('GOOGLE_APPS_SCRIPT_SECRET'),
+        ],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
