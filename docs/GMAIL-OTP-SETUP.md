@@ -13,6 +13,9 @@ tingnan din ang Spam folder.
 ## 1. Gumawa ng Google project
 
 1. Buksan ang <https://script.google.com/> gamit ang Gmail na magiging sender.
+   Kung maraming Google accounts ang naka-sign in, gumamit ng InPrivate/incognito
+   window at mag-sign in lang sa sender account. May kilalang Apps Script
+   authorization issues ang multi-login, kabilang ang failed approval redirects.
 2. Piliin ang **New project** at pangalanang **WEBIS Gmail OTP**.
 3. Palitan ang laman ng `Code.gs` gamit ang buong code sa
    [google-apps-script/Code.gs](google-apps-script/Code.gs). I-save.
@@ -130,3 +133,4 @@ email delivery; the real-account test above is still required after deployment.
 Sources: [Google web apps](https://developers.google.com/apps-script/guides/web),
 [MailApp](https://developers.google.com/apps-script/reference/mail/mail-app),
 [Google quotas](https://developers.google.com/apps-script/guides/services/quotas).
+[Multi-account troubleshooting](https://developers.google.com/apps-script/guides/support/troubleshooting#issues_with_multiple_google_accounts).
