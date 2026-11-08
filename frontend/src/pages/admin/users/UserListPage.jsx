@@ -158,8 +158,20 @@ export default function UserListPage() {
         </Alert>
       )}
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-[auto_1fr_1fr_1fr]">
+      <AdminRecordFilters className="xl:gap-2" value={recordFilters} inTrash={inTrash} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }}>
         <TrashToggle superAdminOnly value={filters.trashed} onChange={(trashed) => updateFilter({ trashed })} />
+        <label className="grid min-w-0 gap-1 text-xs font-medium text-ink-muted sm:w-44">
+          Search users
+          <input
+            aria-label="Search users by name or email"
+            className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink"
+            placeholder="Name or email"
+            value={filters.search}
+            onChange={(e) => updateFilter({ search: e.target.value })}
+          />
+        </label>
+        <label className="grid gap-1 text-xs font-medium text-ink-muted sm:w-36">
+          Role
         <select
           aria-label="Filter by role"
           className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"
@@ -172,6 +184,9 @@ export default function UserListPage() {
             </option>
           ))}
         </select>
+        </label>
+        <label className="grid gap-1 text-xs font-medium text-ink-muted sm:w-36">
+          Status
         <select
           aria-label="Filter by status"
           className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none"
@@ -184,15 +199,8 @@ export default function UserListPage() {
             </option>
           ))}
         </select>
-        <Input
-          aria-label="Search users by name or email"
-          placeholder="Search name or email"
-          value={filters.search}
-          onChange={(e) => updateFilter({ search: e.target.value })}
-        />
-      </div>
-
-      <AdminRecordFilters value={recordFilters} inTrash={inTrash} onChange={(patch) => { setRecordFilters({ ...recordFilters, ...patch }); setPage(1); }} />
+        </label>
+      </AdminRecordFilters>
 
       {isPending && <LoadingState label="Loading users…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}

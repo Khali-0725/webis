@@ -12,6 +12,15 @@ class ReviewListingTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_provider_review_identifies_the_reviewed_booking(): void
+    {
+        $profile = ProviderProfile::factory()->verified()->create();
+        $review = Review::factory()->create(['provider_profile_id' => $profile->id]);
+        $this->actingAs($profile->user)->getJson('/api/provider/reviews')->assertOk()
+            ->assertJsonPath('data.0.booking_reference', $review->booking->booking_code)
+            ->assertJsonPath('data.0.scheduled_date', $review->booking->scheduled_date->toDateString());
+    }
+
     public function test_public_provider_reviews_only_returns_visible_ones_with_a_distribution(): void
     {
         $profile = ProviderProfile::factory()->create();

@@ -57,7 +57,7 @@ export default function ProviderVerificationPage() {
   };
 
   return (
-    <Card title="Provider verification" className="mx-auto max-w-2xl">
+    <Card title={<span className="inline-flex flex-wrap items-center gap-2">Provider verification {statusQuery.data?.verification_status === 'approved' && <VerifiedBadge verified />}</span>} className="mx-auto max-w-2xl">
       <p className="mb-4 text-sm text-ink-muted">
         Upload a government-issued ID and a business permit. An administrator reviews each document, then makes a final provider decision. Business features remain unavailable until approval.
       </p>
@@ -73,11 +73,9 @@ export default function ProviderVerificationPage() {
       {statusQuery.isError && <ErrorState description={statusQuery.error?.message} onRetry={() => statusQuery.refetch()} />}
       {statusQuery.data && (
         <div className="mb-5 rounded-lg bg-navy-50 p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-ink">
-            Overall status: {statusQuery.data.verification_status === 'approved'
-              ? <VerifiedBadge verified />
-              : <Badge tone={statusQuery.data.verification_status === 'rejected' ? 'danger' : 'warning'}>{statusQuery.data.verification_status}</Badge>}
-          </div>
+          {statusQuery.data.verification_status !== 'approved' && <div className="flex items-center gap-2 text-sm font-medium text-ink">
+            Overall status: <Badge tone={statusQuery.data.verification_status === 'rejected' ? 'danger' : 'warning'}>{statusQuery.data.verification_status}</Badge>
+          </div>}
           {statusQuery.data.rejection_reason && <p className="mt-2 text-sm text-ink-muted">Reason: {statusQuery.data.rejection_reason}</p>}
           <ul className="mt-3 space-y-1 text-sm text-ink-muted">
             {['government_id', 'business_permit'].map((requiredType) => {

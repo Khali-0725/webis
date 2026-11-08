@@ -1584,3 +1584,25 @@ signed Google delivery, and successful password persistence when the confirmatio
 hits the Google quota limit. The live confirmation email still requires a real
 password reset after deploying this follow-up; no real user's password was
 changed during automated verification.
+
+### 2026-11-08 — Professor feedback corrections
+
+See `docs/PROFESSOR-REVISIONS-2026-11-08.md` for the complete feedback-to-change
+mapping. Booking lists now filter client names and booking references before
+pagination. Review resources expose booking references and scheduled dates.
+Reactivating a service preserves its original publication date; the frontend
+exposes the existing publish endpoint as Activate for paused published services.
+
+Reports default to all statuses so closed decisions remain discoverable.
+Existing row locking already prevents resolved cases returning to reviewing;
+the complaint is covered by an explicit stale-action regression. Chat warnings
+now notify the account, and warn/suspend actions enforce the existing user
+management policy, closing a privilege gap for moderation of admin accounts.
+
+Verification keeps required-document checks and separate final provider approval;
+the existing final approval action is made discoverable in the frontend.
+No schema changes or new external service are involved.
+
+Validation: 415 backend tests (1,402 assertions) and 92 frontend tests passed;
+frontend lint/build and the scoped UI detector passed. Live layout checks are
+recorded separately in the revision checklist after deployment.

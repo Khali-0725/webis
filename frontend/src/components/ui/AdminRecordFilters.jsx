@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cn } from '@/utils/cn';
 
 const localDate = (date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
 
@@ -9,7 +10,7 @@ function monthsAgo(today, count) {
   return first;
 }
 
-export function AdminRecordFilters({ value, onChange, inTrash = false, dateFieldLabel, children }) {
+export function AdminRecordFilters({ value, onChange, inTrash = false, dateFieldLabel, children, className }) {
   const [datePreset, setDatePreset] = useState(value.start_date || value.end_date ? 'custom' : 'all');
   const update = (key, next) => onChange({ [key]: next });
   const dateLabel = dateFieldLabel ?? (inTrash ? 'Archived' : 'Created');
@@ -23,7 +24,7 @@ export function AdminRecordFilters({ value, onChange, inTrash = false, dateField
   };
 
   return (
-    <div data-testid="admin-filter-toolbar" className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end 2xl:flex-nowrap print:hidden">
+    <div data-testid="admin-filter-toolbar" className={cn('mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end 2xl:flex-nowrap print:hidden', className)}>
       {children}
       <label className="grid gap-1 text-xs font-medium text-ink-muted">
         Sort records

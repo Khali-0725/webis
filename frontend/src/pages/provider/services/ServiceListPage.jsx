@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { IconActionButton } from '@/components/ui/IconActionButton';
+import { IconActionLink } from '@/components/ui/IconActionLink';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { Card } from '@/components/ui/Card';
@@ -45,7 +46,7 @@ export default function ServiceListPage() {
     mutationFn: providerApi.restoreService,
     onSuccess: () => {
       invalidate();
-      setNotice({ tone: 'success', message: 'Service restored. It comes back as it was - re-publish it if it was live before.' });
+      setNotice({ tone: 'success', message: 'Service restored with its previous publication and activation status.' });
     },
     onError: onError('Failed to restore service.'),
   });
@@ -140,8 +141,8 @@ export default function ServiceListPage() {
                         <DeletedBadge deletedAt={service.deleted_at} />
                       ) : (
                         <>
-                          <Badge tone={service.is_published ? 'success' : 'neutral'}>
-                            {service.is_published ? 'Published' : 'Draft'}
+                          <Badge tone={service.is_published && service.is_active ? 'success' : 'neutral'}>
+                            {service.is_published ? (service.is_active ? 'Published' : 'Publication paused') : 'Draft'}
                           </Badge>
                           {!service.is_active && <Badge tone="danger">Inactive</Badge>}
                         </>
@@ -150,39 +151,30 @@ export default function ServiceListPage() {
                   </td>
                   <td className="py-3">
                     {service.deleted_at ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
+                      <IconActionButton
+                        icon="restore"
+                        label={`Restore ${service.title}`}
                         onClick={() => restoreMutation.mutate(service.id)}
                         loading={restoreMutation.isPending && restoreMutation.variables === service.id}
-                      >
-                        Restore
-                      </Button>
+                      />
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        <Link to={`/provider/services/${service.id}/edit`}>
-                          <Button size="sm" variant="outline">
-                            Edit
-                          </Button>
-                        </Link>
-                        {!service.is_published && (
-                          <Button
-                            size="sm"
+                        <IconActionLink to={`/provider/services/${service.id}/edit`} icon="edit" label={`Edit ${service.title}`} />
+                        {(!service.is_published || !service.is_active) && (
+                          <IconActionButton
+                            icon="check"
+                            label={`${service.is_published ? 'Activate' : 'Publish'} ${service.title}`}
                             onClick={() => publishMutation.mutate(service.id)}
                             loading={publishMutation.isPending && publishMutation.variables === service.id}
-                          >
-                            Publish
-                          </Button>
+                          />
                         )}
                         {service.is_active && (
-                          <Button
-                            size="sm"
-                            variant="subtle"
+                          <IconActionButton
+                            icon="pause"
+                            label={`Deactivate ${service.title}`}
                             onClick={() => deactivateMutation.mutate(service.id)}
                             loading={deactivateMutation.isPending && deactivateMutation.variables === service.id}
-                          >
-                            Deactivate
-                          </Button>
+                          />
                         )}
                         <IconActionButton icon="trash" label={`Delete ${service.title}`} onClick={() => setPendingDelete(service)} />
                       </div>

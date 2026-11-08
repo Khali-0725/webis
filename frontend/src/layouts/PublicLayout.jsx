@@ -7,6 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/hooks/useAuth';
 
 const LINKS = [
+  { to: '/', label: 'Home', end: true },
   { to: '/about', label: 'About' },
   { to: '/contact', label: 'Contact' },
 ];
@@ -24,7 +25,7 @@ export function PublicLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <header className="border-b border-line bg-white">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-8 px-4 sm:px-6">
           <Link to="/" aria-label="WEBIS home">
             <Logo />
           </Link>
@@ -58,7 +59,7 @@ export function PublicLayout() {
             )}
           </nav>
 
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="ml-auto hidden items-center gap-2 md:flex">
             {isAuthenticated ? (
               <Link to={user.home_path}>
                 <Button size="sm">Go to dashboard</Button>
@@ -70,15 +71,12 @@ export function PublicLayout() {
                     Login
                   </Button>
                 </Link>
-                <Link to="/register">
-                  <Button size="sm">Register</Button>
-                </Link>
               </>
             )}
           </div>
           <button
             type="button"
-            className="rounded-lg p-3 text-navy-700 hover:bg-canvas md:hidden"
+            className="ml-auto rounded-lg p-3 text-navy-700 hover:bg-canvas md:hidden"
             aria-label={menuOpen ? 'Close public navigation' : 'Open public navigation'}
             aria-expanded={menuOpen}
             aria-controls="public-mobile-navigation"
@@ -101,7 +99,6 @@ export function PublicLayout() {
               ) : (
                 <>
                   <Link to="/login" className="rounded-lg border border-line px-4 py-3 text-sm font-semibold text-navy-800">Login</Link>
-                  <Link to="/register" className="rounded-lg bg-navy-700 px-4 py-3 text-sm font-semibold text-white">Register</Link>
                 </>
               )}
             </div>

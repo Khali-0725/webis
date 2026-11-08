@@ -74,7 +74,7 @@ class ServiceController extends Controller
             throw DomainException::forbidden('Your provider account must be verified before you can publish a service.');
         }
 
-        $service->forceFill(['published_at' => now(), 'is_active' => true])->save();
+        $service->forceFill(['published_at' => $service->published_at ?? now(), 'is_active' => true])->save();
 
         return ApiResponse::ok(new ServiceResource($service->fresh('category')), 'Service published successfully.');
     }

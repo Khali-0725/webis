@@ -47,6 +47,7 @@ export default function MyReportsPage() {
 
   return (
     <Card title="My Reports">
+      <p className="mb-4 text-sm text-ink-muted">The status shown here is current. Earlier notifications record the status when they were sent.</p>
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}

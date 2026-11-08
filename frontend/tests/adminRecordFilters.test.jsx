@@ -19,11 +19,12 @@ it('sets rolling three and five month ranges using local calendar dates', () => 
 it('keeps manual dates available and combines page search with filters', () => {
   const onChange = vi.fn();
   render(
-    <AdminRecordFilters value={{ sort: 'newest', start_date: '', end_date: '' }} onChange={onChange}>
+    <AdminRecordFilters className="xl:gap-2" value={{ sort: 'newest', start_date: '', end_date: '' }} onChange={onChange}>
       <input aria-label="Search business name" />
     </AdminRecordFilters>,
   );
   const toolbar = screen.getByTestId('admin-filter-toolbar');
+  expect(toolbar).toHaveClass('xl:gap-2', 'sm:flex-wrap');
   expect(within(toolbar).getByRole('textbox', { name: 'Search business name' })).toBeInTheDocument();
   expect(screen.queryByLabelText('Created from')).not.toBeInTheDocument();
 

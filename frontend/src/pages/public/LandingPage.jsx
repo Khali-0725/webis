@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
-import { Icon } from '@/components/ui/Icon';
 import { publicApi } from '@/services/api/publicApi';
 
 export default function LandingPage() {
@@ -24,17 +23,18 @@ export default function LandingPage() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/register"><Button variant="brand">Create an account</Button></Link>
-              <Link to="/login"><Button variant="outline">Sign in</Button></Link>
             </div>
           </div>
 
-          <div className="hidden items-center justify-center lg:flex">
-            <div className="grid h-56 w-full max-w-xs place-items-center rounded-card bg-white/5 ring-1 ring-white/10">
-              <div className="text-center">
-                <Icon name="wrench" className="mx-auto h-9 w-9 text-white/70" />
-                <p className="mt-3 text-sm text-white/70">Professional Services</p>
-              </div>
-            </div>
+          <div className="flex items-center justify-center">
+            <img
+              src="/images/home-service-visit.png"
+              alt="Illustration of a home service professional visiting a homeowner"
+              width="1448"
+              height="1086"
+              fetchPriority="high"
+              className="aspect-[4/3] w-full max-w-lg rounded-xl object-cover"
+            />
           </div>
         </div>
       </section>
@@ -50,9 +50,6 @@ export default function LandingPage() {
             Independent providers in Tanza can list services, manage bookings and get paid — all in
             one verified platform.
           </p>
-          <Link to="/register">
-            <Button variant="brand">Register as a provider</Button>
-          </Link>
         </div>
       </section>
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ApiStatusCard } from '@/components/layout/ApiStatusCard';
 import { Alert } from '@/components/ui/Alert';
 import { Card, StatCard } from '@/components/ui/Card';
+import { Icon } from '@/components/ui/Icon';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { useAuth } from '@/hooks/useAuth';
 import { analyticsApi } from '@/services/api/admin/analyticsApi';
@@ -10,17 +11,10 @@ import { queryKeys } from '@/services/api/queryClient';
 import { ROLES } from '@/constants';
 
 const QUICK_LINKS = [
-  { to: '/admin/users', label: 'Manage users' },
-  { to: '/admin/providers', label: 'Provider oversight' },
-  { to: '/admin/verification', label: 'Verification queue' },
-  { to: '/admin/services', label: 'Services' },
-  { to: '/admin/barangays', label: 'Barangays' },
-  { to: '/admin/bookings', label: 'All bookings' },
-  { to: '/admin/payments', label: 'All payments' },
-  { to: '/admin/violations', label: 'Chat violations' },
-  { to: '/admin/reports', label: 'User reports' },
-  { to: '/admin/audit-logs', label: 'Audit logs' },
-  { to: '/admin/analytics', label: 'Full analytics' },
+  { to: '/admin/users', label: 'Manage users', icon: 'users' },
+  { to: '/admin/verification', label: 'Verification queue', icon: 'shield' },
+  { to: '/admin/bookings', label: 'All bookings', icon: 'bookings' },
+  { to: '/admin/reports', label: 'User reports', icon: 'flag' },
 ];
 
 export default function AdminDashboard() {
@@ -34,7 +28,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-5">
       <Alert tone="warning" title={`Signed in as ${user?.full_name} (${user?.role === ROLES.SUPER_ADMIN ? 'super administrator' : 'administrator'}).`}>
-        Every figure below is a live database aggregate — none of it is hard-coded.
+        Review provider verification, bookings, and user reports from one place.
       </Alert>
 
       <ApiStatusCard />
@@ -56,13 +50,14 @@ export default function AdminDashboard() {
       )}
 
       <Card title="Quick links">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {QUICK_LINKS.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className="rounded-lg border border-line px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-navy-300 hover:bg-slate-50"
+              className="flex items-center gap-3 rounded-lg border border-line px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-navy-300 hover:bg-slate-50"
             >
+              <Icon name={link.icon} className="h-5 w-5 shrink-0 text-navy-700" />
               {link.label}
             </Link>
           ))}

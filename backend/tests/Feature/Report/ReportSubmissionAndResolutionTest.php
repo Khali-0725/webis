@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Report;
 
+use App\Enums\BookingStatus;
 use App\Enums\ReportReason;
 use App\Enums\ReportStatus;
+use App\Enums\VerificationStatus;
 use App\Models\Booking;
-use App\Models\Report;
 use App\Models\ProviderProfile;
+use App\Models\Report;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,6 +17,21 @@ use Tests\TestCase;
 class ReportSubmissionAndResolutionTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_super_admin_can_resolve_and_closed_report_cannot_return_to_reviewing(): void
+    {
+        $report = Report::create([
+            'reporter_id' => User::factory()->client()->create()->id,
+            'reportable_type' => User::class, 'reportable_id' => User::factory()->create()->id,
+            'reason' => ReportReason::Other, 'details' => 'A case for final review.',
+        ]);
+        $this->actingAs(User::factory()->superAdmin()->create())
+            ->postJson("/api/admin/reports/{$report->id}/resolve", ['status' => 'resolved', 'handling_notes' => 'Final decision with evidence.'])
+            ->assertOk()->assertJsonPath('data.status', 'resolved');
+        $this->postJson("/api/admin/reports/{$report->id}/resolve", ['status' => 'reviewing', 'handling_notes' => 'An older review action was submitted.'])->assertStatus(409);
+        $this->getJson('/api/admin/reports')->assertOk()->assertJsonPath('data.0.status', 'resolved');
+        $this->assertSame(ReportStatus::Resolved, $report->fresh()->status);
+    }
 
     public function test_a_user_can_submit_a_report_against_another_user(): void
     {
@@ -177,7 +194,7 @@ class ReportSubmissionAndResolutionTest extends TestCase
             $client = User::factory()->client()->create();
             $booking = Booking::factory()->create(['client_id' => $client->id, 'provider_profile_id' => $profile->id]);
             if ($i < 9) {
-                $booking->forceFill(['status' => \App\Enums\BookingStatus::Completed])->save();
+                $booking->forceFill(['status' => BookingStatus::Completed])->save();
             }
             $report = Report::create([
                 'reporter_id' => $client->id,
@@ -227,7 +244,7 @@ class ReportSubmissionAndResolutionTest extends TestCase
     public function test_a_provider_can_report_a_client_for_non_payment_on_a_booking(): void
     {
         $booking = Booking::factory()->create();
-        $booking->providerProfile->forceFill(['verification_status' => \App\Enums\VerificationStatus::Approved])->save();
+        $booking->providerProfile->forceFill(['verification_status' => VerificationStatus::Approved])->save();
         $reporter = $booking->providerProfile->user;
 
         $this->actingAs($reporter)
@@ -279,6 +296,8 @@ class ReportSubmissionAndResolutionTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.status', ReportStatus::Resolved->value);
+
+        $this->actingAs($admin)->getJson('/api/admin/reports')->assertOk()->assertJsonPath('data.0.id', $report->id);
 
         $this->assertDatabaseHas('audit_logs', [
             'actor_id' => $admin->id,

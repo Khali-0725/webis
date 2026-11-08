@@ -47,7 +47,10 @@ export function BulkArchiveControls({ resource, rows, selectedIds, onSelectionCh
         />
         Select all on this page
       </label>
-      <IconActionButton icon="archive" label={`Archive selected (${selectedVisible.length})`} disabled={selectedVisible.length === 0} onClick={() => setConfirmOpen(true)} />
+      <div className="inline-flex min-h-10 items-center gap-2 border-l border-line pl-3">
+        <span role="status" className="text-sm text-ink-muted">{selectedVisible.length} selected</span>
+        <IconActionButton icon="archive" label={`Archive selected (${selectedVisible.length})`} disabled={selectedVisible.length === 0} onClick={() => setConfirmOpen(true)} />
+      </div>
       <ConfirmDialog
         open={confirmOpen}
         onClose={() => { setConfirmOpen(false); setError(null); }}

@@ -88,7 +88,7 @@ export default function BarangayPage() {
           </Alert>
         )}
         <form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
-          <Input label="Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} error={fieldError(createMutation.error, 'name')} />
+          <Input label="Barangay name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} error={fieldError(createMutation.error, 'name')} />
           <Input
             label="Municipality"
             required
@@ -120,7 +120,7 @@ export default function BarangayPage() {
             <ResponsiveTable className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
-                  <th className="py-2 pr-4 font-medium">Name</th>
+                  <th className="py-2 pr-4 font-medium">Barangay name</th>
                   <th className="py-2 pr-4 font-medium">Municipality</th>
                   <th className="py-2 pr-4 font-medium">Province</th>
                   <th className="py-2 pr-4 font-medium">Status</th>
@@ -236,7 +236,7 @@ function BarangayEditor({ barangay, onClose, onSaved }) {
         }}
       >
         {err && !Object.keys(err.errors ?? {}).length && <Alert tone="error">{err.message}</Alert>}
-        <Input label="Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} error={fieldError(err, 'name')} />
+        <Input label="Barangay name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} error={fieldError(err, 'name')} />
         <Input
           label="Municipality"
           required

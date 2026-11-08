@@ -21,6 +21,7 @@ const STATUS_OPTIONS = ['', ...Object.values(BOOKING_STATUS)];
 export default function AdminBookingListPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
   const [providerId, setProviderId] = useState('');
   const [providerSearch, setProviderSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -30,6 +31,7 @@ export default function AdminBookingListPage() {
   const [notice, setNotice] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const params = {
+    ...(search.trim() ? { search: search.trim() } : {}),
     ...(status ? { status } : {}), ...(trashed ? { trashed } : {}),
     ...(providerId ? { provider_id: providerId } : {}),
     ...(categoryId ? { category_id: categoryId } : {}),
@@ -80,6 +82,7 @@ export default function AdminBookingListPage() {
       )}
 
       <AdminRecordFilters value={recordFilters} dateFieldLabel="Scheduled" onChange={(patch) => { setRecordFilters((current) => ({ ...current, ...patch })); setPage(1); }}>
+        <input aria-label="Search bookings" placeholder="Client name or booking reference" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm sm:w-56" />
         <select
           aria-label="Filter by status"
           className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-navy-500 focus:outline-none sm:w-36"

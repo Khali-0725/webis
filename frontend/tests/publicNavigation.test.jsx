@@ -27,6 +27,8 @@ describe('public mobile navigation', () => {
     await user.click(screen.getByRole('button', { name: 'Open public navigation' }));
     const menu = screen.getByRole('navigation', { name: 'Mobile primary' });
     expect(within(menu).getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/login');
+    expect(within(menu).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    expect(within(menu).queryByRole('link', { name: 'Register' })).not.toBeInTheDocument();
     expect(within(menu).queryByRole('link', { name: /services|providers/i })).not.toBeInTheDocument();
     await user.click(within(menu).getByRole('link', { name: 'About' }));
     expect(await screen.findByText('About WEBIS')).toBeInTheDocument();

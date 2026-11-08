@@ -8,10 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ResolveReportRequest;
 use App\Http\Resources\Admin\ReportResource;
 use App\Models\Report;
-use App\Support\AdminRecordFilters;
-use App\Support\ArchiveAccess;
 use App\Notifications\AccountEventNotification;
+use App\Support\AdminRecordFilters;
 use App\Support\Api\ApiResponse;
+use App\Support\ArchiveAccess;
 use App\Support\AuditLogger;
 use App\Support\TrashFilter;
 use Illuminate\Http\JsonResponse;
@@ -29,10 +29,7 @@ class ReportController extends Controller
 
         $reports = TrashFilter::apply(Report::query(), $request)
             ->with('reporter', 'handledByUser')
-            // Default to the open queue - except in the trash, which should
-            // show everything that was deleted regardless of its status.
-            ->when($status, fn ($query) => $query->where('status', $status))
-            ->when(! $status && $request->string('trashed')->toString() !== 'only', fn ($query) => $query->open());
+            ->when($status, fn ($query) => $query->where('status', $status));
 
         $reports = AdminRecordFilters::apply($reports, $request)
             ->paginate(min($request->integer('per_page', 15), config('webis.pagination.max')));

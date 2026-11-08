@@ -16,6 +16,12 @@ describe('profile avatar upload', () => {
     setSession(makeUser());
   });
 
+  it('previews the saved profile picture next to the upload control', () => {
+    setSession(makeUser({ avatar_url: '/api/files/avatars/current.png' }));
+    renderWithProviders(<ProfilePage />);
+    expect(screen.getByRole('img', { name: "Demo Client's profile photo" })).toHaveAttribute('src', '/api/files/avatars/current.png');
+  });
+
   it('shows the avatar validation error returned by the server', async () => {
     profileApi.updateAvatar.mockRejectedValue({
       status: 422,

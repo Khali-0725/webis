@@ -14,6 +14,27 @@ class ChatViolationActionTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_regular_admin_cannot_moderate_an_administrator_account(): void
+    {
+        $admin = User::factory()->admin()->create();
+        foreach (['warn', 'suspend'] as $action) {
+            $violation = ChatViolation::factory()->create(['user_id' => User::factory()->superAdmin()->create()->id]);
+            $this->actingAs($admin)->postJson("/api/admin/chat-violations/{$violation->id}/{$action}", [
+                'reason' => 'A confirmed conduct incident', 'basis' => 'Messaging policy', 'days' => 1,
+            ])->assertForbidden();
+            $this->assertEquals(ViolationAdminStatus::Open, $violation->fresh()->admin_status);
+        }
+    }
+
+    public function test_warning_notifies_the_account_and_clients_cannot_issue_it(): void
+    {
+        $violation = ChatViolation::factory()->create();
+        $this->actingAs(User::factory()->client()->create())->postJson("/api/admin/chat-violations/{$violation->id}/warn")->assertForbidden();
+        $this->actingAs(User::factory()->admin()->create())->postJson("/api/admin/chat-violations/{$violation->id}/warn")->assertOk();
+        $this->assertDatabaseHas('notifications', ['notifiable_id' => $violation->user_id]);
+        $this->assertSame('chat.warning', $violation->user->notifications()->first()->data['event']);
+    }
+
     public function test_admin_can_dismiss_a_violation(): void
     {
         $admin = User::factory()->admin()->create();

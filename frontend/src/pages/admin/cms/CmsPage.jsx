@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
@@ -103,8 +104,8 @@ export default function CmsPage() {
                     <p className="mt-1 text-xs text-ink-soft">Order: {faq.sort_order}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => beginEdit(faq)}>Edit</Button>
-                    <Button size="sm" variant="subtle" onClick={() => setPendingDelete(faq)}>Archive</Button>
+                    <IconActionButton icon="edit" label={`Edit ${faq.question}`} onClick={() => beginEdit(faq)} />
+                    <IconActionButton icon="archive" label={`Archive ${faq.question}`} onClick={() => setPendingDelete(faq)} />
                   </div>
                 </div>
               </li>

@@ -25,9 +25,12 @@ describe('admin bulk archive selection', () => {
     bulkArchiveApi.archive.mockClear();
     const user = userEvent.setup();
     render(<Harness />);
+    expect(screen.getByRole('status')).toHaveTextContent('0 selected');
+    expect(screen.getByRole('button', { name: 'Archive selected (0)' })).toBeDisabled();
 
     await user.click(screen.getByRole('checkbox', { name: 'Select all visible records' }));
     const archive = screen.getByRole('button', { name: 'Archive selected (2)' });
+    expect(screen.getByRole('status')).toHaveTextContent('2 selected');
     expect(archive.textContent).toBe('');
     expect(archive.querySelector('svg')).toBeInTheDocument();
     expect(archive).not.toHaveClass('bg-red-600');
@@ -36,5 +39,6 @@ describe('admin bulk archive selection', () => {
 
     await user.click(screen.getByRole('button', { name: 'Archive selected', exact: true }));
     await waitFor(() => expect(bulkArchiveApi.archive).toHaveBeenCalledWith('services', [1, 2], ''));
+    expect(screen.getByRole('status')).toHaveTextContent('0 selected');
   });
 });

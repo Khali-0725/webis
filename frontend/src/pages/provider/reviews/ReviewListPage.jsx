@@ -32,10 +32,12 @@ export default function ReviewListPage() {
             <li key={review.id} className="py-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <Link to={`/provider/bookings/${review.booking_id}`} className="font-medium text-ink hover:text-brand">
-                    {review.client?.full_name}
+                  <p className="font-medium text-ink">{review.client?.full_name}</p>
+                  <p className="text-sm text-ink-muted">{review.service_title}</p>
+                  <Link to={`/provider/bookings/${review.booking_id}`} className="text-xs text-brand hover:underline">
+                    Booking {review.booking_reference ?? `#${review.booking_id}`}
                   </Link>
-                  <span className="ml-2 text-xs text-ink-muted">{review.service_title}</span>
+                  {review.scheduled_date && <span className="ml-2 text-xs text-ink-muted">Service date: {review.scheduled_date}</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   <StarRating value={review.rating} size="sm" />

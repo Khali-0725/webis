@@ -6,8 +6,10 @@ use App\Enums\ViolationAdminStatus;
 use App\Exceptions\DomainException;
 use App\Models\ChatViolation;
 use App\Models\User;
+use App\Notifications\AccountEventNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Admin disposition of a flagged message. Suspensions use the same account
@@ -30,8 +32,12 @@ class ChatViolationService
                 default => throw DomainException::unprocessable('Unknown violation action.'),
             };
 
-            if ($action === 'suspend' && ! $violation->user) {
+            if (in_array($action, ['warn', 'suspend'], true) && ! $violation->user) {
                 throw DomainException::conflict('The account for this case is unavailable.');
+            }
+
+            if (in_array($action, ['warn', 'suspend'], true)) {
+                Gate::forUser($admin)->authorize('manage', $violation->user);
             }
 
             $violation->forceFill([
@@ -44,6 +50,15 @@ class ChatViolationService
                 $this->suspensions->suspend(
                     $violation->user, $admin, $suspension, $request, 'chat_violation:'.$violation->id,
                 );
+            }
+
+            if ($action === 'warn' && $violation->user) {
+                $audience = $violation->user->isProvider() ? 'provider' : 'client';
+                $violation->user->notify(new AccountEventNotification(
+                    'chat.warning',
+                    'An administrator reviewed your flagged message and issued a warning. Please follow the messaging conduct policy.',
+                    "/{$audience}/notifications",
+                ));
             }
 
             return $violation->fresh();

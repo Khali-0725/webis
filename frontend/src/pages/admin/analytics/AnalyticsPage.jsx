@@ -71,7 +71,7 @@ export default function AnalyticsPage() {
         <StatCard value={s.users.clients} label="Clients" />
         <StatCard value={s.users.providers} label="Providers" />
         <StatCard value={s.bookings.completed} label="Completed Bookings" tone="success" />
-        <StatCard value={formatPeso(s.payments.total_earnings)} label="Total Earnings" tone="success" />
+        <StatCard value={formatPeso(s.payments.total_earnings)} label="Verified Payment Volume" tone="success" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
           )}
         </Card>
 
-        <Card title="Earnings Over Time (last 30 days)">
+        <Card title="Verified Payment Volume (last 30 days)">
           {earningsOverTimeQuery.isPending && <LoadingState label="Loading…" />}
           {!earningsOverTimeQuery.isPending && (
             <LineChart

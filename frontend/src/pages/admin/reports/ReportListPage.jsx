@@ -18,7 +18,7 @@ import { queryKeys } from '@/services/api/queryClient';
 
 const STATUS_TONE = { open: 'warning', reviewing: 'info', resolved: 'success', dismissed: 'neutral' };
 const STATUS_OPTIONS = [
-  { value: '', label: 'Open queue' },
+  { value: '', label: 'All statuses' },
   { value: 'open', label: 'Open' },
   { value: 'reviewing', label: 'Under review' },
   { value: 'resolved', label: 'Resolved' },

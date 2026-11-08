@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
@@ -113,6 +114,15 @@ export default function ProfilePage() {
           {notice.message}
         </Alert>
       )}
+
+      <div className="mb-6 flex items-center gap-4 border-b border-line pb-5">
+        <Avatar src={user?.avatar_url} initials={user?.initials} name={user?.full_name} size="lg" className="h-20 w-20 text-xl" />
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-navy-800">{user?.full_name}</p>
+          <p className="mt-1 text-sm text-ink-muted">Your current profile picture</p>
+          <a href="#avatar-upload" className="mt-2 inline-block text-sm font-semibold text-navy-700 underline underline-offset-4">Change profile picture</a>
+        </div>
+      </div>
 
       <form onSubmit={handleProfileSubmit} className="space-y-4">
         <Input

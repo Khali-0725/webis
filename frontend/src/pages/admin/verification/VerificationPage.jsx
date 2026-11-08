@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
@@ -158,7 +159,10 @@ export default function AdminVerificationPage() {
                 </ul>
               )}
               {profile.verification_status !== 'approved' && profile.required_documents.government_id === 'approved' && profile.required_documents.business_permit === 'approved' && (
-                <IconActionButton className="mt-3" icon="shield" label={`Verify provider ${profile.owner_name}`} onClick={() => setAction({ kind: 'provider', providerId: profile.id })} />
+                <Button className="mt-3" size="sm" onClick={() => setAction({ kind: 'provider', providerId: profile.id })}>Verify provider</Button>
+              )}
+              {profile.verification_status !== 'approved' && (profile.required_documents.government_id !== 'approved' || profile.required_documents.business_permit !== 'approved') && (
+                <p className="mt-3 text-sm text-ink-muted">The provider must submit any outstanding documents. Review and approve the government ID and business permit before final verification.</p>
               )}
             </div>
           ))}

@@ -26,6 +26,16 @@ describe('provider booking acceptance', () => {
     bookingApi.accept.mockResolvedValue({ id: 42, status: 'accepted' });
   });
 
+  it('sends client name search to the API and resets pagination', async () => {
+    bookingApi.list.mockResolvedValue({ items: [], meta: { page: 1, last_page: 3 } });
+    const user = userEvent.setup();
+    renderWithProviders(<BookingListPage />);
+    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await waitFor(() => expect(bookingApi.list).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })));
+    await user.type(screen.getByRole('textbox', { name: 'Search bookings' }), 'Ethan Hayes');
+    await waitFor(() => expect(bookingApi.list).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, search: 'Ethan Hayes' })));
+  });
+
   it('requires confirmation before accepting a pending booking', async () => {
     const user = userEvent.setup();
     renderWithProviders(<BookingListPage />);

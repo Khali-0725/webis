@@ -14,6 +14,19 @@ class BookingFiltersTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_name_search_filters_before_pagination_and_preserves_provider_scope(): void
+    {
+        $profile = ProviderProfile::factory()->verified()->create();
+        $client = User::factory()->client()->create(['first_name' => 'Ethan', 'last_name' => 'Hayes']);
+        $match = Booking::factory()->create(['provider_profile_id' => $profile->id, 'client_id' => $client->id]);
+        Booking::factory()->create(['provider_profile_id' => $profile->id]);
+        Booking::factory()->create(['client_id' => $client->id]);
+        $this->actingAs($profile->user)->getJson('/api/bookings?search=Ethan%20Hayes&per_page=1')
+            ->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $match->id);
+        $this->actingAs(User::factory()->admin()->create())->getJson('/api/bookings?search=Ethan%20Hayes&per_page=1')
+            ->assertOk()->assertJsonPath('meta.total', 2)->assertJsonCount(1, 'data');
+    }
+
     public function test_admin_filters_bookings_by_provider_category_and_date_with_sorting(): void
     {
         $admin = User::factory()->admin()->create();

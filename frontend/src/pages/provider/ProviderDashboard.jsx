@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ApiStatusCard } from '@/components/layout/ApiStatusCard';
 import { Alert } from '@/components/ui/Alert';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
@@ -53,11 +52,9 @@ export default function ProviderDashboard() {
 
   return (
     <div className="space-y-5">
-      <Alert tone="info" title={`Welcome back, ${user?.first_name}.`}>
+      <Alert tone="info" title={`Welcome, ${user?.first_name ?? 'there'}!`}>
         Manage your services, availability and booking requests below.
       </Alert>
-
-      <ApiStatusCard />
 
       <Card>
         <CardHeader
@@ -141,10 +138,10 @@ export default function ProviderDashboard() {
         </CardBody>
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className={`grid gap-5 ${verification?.label === 'Verified' ? '' : 'lg:grid-cols-2'}`}>
         <Card>
           <CardHeader
-            title="My Services"
+            title={<span className="inline-flex flex-wrap items-center gap-2">My Services {verification?.label === 'Verified' && <VerifiedBadge verified />}</span>}
             action={
               <Link to="/provider/services">
                 <Button size="sm" variant="outline">
@@ -184,7 +181,7 @@ export default function ProviderDashboard() {
           </CardBody>
         </Card>
 
-        <Card>
+        {verification?.label !== 'Verified' && <Card>
           <CardHeader
             title="Verification"
             action={verification?.label !== 'Verified' ? (
@@ -211,7 +208,7 @@ export default function ProviderDashboard() {
               </div>
             )}
           </CardBody>
-        </Card>
+        </Card>}
       </div>
     </div>
   );

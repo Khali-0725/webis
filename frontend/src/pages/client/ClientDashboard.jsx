@@ -33,7 +33,7 @@ export default function ClientDashboard() {
 
   return (
     <div className="space-y-5">
-      <Alert tone="info" title={`Welcome back, ${user?.first_name}.`}>
+      <Alert tone="info" title={`Welcome, ${user?.first_name ?? 'there'}!`}>
         Search for a service and send a booking request to get started.
       </Alert>
 

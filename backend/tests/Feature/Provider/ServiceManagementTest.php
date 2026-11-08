@@ -13,6 +13,19 @@ class ServiceManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_reactivating_a_published_service_preserves_its_publication_date(): void
+    {
+        [$user, $profile] = $this->verifiedProviderWithProfile();
+        $service = Service::factory()->published()->create(['provider_profile_id' => $profile->id, 'published_at' => now()->subWeek()]);
+        $publishedAt = $service->published_at->toDateTimeString();
+        $this->actingAs($user)->patchJson("/api/provider/services/{$service->id}/deactivate")->assertOk();
+        $this->getJson('/api/services?q='.urlencode($service->title))->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($user)->patchJson("/api/provider/services/{$service->id}/publish")->assertOk();
+        $this->assertTrue($service->fresh()->is_active);
+        $this->assertSame($publishedAt, $service->fresh()->published_at->toDateTimeString());
+        $this->getJson('/api/services?q='.urlencode($service->title))->assertOk()->assertJsonPath('data.0.id', $service->id);
+    }
+
     private function providerWithProfile(): array
     {
         $user = User::factory()->provider()->create();

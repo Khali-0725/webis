@@ -16,6 +16,8 @@ class ReviewResource extends JsonResource
         return [
             'id' => $this->id,
             'booking_id' => $this->booking_id,
+            'booking_reference' => $this->whenLoaded('booking', fn () => $this->booking?->booking_code),
+            'scheduled_date' => $this->whenLoaded('booking', fn () => $this->booking?->scheduled_date?->toDateString()),
             'rating' => $this->rating,
             'comment' => $this->comment,
             'is_visible' => $this->is_visible,

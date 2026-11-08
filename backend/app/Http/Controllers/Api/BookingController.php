@@ -60,6 +60,7 @@ class BookingController extends Controller
         }
 
         $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:150'],
             'status' => ['nullable', Rule::in(BookingStatus::values())],
             'provider_id' => ['nullable', 'integer', 'exists:provider_profiles,id'],
             'category_id' => ['nullable', 'integer', 'exists:service_categories,id'],
@@ -70,6 +71,17 @@ class BookingController extends Controller
 
         if (! empty($validated['status'])) {
             $query->withStatus(BookingStatus::from($validated['status']));
+        }
+
+        if ($search = trim($validated['search'] ?? '')) {
+            $query->where(function ($query) use ($search) {
+                $query->where('booking_code', 'like', '%'.$search.'%')
+                    ->orWhereHas('client', function ($client) use ($search) {
+                        foreach (preg_split('/\s+/', $search) as $word) {
+                            $client->where(fn ($name) => $name->where('first_name', 'like', '%'.$word.'%')->orWhere('last_name', 'like', '%'.$word.'%'));
+                        }
+                    });
+            });
         }
 
         if ($user->isAdmin() && ! empty($validated['provider_id'])) {

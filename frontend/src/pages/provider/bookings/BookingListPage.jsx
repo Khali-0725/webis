@@ -17,6 +17,7 @@ import { BOOKING_STATUS_META } from '@/constants';
 export default function BookingListPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -25,6 +26,7 @@ export default function BookingListPage() {
   const [bookingToAccept, setBookingToAccept] = useState(null);
   const { data: categories = [] } = useQuery({ queryKey: queryKeys.public.categories, queryFn: publicApi.listCategories });
   const filters = {
+    ...(search.trim() ? { search: search.trim() } : {}),
     ...(status ? { status } : {}),
     ...(categoryId ? { category_id: categoryId } : {}),
     ...(startDate ? { start_date: startDate } : {}),
@@ -53,6 +55,9 @@ export default function BookingListPage() {
   return (
     <Card title="Bookings">
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <label className="flex flex-col gap-1 text-sm text-ink-muted">Search bookings
+          <input aria-label="Search bookings" placeholder="Client name or booking reference" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} className="h-9 rounded-lg border border-line bg-white px-2 text-sm text-ink" />
+        </label>
         <label htmlFor="status-filter" className="flex flex-col gap-1 text-sm text-ink-muted">
           Status
         <select

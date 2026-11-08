@@ -188,14 +188,13 @@ export default function ProviderProfilePage() {
         </Alert>
       )}
 
-      <Card title="Business Profile">
-        <div className="mb-4 flex items-center gap-2">
+      <Card title={<span className="inline-flex flex-wrap items-center gap-2">Business Profile
           {profileQuery.data.verification_status === 'approved'
             ? <VerifiedBadge verified />
             : <Badge tone={VERIFICATION_STATUS_META[profileQuery.data.verification_status]?.tone ?? 'neutral'}>
               {VERIFICATION_STATUS_META[profileQuery.data.verification_status]?.label ?? 'Verification unavailable'}
             </Badge>}
-        </div>
+        </span>}>
         <form onSubmit={handleProfileSubmit} className="space-y-4">
           <Input
             label="Business Name"
