@@ -1,5 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { AppRoutes } from '@/routes';
@@ -22,7 +23,7 @@ beforeEach(() => {
   publicApi.searchServices.mockResolvedValue({ items: [], meta: { total: 0 } });
 });
 
-it('groups admin destinations and keeps Profile out of the main navigation', () => {
+it('groups admin destinations and keeps Profile out of the main navigation', async () => {
   setSession(makeUser({ role: 'admin', home_path: '/admin/dashboard' }));
   renderWithProviders(<Sidebar />);
   const nav = screen.getByRole('navigation', { name: 'Main navigation' });
@@ -31,9 +32,32 @@ it('groups admin destinations and keeps Profile out of the main navigation', () 
   expect(within(nav).getAllByText('Services')).toHaveLength(2);
   expect(within(nav).getByText('Operations')).toBeInTheDocument();
   expect(within(nav).getByText('Moderation')).toBeInTheDocument();
+  expect(within(nav).getByText('People').closest('details')).not.toHaveAttribute('open');
+  await userEvent.setup().click(within(nav).getByText('People'));
   expect(within(nav).getByRole('link', { name: 'Users' })).toHaveAttribute('href', '/admin/users');
   expect(within(nav).getByRole('link', { name: 'Appeals' })).toHaveAttribute('href', '/admin/appeals');
   expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
+});
+
+it.each(['admin', 'super_admin'])('opens the current %s section and lets other sections expand independently', async (role) => {
+  setSession(makeUser({ role, home_path: '/admin/dashboard' }));
+  renderWithProviders(<Sidebar />, { route: '/admin/verification' });
+  const nav = within(screen.getByRole('navigation', { name: 'Main navigation' }));
+  const people = nav.getByText('People').closest('details');
+  const system = nav.getByText('System').closest('details');
+  expect(people).toHaveAttribute('open');
+  expect(system).not.toHaveAttribute('open');
+  expect(screen.getByRole('link', { name: 'Verifications' })).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByText('Overview').closest('details')).toBeNull();
+
+  const user = userEvent.setup();
+  await user.click(nav.getByText('System'));
+  expect(system).toHaveAttribute('open');
+  expect(people).toHaveAttribute('open');
+  expect(screen.getByRole('link', { name: 'Platform Settings' })).toBeInTheDocument();
+  await user.click(screen.getByText('People'));
+  expect(people).not.toHaveAttribute('open');
+  expect(system).toHaveAttribute('open');
 });
 
 it('makes the sidebar identity the only account Profile link', () => {
