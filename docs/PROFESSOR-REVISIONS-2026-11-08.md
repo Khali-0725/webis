@@ -52,3 +52,14 @@ clearer.
   content, public navigation, profile photo display, and bulk selection.
 
 No database migration or additional paid service is required.
+
+## Live deployment verification
+
+- Vercel serves the revised landing page, including the photograph and simplified navigation.
+- Render lists `ac3c141f7e2c2fcc8a65ff0e0303abc66860964d` as its last successfully deployed commit.
+- Landing page and users list were checked at 1440px desktop and 390px mobile widths without horizontal overflow.
+- All five desktop user filters align on one row. Four admin quick links include icons.
+- My Profile shows the saved-photo/initials preview and change-picture link.
+- Reports default to All statuses, retaining access to resolved and dismissed cases.
+- Screenshots are saved in the local professor-revisions visualization folder.
+- State-changing provider/client workflows were covered by automated tests; live checks did not sanction accounts, delete records, or approve providers.
