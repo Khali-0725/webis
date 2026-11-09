@@ -36,6 +36,12 @@ class ReportResource extends JsonResource
             'handled_by' => $this->whenLoaded('handledByUser', fn () => $this->handledByUser?->full_name),
             'handled_at' => $this->handled_at?->toIso8601String(),
             'handling_notes' => $this->handling_notes,
+            'provider_violation' => $this->whenLoaded('providerViolation', fn () => $this->providerViolation ? [
+                'id' => $this->providerViolation->id,
+                'penalty_points' => $this->providerViolation->penalty_points,
+                'reason' => $this->providerViolation->reason,
+                'issued_at' => $this->providerViolation->created_at?->toIso8601String(),
+            ] : null),
             'created_at' => $this->created_at?->toIso8601String(),
             'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];

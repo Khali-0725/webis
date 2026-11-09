@@ -8,6 +8,7 @@ use App\Enums\ReportStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Booking;
 use App\Models\ProviderProfile;
+use App\Models\ProviderViolation;
 use App\Models\Report;
 use App\Models\Service;
 use App\Models\User;
@@ -307,6 +308,82 @@ class ReportSubmissionAndResolutionTest extends TestCase
         $this->actingAs($reporter)->getJson('/api/notifications')->assertOk()
             ->assertJsonPath('data.0.data.event', 'report.status_updated')
             ->assertDontSee('Verified and closed.');
+    }
+
+    public function test_resolving_client_report_issues_one_provider_violation_and_deducts_performance(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $client = User::factory()->client()->create();
+        $profile = ProviderProfile::factory()->verified()->create(['performance_rate' => 100]);
+        $report = Report::create([
+            'reporter_id' => $client->id,
+            'target_user_id' => $profile->user_id,
+            'reportable_type' => User::class,
+            'reportable_id' => $profile->user_id,
+            'reason' => ReportReason::Other,
+            'details' => 'A valid provider complaint for admin decision.',
+        ]);
+
+        $this->actingAs($admin)->postJson("/api/admin/reports/{$report->id}/resolve", [
+            'status' => ReportStatus::Resolved->value,
+            'handling_notes' => 'Evidence confirmed by administrator.',
+        ])->assertOk()->assertJsonPath('data.provider_violation.penalty_points', 5);
+
+        $this->assertDatabaseHas('provider_violations', [
+            'report_id' => $report->id,
+            'provider_profile_id' => $profile->id,
+            'issued_by' => $admin->id,
+            'penalty_points' => 5,
+        ]);
+        $this->assertDatabaseHas('provider_profiles', [
+            'id' => $profile->id,
+            'performance_rate' => 95,
+            'violation_count' => 1,
+        ]);
+    }
+
+    public function test_dismissed_report_does_not_issue_provider_violation(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $profile = ProviderProfile::factory()->verified()->create(['performance_rate' => 100]);
+        $report = Report::create([
+            'reporter_id' => User::factory()->client()->create()->id,
+            'target_user_id' => $profile->user_id,
+            'reportable_type' => User::class,
+            'reportable_id' => $profile->user_id,
+            'reason' => ReportReason::Other,
+            'details' => 'A report dismissed by administrator.',
+        ]);
+
+        $this->actingAs($admin)->postJson("/api/admin/reports/{$report->id}/resolve", [
+            'status' => ReportStatus::Dismissed->value,
+            'handling_notes' => 'Evidence did not confirm the complaint.',
+        ])->assertOk();
+
+        $this->assertDatabaseCount('provider_violations', 0);
+        $this->assertDatabaseHas('provider_profiles', ['id' => $profile->id, 'performance_rate' => 100, 'violation_count' => 0]);
+    }
+
+    public function test_resolved_report_cannot_deduct_performance_twice(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $profile = ProviderProfile::factory()->verified()->create(['performance_rate' => 100]);
+        $report = Report::create([
+            'reporter_id' => User::factory()->client()->create()->id,
+            'target_user_id' => $profile->user_id,
+            'reportable_type' => User::class,
+            'reportable_id' => $profile->user_id,
+            'reason' => ReportReason::Other,
+            'details' => 'A report resolved once only.',
+        ]);
+
+        $this->actingAs($admin)->postJson("/api/admin/reports/{$report->id}/resolve", [
+            'status' => ReportStatus::Resolved->value,
+            'handling_notes' => 'Confirmed and resolved.',
+        ])->assertOk();
+
+        $this->assertSame(1, ProviderViolation::where('report_id', $report->id)->count());
+        $this->assertSame(95, $profile->fresh()->performance_rate);
     }
 
     public function test_admin_decision_requires_handling_notes(): void

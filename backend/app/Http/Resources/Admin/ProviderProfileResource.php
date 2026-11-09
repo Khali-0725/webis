@@ -31,6 +31,8 @@ class ProviderProfileResource extends JsonResource
             'rating_avg' => $this->rating_avg,
             'rating_count' => $this->rating_count,
             'completed_bookings_count' => $this->completed_bookings_count,
+            'performance_rate' => $this->performance_rate,
+            'violation_count' => $this->violation_count,
             'is_accepting_bookings' => $this->is_accepting_bookings,
             'base_barangay' => $this->whenLoaded('baseBarangay', fn () => $this->baseBarangay?->name),
             'created_at' => $this->created_at?->toIso8601String(),

@@ -14,6 +14,7 @@ use App\Support\Api\ApiResponse;
 use App\Support\ArchiveAccess;
 use App\Support\AuditLogger;
 use App\Support\TrashFilter;
+use App\Services\ProviderReportResolutionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,7 @@ class ReportController extends Controller
         ])['status'] ?? null;
 
         $reports = TrashFilter::apply(Report::query(), $request)
-            ->with('reporter', 'handledByUser')
+            ->with('reporter', 'handledByUser', 'providerViolation')
             ->when($status, fn ($query) => $query->where('status', $status));
 
         $reports = AdminRecordFilters::apply($reports, $request)
@@ -37,9 +38,9 @@ class ReportController extends Controller
         return ApiResponse::paginated($reports, ReportResource::class);
     }
 
-    public function resolve(ResolveReportRequest $request, Report $report): JsonResponse
+    public function resolve(ResolveReportRequest $request, Report $report, ProviderReportResolutionService $resolutionService): JsonResponse
     {
-        $report = DB::transaction(function () use ($request, $report) {
+        $report = DB::transaction(function () use ($request, $report, $resolutionService) {
             $locked = Report::query()->whereKey($report->id)->lockForUpdate()->firstOrFail();
             if ($locked->status->isClosed() || ($locked->status === ReportStatus::Reviewing && $request->validated('status') === ReportStatus::Reviewing->value)) {
                 throw DomainException::conflict('This report has already been reviewed or closed. Refresh the list.');
@@ -50,6 +51,10 @@ class ReportController extends Controller
                 'handled_at' => now(),
                 'handling_notes' => $request->validated('handling_notes'),
             ])->save();
+
+            if ($locked->status === ReportStatus::Resolved) {
+                $resolutionService->issueForResolvedReport($locked->load('reporter'), $request->user());
+            }
 
             AuditLogger::record($request->user(), $locked->status === ReportStatus::Reviewing ? 'report.acknowledged' : 'report.resolved', $locked, [
                 'status' => $locked->status->value,
@@ -64,14 +69,14 @@ class ReportController extends Controller
             "/{$audience}/reports",
         ));
 
-        return ApiResponse::ok(new ReportResource($report->fresh(['reporter', 'handledByUser'])), 'Report updated.');
+        return ApiResponse::ok(new ReportResource($report->fresh(['reporter', 'handledByUser', 'providerViolation'])), 'Report updated.');
     }
 
     public function show(Report $report): JsonResponse
     {
         ArchiveAccess::record($report);
 
-        return ApiResponse::ok(new ReportResource($report->load(['reporter', 'handledByUser'])));
+        return ApiResponse::ok(new ReportResource($report->load(['reporter', 'handledByUser', 'providerViolation'])));
     }
 
     public function destroy(Request $request, Report $report): JsonResponse

@@ -31,6 +31,8 @@ class ProviderProfile extends Model
         'longitude',
         'is_accepting_bookings',
         'welcome_message',
+        'performance_rate',
+        'violation_count',
     ];
 
     protected function casts(): array
@@ -46,6 +48,8 @@ class ProviderProfile extends Model
             'rating_avg' => 'decimal:2',
             'rating_count' => 'integer',
             'completed_bookings_count' => 'integer',
+            'performance_rate' => 'integer',
+            'violation_count' => 'integer',
             'is_accepting_bookings' => 'boolean',
             'exclude_all_holidays' => 'boolean',
         ];
@@ -151,5 +155,10 @@ class ProviderProfile extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function violations(): HasMany
+    {
+        return $this->hasMany(ProviderViolation::class);
     }
 }

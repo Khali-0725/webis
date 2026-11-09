@@ -29,6 +29,8 @@ class ProviderProfileResource extends JsonResource
             'rating_avg' => $this->rating_avg,
             'rating_count' => $this->rating_count,
             'completed_bookings_count' => $this->completed_bookings_count,
+            'performance_rate' => $this->performance_rate,
+            'violation_count' => $this->violation_count,
             'is_accepting_bookings' => $this->is_accepting_bookings,
             'welcome_message' => $this->welcome_message,
             'exclude_all_holidays' => $this->exclude_all_holidays,

@@ -21,6 +21,7 @@ class Report extends Model
     protected $fillable = [
         'reporter_id',
         'target_user_id',
+        'target_user_id',
         'reportable_type',
         'reportable_id',
         'reason',
@@ -62,6 +63,11 @@ class Report extends Model
     public function handledByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'handled_by');
+    }
+
+    public function providerViolation(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ProviderViolation::class);
     }
 
     /** Resolve the person behind every report route, from the reporter's perspective. */
