@@ -121,6 +121,7 @@ export default function ProfilePage() {
           <p className="truncate font-semibold text-navy-800">{user?.full_name}</p>
           <p className="mt-1 text-sm text-ink-muted">Your current profile picture</p>
           <label htmlFor="avatar-upload" className="mt-2 inline-block cursor-pointer text-sm font-semibold text-navy-700 underline underline-offset-4">Change profile picture</label>
+          <p className="mt-1 text-xs text-ink-muted">Supported: JPEG, PNG, or WebP. Up to 4 MB.</p>
           <label htmlFor="avatar-upload" className="sr-only">Update avatar</label>
           <input
             id="avatar-upload"
