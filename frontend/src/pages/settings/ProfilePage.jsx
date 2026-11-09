@@ -121,6 +121,15 @@ export default function ProfilePage() {
           <p className="truncate font-semibold text-navy-800">{user?.full_name}</p>
           <p className="mt-1 text-sm text-ink-muted">Your current profile picture</p>
           <label htmlFor="avatar-upload" className="mt-2 inline-block cursor-pointer text-sm font-semibold text-navy-700 underline underline-offset-4">Change profile picture</label>
+          <label htmlFor="avatar-upload" className="sr-only">Update avatar</label>
+          <input
+            id="avatar-upload"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={uploadingAvatar}
+            onChange={handleAvatarChange}
+            className="sr-only"
+          />
         </div>
       </div>
 
@@ -165,19 +174,6 @@ export default function ProfilePage() {
           Save changes
         </Button>
       </form>
-
-      <div className="mt-6 border-t border-line pt-5">
-        <p className="text-xs text-ink-muted">JPEG, PNG, or WebP. Up to 4 MB. Use “Change profile picture” above to choose a new photo.</p>
-        <label htmlFor="avatar-upload" className="sr-only">Update avatar</label>
-        <input
-          id="avatar-upload"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          disabled={uploadingAvatar}
-          onChange={handleAvatarChange}
-          className="mt-2 block w-full text-sm text-ink-muted file:mr-4 file:rounded-lg file:border-0 file:bg-navy-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-navy-700 hover:file:bg-navy-100 disabled:cursor-not-allowed disabled:opacity-60"
-        />
-      </div>
 
       {user?.role !== ROLES.ADMIN && (
         <div className="mt-6 border-t border-line pt-5">
