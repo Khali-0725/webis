@@ -10,6 +10,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { faqApi } from '@/services/api/admin/faqApi';
 import { settingsApi } from '@/services/api/admin/settingsApi';
+import { categoryApi } from '@/services/api/categoryApi';
+import { adminBarangayApi } from '@/services/api/admin/barangayApi';
 import { fieldError } from '@/services/api/client';
 import { queryKeys } from '@/services/api/queryClient';
 
@@ -26,6 +28,25 @@ export default function CmsPage() {
 
   const settingsQuery = useQuery({ queryKey: queryKeys.admin.settings, queryFn: settingsApi.list });
   const faqQuery = useQuery({ queryKey: ['admin', 'faqs'], queryFn: faqApi.list });
+  const categoryQuery = useQuery({ queryKey: queryKeys.admin.categories, queryFn: () => categoryApi.list({ per_page: 1000 }) });
+  const barangayQuery = useQuery({ queryKey: queryKeys.admin.barangays, queryFn: () => adminBarangayApi.list({ per_page: 1000 }) });
+
+  const downloadBackup = () => {
+    const backup = {
+      exported_at: new Date().toISOString(),
+      settings: settingsQuery.data ?? [],
+      faqs: faqQuery.data ?? [],
+      categories: categoryQuery.data ?? [],
+      barangays: barangayQuery.data ?? [],
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `webis-platform-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setNotice({ tone: 'success', message: 'Platform configuration backup downloaded.' });
+  };
 
   if (settingsQuery.data && settingsQuery.dataUpdatedAt !== syncedAt) {
     setAnnouncement(settingsQuery.data.find((row) => row.key === 'platform.announcement')?.value ?? '');
@@ -71,6 +92,11 @@ export default function CmsPage() {
   return (
     <div className="space-y-5">
       {notice && <Alert tone={notice.tone}>{notice.message}</Alert>}
+
+      <Card title="System data backup">
+        <p className="text-sm text-ink-muted">Download platform settings, announcements, FAQs, categories, and barangays as a JSON backup. Database records and uploaded files still require a hosting backup.</p>
+        <Button type="button" variant="outline" className="mt-3" onClick={downloadBackup} disabled={settingsQuery.isPending || faqQuery.isPending || categoryQuery.isPending || barangayQuery.isPending}>Download configuration backup</Button>
+      </Card>
 
       <Card title="Public announcement">
         {settingsQuery.isPending && <LoadingState label="Loading announcement…" />}

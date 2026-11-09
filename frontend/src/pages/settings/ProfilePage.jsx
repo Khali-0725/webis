@@ -120,7 +120,7 @@ export default function ProfilePage() {
         <div className="min-w-0">
           <p className="truncate font-semibold text-navy-800">{user?.full_name}</p>
           <p className="mt-1 text-sm text-ink-muted">Your current profile picture</p>
-          <a href="#avatar-upload" className="mt-2 inline-block text-sm font-semibold text-navy-700 underline underline-offset-4">Change profile picture</a>
+          <label htmlFor="avatar-upload" className="mt-2 inline-block cursor-pointer text-sm font-semibold text-navy-700 underline underline-offset-4">Change profile picture</label>
         </div>
       </div>
 
@@ -167,10 +167,8 @@ export default function ProfilePage() {
       </form>
 
       <div className="mt-6 border-t border-line pt-5">
-        <label htmlFor="avatar-upload" className="block text-sm font-medium text-ink">
-          Update avatar
-        </label>
-        <p className="mt-0.5 text-xs text-ink-muted">JPEG, PNG, or WebP. Up to 4 MB.</p>
+        <p className="text-xs text-ink-muted">JPEG, PNG, or WebP. Up to 4 MB. Use “Change profile picture” above to choose a new photo.</p>
+        <label htmlFor="avatar-upload" className="sr-only">Update avatar</label>
         <input
           id="avatar-upload"
           type="file"

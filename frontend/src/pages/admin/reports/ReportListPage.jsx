@@ -90,6 +90,10 @@ export default function ReportListPage() {
         </Alert>
       )}
 
+      <Alert tone="info" className="mb-4">
+        Final report status is decided by an administrator. “Under review” is an interim state; resolving or dismissing a report records the admin decision and notes.
+      </Alert>
+
       <div className="mb-4">
         <select
           aria-label="Filter by status"
@@ -194,6 +198,7 @@ export default function ReportListPage() {
               {viewing.suspension_review.eligible && ' Suspension review eligible; an administrator must decide.'}
             </p>
           )}
+          {viewing.handled_by_user?.full_name && <p><strong>Decision by:</strong> {viewing.handled_by_user.full_name}</p>}
           {viewing.handling_notes && <p className="whitespace-pre-wrap"><strong>Admin notes:</strong> {viewing.handling_notes}</p>}
         </div>}
       </Modal>

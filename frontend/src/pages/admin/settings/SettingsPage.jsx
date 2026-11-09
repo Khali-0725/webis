@@ -8,6 +8,7 @@ import { LoadingState, ErrorState } from '@/components/ui/States';
 import { settingsApi } from '@/services/api/admin/settingsApi';
 import { fieldError } from '@/services/api/client';
 import { queryKeys } from '@/services/api/queryClient';
+import CmsPage from '@/pages/admin/cms/CmsPage';
 
 const KNOWN_KEYS = [
   { key: 'platform.name', label: 'Platform name', defaultValue: 'WEBIS' },
@@ -53,7 +54,8 @@ export default function SettingsPage() {
   if (isError) return <ErrorState description={error?.message} onRetry={() => refetch()} />;
 
   return (
-    <Card title="Platform Settings">
+    <div className="space-y-6">
+      <Card title="Platform Settings">
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}
@@ -74,6 +76,14 @@ export default function SettingsPage() {
           Save settings
         </Button>
       </form>
-    </Card>
+      </Card>
+      <section aria-labelledby="content-management-heading">
+        <div className="mb-3">
+          <h2 id="content-management-heading" className="text-lg font-semibold text-navy-800">Content management &amp; backups</h2>
+          <p className="mt-1 text-sm text-ink-muted">Edit public content and download a backup of platform configuration data.</p>
+        </div>
+        <CmsPage />
+      </section>
+    </div>
   );
 }

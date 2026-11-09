@@ -59,7 +59,6 @@ const NAV = {
 
 NAV[ROLES.SUPER_ADMIN] = [
   ...NAV[ROLES.ADMIN].filter((item) => item.to !== '/admin/reviews'),
-  { to: '/admin/cms', label: 'Content Management', icon: 'clipboard', group: 'System' },
 ];
 
 const PORTAL_LABEL = {
