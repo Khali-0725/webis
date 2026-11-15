@@ -34,6 +34,11 @@ export const authApi = {
     resetCsrfCookie();
   },
 
+  async setPassword(payload) {
+    const response = await api.put('/me/password', payload);
+    return unwrap(response);
+  },
+
   /** POST /api/auth/forgot-password */
   async forgotPassword({ email }) {
     const response = await api.post('/auth/forgot-password', { email });

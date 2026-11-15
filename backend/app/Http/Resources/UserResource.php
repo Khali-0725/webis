@@ -38,6 +38,7 @@ class UserResource extends JsonResource
             'role_label' => $this->role->label(),
             'status' => $this->status->value,
             'email_verified' => $this->email_verified_at !== null,
+            'password_setup_required' => (bool) ($this->resource->getAttributes()['password_setup_required'] ?? false),
             'home_path' => $this->role->homePath(),
             'provider_verification_status' => $this->isProvider() ? $this->providerProfile?->verification_status?->value : null,
             'created_at' => $this->created_at?->toIso8601String(),

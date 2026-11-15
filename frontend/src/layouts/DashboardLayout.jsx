@@ -8,6 +8,11 @@ import { notificationApi } from '@/services/api/notificationApi';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { ROLES } from '@/constants';
 import { dashboardBackLink } from '@/utils/dashboardBackLink';
+import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
+import { authApi } from '@/services/auth/authApi';
 
 /**
  * The shell used by all three portals: fixed navy sidebar on desktop, a
@@ -15,7 +20,7 @@ import { dashboardBackLink } from '@/utils/dashboardBackLink';
  * page title, notification bell and the signed-in user's name.
  */
 export function DashboardLayout({ title }) {
-  const { user, role } = useAuth();
+  const { user, role, refreshUser } = useAuth();
   const unreadCount = useUnreadCount();
   const canMessage = role === ROLES.CLIENT || role === ROLES.PROVIDER;
   const { data: notifications } = useQuery({
@@ -27,6 +32,10 @@ export function DashboardLayout({ title }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
   const [lastPath, setLastPath] = useState(location.pathname);
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [passwordError, setPasswordError] = useState(null);
+  const [savingPassword, setSavingPassword] = useState(false);
   const backLink = role === ROLES.PROVIDER && user?.provider_verification_status !== 'approved'
     ? null
     : dashboardBackLink(location.pathname, user?.home_path);
@@ -42,6 +51,30 @@ export function DashboardLayout({ title }) {
     setLastPath(location.pathname);
     setDrawerOpen(false);
   }
+
+  const savePassword = async (event) => {
+    event.preventDefault();
+    setPasswordError(null);
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      setPasswordError('Use at least 8 characters, including a letter and a number.');
+      return;
+    }
+    if (password !== passwordConfirmation) {
+      setPasswordError('Passwords do not match.');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      await authApi.setPassword({ password, password_confirmation: passwordConfirmation });
+      await refreshUser();
+      setPassword('');
+      setPasswordConfirmation('');
+    } catch (error) {
+      setPasswordError(error?.message ?? 'Could not save password.');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
 
   // Close on Escape.
   useEffect(() => {
@@ -138,6 +171,19 @@ export function DashboardLayout({ title }) {
           <Outlet />
         </main>
       </div>
+      <Modal
+        open={Boolean(user?.password_setup_required)}
+        onClose={() => {}}
+        title="Create your WEBIS password"
+        description="Set a password before exploring your dashboard. You can use it to sign in without Google."
+      >
+        {passwordError && <Alert tone="error" className="mb-4">{passwordError}</Alert>}
+        <form onSubmit={savePassword} className="space-y-4">
+          <Input label="New password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} hint="At least 8 characters, with a letter and a number." required />
+          <Input label="Confirm new password" type="password" autoComplete="new-password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required />
+          <Button type="submit" fullWidth loading={savingPassword}>Save password</Button>
+        </form>
+      </Modal>
     </div>
   );
 }

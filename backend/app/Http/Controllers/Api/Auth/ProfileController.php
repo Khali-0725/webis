@@ -4,12 +4,24 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\UpdateProfileRequest;
+use App\Http\Requests\Auth\SetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class ProfileController extends Controller
 {
+    public function setPassword(SetPasswordRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->forceFill([
+            'password' => $request->validated('password'),
+            'password_setup_required' => false,
+        ])->save();
+
+        return ApiResponse::ok(new UserResource($user->fresh()), 'Password saved successfully.');
+    }
+
     public function update(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();

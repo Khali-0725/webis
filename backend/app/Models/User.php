@@ -46,6 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'suspended_until' => 'datetime',
             'suspended_at' => 'datetime',
             'password' => 'hashed',
+            'password_setup_required' => 'boolean',
             'role' => UserRole::class,
             'status' => UserStatus::class,
         ];
