@@ -1,4 +1,3 @@
-import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -49,6 +48,12 @@ export default function AdminVerificationPage() {
   const documents = profileTab ? [] : (data?.items ?? []);
   const profiles = profileTab ? (data?.items ?? []) : [];
   const pendingIds = documents.filter((doc) => doc.status === 'pending').map((doc) => doc.id);
+  const groupedDocuments = Object.values(documents.reduce((groups, doc) => {
+    const key = String(doc.provider.id);
+    if (!groups[key]) groups[key] = { provider: doc.provider, documents: [] };
+    groups[key].documents.push(doc);
+    return groups;
+  }, {}));
   const selectedPending = selected.filter((id) => pendingIds.includes(id));
   const allSelected = pendingIds.length > 0 && pendingIds.every((id) => selectedPending.includes(id));
 
@@ -169,42 +174,44 @@ export default function AdminVerificationPage() {
         </div>
       )}
       {!isPending && !isError && documents.length > 0 && (
-        <div className="overflow-x-auto">
+        <div>
           <label className="mb-3 inline-flex min-h-10 items-center gap-2 text-sm text-ink">
             <input type="checkbox" aria-label="Select all pending documents on this page" checked={allSelected}
               onChange={(event) => setSelected(event.target.checked ? pendingIds : [])} disabled={pendingIds.length === 0} />
             Select all pending documents on this page
           </label>
-          <ResponsiveTable className="w-full min-w-[700px] text-left text-sm">
-            <thead><tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
-              <th className="py-2 pr-3"><span className="sr-only">Select</span></th>
-              <th className="py-2 pr-3">Provider</th><th className="py-2 pr-3">Document</th>
-              <th className="py-2 pr-3">Status</th><th className="py-2">Actions</th>
-            </tr></thead>
-            <tbody className="divide-y divide-line">
-              {documents.map((doc) => (
-                <tr key={doc.id}>
-                  <td className="py-3 pr-3"><input type="checkbox" aria-label={`Select ${doc.original_name}`}
-                    checked={selectedPending.includes(doc.id)} disabled={doc.status !== 'pending'}
-                    onChange={(event) => setSelected(event.target.checked ? [...selectedPending, doc.id] : selectedPending.filter((id) => id !== doc.id))} /></td>
-                  <td className="py-3 pr-3"><Link to={`/admin/providers/${doc.provider.id}`} className="font-medium text-navy-700 hover:underline">
-                    {doc.provider.user_full_name}</Link><div className="text-xs text-ink-muted">{doc.provider.business_name}</div></td>
-                  <td className="py-3 pr-3">{doc.document_type.replaceAll('_', ' ')}<div className="text-xs text-ink-muted">{doc.original_name}</div></td>
-                  <td className="py-3 pr-3"><Badge tone={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'danger' : 'warning'}>{doc.status}</Badge></td>
-                  <td className="py-3"><div className="flex flex-wrap gap-2">
-                    <IconActionButton icon="eye" label={`View ${doc.original_name}`} onClick={() => setPreviewDocument(doc)} />
-                    {doc.status === 'pending' && <>
-                      <IconActionButton icon="check" label={`Approve ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })} />
-                      <IconActionButton icon="close" label={`Decline ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })} />
-                    </>}
-                    {doc.status === 'approved' && doc.provider_verification_status !== 'approved' && (
-                      <IconActionButton icon="shield" label={`Verify provider ${doc.provider.user_full_name}`} onClick={() => setAction({ kind: 'provider', providerId: doc.provider.id })} />
-                    )}
-                  </div></td>
-                </tr>
-              ))}
-            </tbody>
-          </ResponsiveTable>
+          <div className="space-y-3">
+            {groupedDocuments.map(({ provider, documents: providerDocuments }) => (
+              <details key={provider.id} className="rounded-lg border border-line bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-navy-800">
+                  <span>
+                    <span className="text-navy-700">{provider.user_full_name}</span>
+                    <span className="ml-2 text-xs font-normal text-ink-muted">{provider.business_name || 'Business name not set'}</span>
+                  </span>
+                  <Badge tone="warning">{providerDocuments.length} document{providerDocuments.length === 1 ? '' : 's'}</Badge>
+                </summary>
+                <div className="border-t border-line px-4">
+                  {providerDocuments.map((doc) => (
+                    <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line py-3 last:border-b-0">
+                      <div className="flex items-center gap-3 text-sm">
+                        <input type="checkbox" aria-label={`Select ${doc.original_name}`} checked={selectedPending.includes(doc.id)} disabled={doc.status !== 'pending'}
+                          onChange={(event) => setSelected(event.target.checked ? [...selectedPending, doc.id] : selectedPending.filter((id) => id !== doc.id))} />
+                        <span className="capitalize">{doc.document_type.replaceAll('_', ' ')}<span className="block text-xs text-ink-muted">{doc.original_name}</span></span>
+                        <Badge tone={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'danger' : 'warning'}>{doc.status}</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <IconActionButton icon="eye" label={`View ${doc.original_name}`} onClick={() => setPreviewDocument(doc)} />
+                        {doc.status === 'pending' && <>
+                          <IconActionButton icon="check" label={`Approve ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })} />
+                          <IconActionButton icon="close" label={`Decline ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })} />
+                        </>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
         </div>
       )}
       <Pagination meta={data?.meta} onChange={(next) => { setPage(next); setSelected([]); }} />
