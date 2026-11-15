@@ -159,6 +159,9 @@ export default function ProfilePage() {
         <Input
           label="Contact number"
           type="tel"
+          inputMode="numeric"
+          maxLength={11}
+          pattern="09[0-9]{9}"
           autoComplete="tel"
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}

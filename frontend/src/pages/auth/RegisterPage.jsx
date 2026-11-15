@@ -21,7 +21,7 @@ const schema = z
     phone: z
       .string()
       .trim()
-      .regex(/^(\+?63|0)9\d{9}$/, 'Enter a valid Philippine mobile number (e.g. 09171234567).')
+      .regex(/^09\d{9}$/, 'Enter 11 digits starting with 09 (e.g. 09171234567).')
       .or(z.literal('')),
     role: z.enum([ROLES.CLIENT, ROLES.PROVIDER]),
     password: z
@@ -196,6 +196,9 @@ export default function RegisterPage() {
 
         <Input
           label="Mobile Number"
+          inputMode="numeric"
+          maxLength={11}
+          pattern="09[0-9]{9}"
           type="tel"
           autoComplete="tel"
           placeholder="09171234567"

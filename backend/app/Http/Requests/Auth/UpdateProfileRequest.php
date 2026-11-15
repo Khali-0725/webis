@@ -18,7 +18,7 @@ class UpdateProfileRequest extends FormRequest
         return [
             'first_name' => ['sometimes', 'required', 'string', 'min:2', 'max:100', new NoProfanity],
             'last_name' => ['sometimes', 'required', 'string', 'min:2', 'max:100', new NoProfanity],
-            'phone' => ['sometimes', 'nullable', 'string', 'regex:/^(\+?63|0)9\d{9}$/'],
+            'phone' => ['sometimes', 'nullable', 'string', 'regex:/^09\d{9}$/'],
             'email' => ['sometimes', 'required', 'string', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($this->user()->id)],
             'address_line' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
@@ -34,9 +34,6 @@ class UpdateProfileRequest extends FormRequest
         }
         if (isset($values['email'])) {
             $values['email'] = mb_strtolower($values['email']);
-        }
-        if ($this->has('phone') && is_string($this->input('phone'))) {
-            $values['phone'] = preg_replace('/[\s\-()]/', '', $this->input('phone'));
         }
         $this->merge($values);
     }

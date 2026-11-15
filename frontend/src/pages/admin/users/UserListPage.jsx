@@ -427,7 +427,7 @@ function UserEditor({ mode, user, barangays, isSelf, onClose, onSaved }) {
         <Input label="First name" required value={form.first_name} onChange={set('first_name')} error={fieldError(err, 'first_name')} />
         <Input label="Last name" required value={form.last_name} onChange={set('last_name')} error={fieldError(err, 'last_name')} />
         <Input label="Email" type="email" required value={form.email} onChange={set('email')} error={fieldError(err, 'email')} className="sm:col-span-2" />
-        <Input label="Mobile number" value={form.phone} onChange={set('phone')} placeholder="09171234567" error={fieldError(err, 'phone')} />
+        <Input label="Mobile number" value={form.phone} onChange={set('phone')} placeholder="09171234567" inputMode="numeric" maxLength={11} pattern="09[0-9]{9}" error={fieldError(err, 'phone')} />
         <Select
           label="Role"
           value={form.role}

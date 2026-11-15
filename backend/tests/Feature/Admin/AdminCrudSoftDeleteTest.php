@@ -55,7 +55,7 @@ class AdminCrudSoftDeleteTest extends TestCase
         $user = User::factory()->client()->create();
 
         $this->actingAs($this->admin())
-            ->patchJson("/api/admin/users/{$user->id}", ['first_name' => 'Renamed', 'phone' => '0917 123 4567'])
+                ->patchJson("/api/admin/users/{$user->id}", ['first_name' => 'Renamed', 'phone' => '09171234567'])
             ->assertOk()
             ->assertJsonPath('data.full_name', "Renamed {$user->last_name}")
             ->assertJsonPath('data.phone', '09171234567');

@@ -137,6 +137,16 @@ class RegistrationTest extends TestCase
             ->assertJsonValidationErrors('phone');
     }
 
+    public function test_registration_rejects_country_code_and_formatted_mobile_numbers(): void
+    {
+        foreach (['+639171234567', '0917 123 4567', '0917-123-4567'] as $phone) {
+            $this->postJson('/api/auth/register', $this->payload([
+                'phone' => $phone,
+                'email' => str_replace(['+', ' ', '-'], '', $phone).'@example.com',
+            ]))->assertStatus(422)->assertJsonValidationErrors('phone');
+        }
+    }
+
     public function test_registration_requires_accepting_the_terms(): void
     {
         $this->postJson('/api/auth/register', $this->payload(['accepted_terms' => false]))

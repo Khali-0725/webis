@@ -26,7 +26,7 @@ class StoreUserRequest extends FormRequest
             'first_name' => ['required', 'string', 'min:2', 'max:100', new NoProfanity],
             'last_name' => ['required', 'string', 'min:2', 'max:100', new NoProfanity],
             'email' => ['required', 'string', 'email:rfc', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'regex:/^(\+?63|0)9\d{9}$/'],
+            'phone' => ['nullable', 'string', 'regex:/^09\d{9}$/'],
             'barangay_id' => ['nullable', 'exists:barangays,id'],
             // Super Admin accounts are provisioned outside the public API.
             'role' => ['required', Rule::in([UserRole::Client->value, UserRole::Provider->value, UserRole::Admin->value])],
@@ -45,7 +45,6 @@ class StoreUserRequest extends FormRequest
     {
         $this->merge([
             'email' => is_string($this->email) ? mb_strtolower(trim($this->email)) : $this->email,
-            'phone' => is_string($this->phone) ? preg_replace('/[\s\-()]/', '', $this->phone) : $this->phone,
         ]);
     }
 }

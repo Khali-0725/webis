@@ -37,7 +37,7 @@ class UpdateUserRequest extends FormRequest
             'first_name' => ['sometimes', 'required', 'string', 'min:2', 'max:100', new NoProfanity],
             'last_name' => ['sometimes', 'required', 'string', 'min:2', 'max:100', new NoProfanity],
             'email' => ['sometimes', 'required', 'string', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
-            'phone' => ['sometimes', 'nullable', 'string', 'regex:/^(\+?63|0)9\d{9}$/'],
+            'phone' => ['sometimes', 'nullable', 'string', 'regex:/^09\d{9}$/'],
             'barangay_id' => ['sometimes', 'nullable', 'exists:barangays,id'],
             'role' => ['sometimes', Rule::in([UserRole::Client->value, UserRole::Provider->value, UserRole::Admin->value])],
             'password' => ['sometimes', 'nullable', 'string', Password::min(8)->letters()->numbers()],
@@ -59,9 +59,6 @@ class UpdateUserRequest extends FormRequest
             $merge['email'] = mb_strtolower(trim($this->email));
         }
 
-        if (is_string($this->phone)) {
-            $merge['phone'] = preg_replace('/[\s\-()]/', '', $this->phone);
-        }
 
         $this->merge($merge);
     }

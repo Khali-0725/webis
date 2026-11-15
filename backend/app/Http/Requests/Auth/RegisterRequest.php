@@ -27,7 +27,7 @@ class RegisterRequest extends FormRequest
             // `rfc` only, deliberately: `dns` makes registration depend on a live
             // DNS lookup, which fails offline and rejects freshly-registered domains.
             'email' => ['required', 'string', 'email:rfc', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'regex:/^(\+?63|0)9\d{9}$/'],
+            'phone' => ['nullable', 'string', 'regex:/^09\d{9}$/'],
 
             // A visitor may register only as a client or a provider.
             // "admin" is rejected here AND ignored by the service layer.
@@ -74,7 +74,6 @@ class RegisterRequest extends FormRequest
             'email' => is_string($this->email) ? mb_strtolower(trim($this->email)) : $this->email,
             'first_name' => is_string($this->first_name) ? trim($this->first_name) : $this->first_name,
             'last_name' => is_string($this->last_name) ? trim($this->last_name) : $this->last_name,
-            'phone' => is_string($this->phone) ? preg_replace('/[\s\-()]/', '', $this->phone) : $this->phone,
         ]);
     }
 }
