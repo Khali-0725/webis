@@ -21,7 +21,9 @@ class VerificationDocumentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $profile = $request->user()->providerProfile()->firstOrFail();
+        // Older provider accounts may predate provider-profile creation.
+        // Create the default pending profile when it is missing.
+        $profile = $request->user()->providerProfile()->firstOrCreate([]);
 
         return ApiResponse::ok([
             'verification_status' => $profile->verification_status->value,
@@ -39,7 +41,7 @@ class VerificationDocumentController extends Controller
             'document' => ['required', File::types(config('webis.uploads.document_mimes'))->max(config('webis.uploads.document_max_kb'))],
         ]);
 
-        $profile = $request->user()->providerProfile;
+        $profile = $request->user()->providerProfile()->firstOrCreate([]);
 
         if (!$profile) {
             return ApiResponse::error('Provider profile not found.', [], 404);
