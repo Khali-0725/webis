@@ -9,8 +9,6 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -61,25 +59,6 @@ class RegistrationTest extends TestCase
 
         $this->assertSame(UserRole::Client, $user->role);
         $this->assertSame(UserStatus::Active, $user->status);
-        $this->assertNull($user->email_verified_at);
-    }
-
-    public function test_new_registration_sends_email_verification_notification(): void
-    {
-        Notification::fake();
-
-        $this->postJson('/api/auth/register', $this->payload())->assertCreated();
-
-        Notification::assertSentTo(User::where('email', 'juan@example.com')->firstOrFail(), VerifyEmail::class);
-    }
-
-    public function test_unverified_account_cannot_use_role_routes(): void
-    {
-        $user = User::factory()->client()->create(['email_verified_at' => null]);
-
-        $this->actingAs($user)->getJson('/api/client/ping')
-            ->assertForbidden()
-            ->assertJsonPath('message', 'Verify your email address before using WEBIS.');
     }
 
     public function test_a_visitor_can_register_as_a_provider(): void

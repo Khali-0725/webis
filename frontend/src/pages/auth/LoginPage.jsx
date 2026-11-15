@@ -47,7 +47,7 @@ export default function LoginPage() {
       const user = await login.mutateAsync(values);
       const intended = location.state?.from;
 
-      navigate(user.email_verified ? (intended || ROLE_HOME[user.role] || '/') : '/verify-email', { replace: true });
+      navigate(intended || ROLE_HOME[user.role] || '/', { replace: true });
     } catch (error) {
       setAppealEligible(error?.status === 403 && /has been suspended/i.test(error?.message ?? ''));
       // Field-level messages from the server win over the generic banner.

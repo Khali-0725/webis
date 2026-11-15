@@ -85,7 +85,7 @@ export default function RegisterPage() {
         phone: values.phone || null,
       });
 
-      navigate(user.email_verified ? (ROLE_HOME[user.role] ?? '/') : '/verify-email', { replace: true });
+      navigate(ROLE_HOME[user.role] ?? '/', { replace: true });
     } catch (error) {
       const serverErrors = error?.errors ?? {};
       let attached = false;

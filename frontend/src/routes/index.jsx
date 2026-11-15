@@ -12,7 +12,6 @@ const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
-import VerifyEmailPage from '@/pages/auth/VerifyEmailPage';
 const ClientDashboard = lazy(() => import('@/pages/client/ClientDashboard'));
 const ProviderDashboard = lazy(() => import('@/pages/provider/ProviderDashboard'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
@@ -108,12 +107,6 @@ export function AppRoutes() {
         </Route>
 
         {/* Client portal */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="verify-email" element={<DashboardLayout title="Verify Email" />}>
-            <Route index element={<VerifyEmailPage />} />
-          </Route>
-        </Route>
-
         {/* Client portal */}
         <Route element={<ProtectedRoute allow={[ROLES.CLIENT]} />}>
           <Route path="client/search" element={<DashboardLayout title="Search Services" />}>
