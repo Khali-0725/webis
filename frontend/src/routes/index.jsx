@@ -20,7 +20,7 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 const ProfilePage = lazy(() => import('@/pages/settings/ProfilePage'));
 const NotificationPage = lazy(() => import('@/pages/notifications/NotificationPage'));
 
-const ProviderVerificationPage = lazy(() => import('@/pages/provider/verification/VerificationPage'));
+import ProviderVerificationPage from '@/pages/provider/verification/VerificationPage';
 const AdminVerificationPage = lazy(() => import('@/pages/admin/verification/VerificationPage'));
 
 const SearchResultsPage = lazy(() => import('@/pages/public/SearchResultsPage'));
