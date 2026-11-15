@@ -36,6 +36,7 @@ export function DashboardLayout({ title }) {
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [passwordError, setPasswordError] = useState(null);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [googlePasswordSetup, setGooglePasswordSetup] = useState(() => sessionStorage.getItem('webis:google-password-setup') === '1');
   const backLink = role === ROLES.PROVIDER && user?.provider_verification_status !== 'approved'
     ? null
     : dashboardBackLink(location.pathname, user?.home_path);
@@ -67,6 +68,8 @@ export function DashboardLayout({ title }) {
     try {
       await authApi.setPassword({ password, password_confirmation: passwordConfirmation });
       await refreshUser();
+      sessionStorage.removeItem('webis:google-password-setup');
+      setGooglePasswordSetup(false);
       setPassword('');
       setPasswordConfirmation('');
     } catch (error) {
@@ -172,7 +175,7 @@ export function DashboardLayout({ title }) {
         </main>
       </div>
       <Modal
-        open={Boolean(user?.password_setup_required)}
+        open={Boolean(user?.password_setup_required || googlePasswordSetup)}
         onClose={() => {}}
         title="Create your WEBIS password"
         description="Set a password before exploring your dashboard. You can use it to sign in without Google."

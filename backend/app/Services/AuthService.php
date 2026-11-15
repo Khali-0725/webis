@@ -197,7 +197,7 @@ class AuthService
                 'last_name' => $google['family_name'],
                 'email' => $google['email'],
                 'password' => $password ?: Str::random(40),
-                'password_setup_required' => $password === null,
+                'password_setup_required' => true,
             ]);
 
             $user->google_id = $google['sub'];
