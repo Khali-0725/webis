@@ -28,6 +28,7 @@ export default function ProviderVerificationPage() {
   const [type, setType] = useState(DOCUMENT_TYPES[0].value);
   const [notice, setNotice] = useState(null);
   const [previewDocument, setPreviewDocument] = useState(null);
+  const documents = Array.isArray(statusQuery.data?.documents) ? statusQuery.data.documents : [];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,10 +84,10 @@ export default function ProviderVerificationPage() {
               return <li key={requiredType}>{requiredType === 'government_id' ? 'Government-issued ID' : 'Business permit'}: {current?.status === 'approved' ? 'Approved' : current?.status === 'rejected' ? 'Rejected — replace this document' : 'Required or under review'}</li>;
             })}
           </ul>
-          {statusQuery.data.documents.length > 0 && (
+          {documents.length > 0 && (
             <div className="mt-4 border-t border-line pt-3">
               <p className="mb-2 text-sm font-medium">Submitted documents</p>
-              {statusQuery.data.documents.map((doc) => (
+              {documents.map((doc) => (
                 <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
                   <span>{doc.original_name} ({doc.document_type.replaceAll('_', ' ')})</span>
                   <span>{doc.status} · <button type="button" onClick={() => setPreviewDocument(doc)} aria-label={`View ${doc.original_name}`} className="text-brand underline">View</button></span>

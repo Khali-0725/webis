@@ -161,6 +161,7 @@ export function AppRoutes() {
         {/* Provider portal */}
         <Route element={<ProtectedRoute allow={[ROLES.PROVIDER]} />}>
           <Route path="provider" element={<DashboardLayout title="Dashboard" />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<ProviderDashboard />} />
           </Route>
           <Route path="provider/profile" element={<DashboardLayout title="My Profile" />}>
