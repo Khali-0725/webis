@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use App\Rules\NoProfanity;
 
 class StoreUserRequest extends FormRequest
 {
@@ -22,8 +23,8 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['required', 'string', 'min:2', 'max:100'],
-            'last_name' => ['required', 'string', 'min:2', 'max:100'],
+            'first_name' => ['required', 'string', 'min:2', 'max:100', new NoProfanity],
+            'last_name' => ['required', 'string', 'min:2', 'max:100', new NoProfanity],
             'email' => ['required', 'string', 'email:rfc', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'regex:/^(\+?63|0)9\d{9}$/'],
             'barangay_id' => ['nullable', 'exists:barangays,id'],

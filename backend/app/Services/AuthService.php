@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\DomainException;
 use App\Models\User;
+use App\Services\ChatModerationService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -175,6 +176,15 @@ class AuthService
      */
     private function registerWithGoogle(array $google, UserRole $role): User
     {
+        if (app(ChatModerationService::class)->containsProfanity($google['given_name'])
+            || app(ChatModerationService::class)->containsProfanity($google['family_name'])) {
+            throw new DomainException(
+                'This Google profile name contains language that is not allowed.',
+                422,
+                ['name' => ['This Google profile name contains language that is not allowed.']]
+            );
+        }
+
         $user = DB::transaction(function () use ($google, $role) {
             $user = new User;
 

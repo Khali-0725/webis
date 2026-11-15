@@ -16,6 +16,12 @@ use Normalizer;
  */
 class ChatModerationService
 {
+    public function containsProfanity(string $text): bool
+    {
+        $result = $this->evaluate($text);
+
+        return $result['matched_rule'] === 'profanity';
+    }
     /**
      * @return array{tier: 'blocked'|'warned'|'allowed', category: ?ViolationCategory, matched_rule: ?string, severity: ?ViolationSeverity}
      */

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Enums\UserRole;
+use App\Rules\NoProfanity;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -21,8 +22,8 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['required', 'string', 'min:2', 'max:100'],
-            'last_name' => ['required', 'string', 'min:2', 'max:100'],
+            'first_name' => ['required', 'string', 'min:2', 'max:100', new NoProfanity],
+            'last_name' => ['required', 'string', 'min:2', 'max:100', new NoProfanity],
             // `rfc` only, deliberately: `dns` makes registration depend on a live
             // DNS lookup, which fails offline and rejects freshly-registered domains.
             'email' => ['required', 'string', 'email:rfc', 'max:255', 'unique:users,email'],

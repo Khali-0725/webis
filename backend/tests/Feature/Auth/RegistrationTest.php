@@ -111,6 +111,18 @@ class RegistrationTest extends TestCase
         ]))->assertStatus(422)->assertJsonValidationErrors('password');
     }
 
+    public function test_registration_rejects_profanity_in_display_name(): void
+    {
+        $this->postJson('/api/auth/register', $this->payload([
+            'first_name' => 'Puta',
+            'email' => 'bad-name@example.com',
+        ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('first_name');
+
+        $this->assertDatabaseMissing('users', ['email' => 'bad-name@example.com']);
+    }
+
     public function test_registration_rejects_a_mismatched_confirmation(): void
     {
         $this->postJson('/api/auth/register', $this->payload([
