@@ -18,7 +18,10 @@ export default function NotificationPage() {
   });
   const readMutation = useMutation({
     mutationFn: notificationApi.markRead,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'header'] });
+    },
   });
 
   return (

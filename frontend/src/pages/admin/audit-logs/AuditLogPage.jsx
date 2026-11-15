@@ -8,6 +8,8 @@ import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { auditLogApi } from '@/services/api/admin/auditLogApi';
 import { queryKeys } from '@/services/api/queryClient';
+import { Button } from '@/components/ui/Button';
+import { exportRowsToPdf } from '@/utils/exportPdf';
 
 export default function AuditLogPage() {
   const [searchParams] = useSearchParams();
@@ -24,7 +26,7 @@ export default function AuditLogPage() {
   const logs = data?.items ?? [];
 
   return (
-    <Card title={userId ? `Account history · User #${userId}` : 'Audit Logs'}>
+    <Card title={userId ? `Account history · User #${userId}` : 'Audit Logs'} action={<Button size="sm" onClick={() => exportRowsToPdf({ filename: 'webis-audit-logs.pdf', title: 'WEBIS Audit Logs', columns: [{ label: 'When', width: 42, value: (l) => new Date(l.created_at).toLocaleString('en-PH') }, { label: 'Actor', width: 40, value: (l) => l.actor?.full_name ?? 'System' }, { label: 'Action', width: 50, value: (l) => l.action }, { label: 'Subject', width: 65, value: (l) => l.auditable_type ? `${l.auditable_type} #${l.auditable_id}` : '—' }], rows: logs })}>Export PDF</Button>}>
       {userId && <Link to="/admin/users" className="mb-3 inline-block text-sm text-brand hover:underline">Back to users</Link>}
       <div className="mb-4">
         <Input

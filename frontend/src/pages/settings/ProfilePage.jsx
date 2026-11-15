@@ -39,6 +39,7 @@ export default function ProfilePage() {
   };
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
@@ -65,6 +66,7 @@ export default function ProfilePage() {
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     setNotice(null);
+    setFormErrors({});
     setSavingProfile(true);
 
     try {
@@ -74,6 +76,7 @@ export default function ProfilePage() {
         ? 'Profile saved. Check your new email address for a verification link.'
         : 'Profile updated successfully.' });
     } catch (error) {
+      setFormErrors(error?.errors ?? {});
       setNotice({ tone: 'error', message: error?.message ?? 'Failed to update profile.' });
     } finally {
       setSavingProfile(false);
@@ -139,12 +142,14 @@ export default function ProfilePage() {
           label="First Name"
           required
           value={formData.first_name}
+          error={fieldError({ errors: formErrors }, 'first_name')}
           onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
         />
         <Input
           label="Last Name"
           required
           value={formData.last_name}
+          error={fieldError({ errors: formErrors }, 'last_name')}
           onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
         />
         <Input
@@ -153,6 +158,7 @@ export default function ProfilePage() {
           autoComplete="email"
           required
           value={formData.email}
+          error={fieldError({ errors: formErrors }, 'email')}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           hint="Changing your email requires verification."
         />
@@ -166,6 +172,7 @@ export default function ProfilePage() {
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           placeholder="09171234567"
+          error={fieldError({ errors: formErrors }, 'phone')}
         />
         <Input
           label="Address"

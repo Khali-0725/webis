@@ -327,7 +327,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::patch('/users/{user}/terminate', [UserController::class, 'terminate'])->name('users.terminate');
         Route::patch('/users/{user}/restore-terminated', [UserController::class, 'restoreTerminated'])->name('users.restore-terminated');
         Route::get('/appeals', [SuspensionAppealController::class, 'index'])->name('appeals.index');
-        Route::patch('/appeals/{appeal}', [SuspensionAppealController::class, 'decide'])->name('appeals.decide');
+        Route::patch('/appeals/{appealId}', [SuspensionAppealController::class, 'decide'])->whereNumber('appealId')->name('appeals.decide');
         Route::middleware('role:admin')->group(function () {
             Route::get('/reviews', [App\Http\Controllers\Api\Admin\ReviewController::class, 'index'])->name('reviews.index');
             Route::patch('/reviews/{review}/visibility', [App\Http\Controllers\Api\Admin\ReviewController::class, 'visibility'])->name('reviews.visibility');

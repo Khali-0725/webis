@@ -21,6 +21,7 @@ import { fieldError } from '@/services/api/client';
 import { queryKeys } from '@/services/api/queryClient';
 import { ROLE_LABELS, ROLES } from '@/constants';
 import { useAuth } from '@/hooks/useAuth';
+import { showFeedback } from '@/utils/feedback';
 
 const ROLE_OPTIONS = ['', ROLES.CLIENT, ROLES.PROVIDER, ROLES.ADMIN, ROLES.SUPER_ADMIN];
 const STATUS_OPTIONS = ['', 'active', 'suspended', 'terminated'];
@@ -93,7 +94,8 @@ export default function UserListPage() {
     try {
       await fn();
       await invalidate();
-      setNotice({ tone: 'success', message: successMessage });
+      setNotice(null);
+      showFeedback('success', 'Done', successMessage);
     } catch (err) {
       setNotice({ tone: 'error', message: err?.message ?? fallback });
     }
@@ -118,7 +120,9 @@ export default function UserListPage() {
       setAccountBasis('');
       setNotice({ tone: 'success', message: `Account ${kind === 'restore' ? 'restored' : kind === 'suspend' ? 'suspended' : 'terminated'}.` });
     } catch (error) {
-      setAccountActionError(error?.message ?? 'Could not update this account.');
+      const message = fieldError(error, 'reason') ?? error?.message ?? 'Could not update this account.';
+      setAccountActionError(message);
+      showFeedback('error', 'Account update failed', message);
     } finally {
       setAccountActionBusy(false);
     }
@@ -367,7 +371,7 @@ export default function UserListPage() {
               <Input label="Duration in days (1–15)" type="number" min="1" max="15" required value={suspensionDays} onChange={(event) => setSuspensionDays(event.target.value)} />
             </>
           )}
-          <Input label="Reason" required value={accountReason} onChange={(event) => setAccountReason(event.target.value)} />
+              <Input label="Reason" required minLength={5} value={accountReason} onChange={(event) => setAccountReason(event.target.value)} hint="Enter at least 5 characters." />
         </div>
       </ConfirmDialog>
     </Card>

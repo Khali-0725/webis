@@ -15,6 +15,9 @@ import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { adminReportApi } from '@/services/api/admin/reportApi';
 import { queryKeys } from '@/services/api/queryClient';
+import { Button } from '@/components/ui/Button';
+import { exportRowsToPdf } from '@/utils/exportPdf';
+import { showFeedback } from '@/utils/feedback';
 
 const STATUS_TONE = { open: 'warning', reviewing: 'info', resolved: 'success', dismissed: 'neutral' };
 const STATUS_OPTIONS = [
@@ -53,9 +56,10 @@ export default function ReportListPage() {
       invalidate();
       setPendingDecision(null);
       setHandlingNotes('');
-      setNotice({ tone: 'success', message: 'Report updated.' });
+      setNotice(null);
+      showFeedback('success', 'Report updated', 'The administrator decision was saved.');
     },
-    onError: (err) => setNotice({ tone: 'error', message: err?.message ?? 'Failed to update report.' }),
+    onError: (err) => { setNotice(null); showFeedback('error', 'Report update failed', err?.message ?? 'Failed to update report.'); },
   });
 
   const restoreMutation = useMutation({
@@ -83,7 +87,7 @@ export default function ReportListPage() {
   };
 
   return (
-    <Card title="Reports" action={<TrashToggle superAdminOnly value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} />}>
+    <Card title="Reports" action={<div className="flex items-center gap-2"><Button size="sm" onClick={() => exportRowsToPdf({ filename: 'webis-reports.pdf', title: 'WEBIS Reports', columns: [{ label: 'Reporter', width: 48, value: (r) => r.reporter?.full_name ?? 'Unknown' }, { label: 'Against', width: 45, value: (r) => `${r.reportable_type} #${r.reportable_id}` }, { label: 'Reason', width: 65, value: (r) => r.reason_label }, { label: 'Status', width: 38, value: (r) => r.status_label }], rows: reports })}>Export PDF</Button><TrashToggle superAdminOnly value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} /></div>}>
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}

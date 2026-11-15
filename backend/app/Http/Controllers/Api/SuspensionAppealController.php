@@ -73,14 +73,14 @@ class SuspensionAppealController extends Controller
         return ApiResponse::paginated($appeals);
     }
 
-    public function decide(Request $request, SuspensionAppeal $appeal): JsonResponse
+    public function decide(Request $request, int $appealId): JsonResponse
     {
         $data = $request->validate([
             'decision' => ['required', Rule::in(['approved', 'rejected'])],
             'rationale' => ['required', 'string', 'min:10', 'max:3000'],
         ]);
-        DB::transaction(function () use ($request, $appeal, $data) {
-            $appeal = SuspensionAppeal::whereKey($appeal->id)->lockForUpdate()->firstOrFail();
+        DB::transaction(function () use ($request, $appealId, $data) {
+            $appeal = SuspensionAppeal::whereKey($appealId)->lockForUpdate()->firstOrFail();
             if ($appeal->status !== 'pending') throw DomainException::conflict('This appeal has already been decided.');
             $user = User::whereKey($appeal->user_id)->lockForUpdate()->firstOrFail();
             $appeal->forceFill([
