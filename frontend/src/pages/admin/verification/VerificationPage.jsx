@@ -15,52 +15,37 @@ import { VerificationDocumentPreview } from '@/components/verification/Verificat
 import { verificationApi } from '@/services/api/verificationApi';
 
 const TABS = [
-  { key: 'pending', label: 'Pending', params: { status: 'pending' } },
-  { key: 'verified', label: 'Verified', params: { status: 'all', profile_status: 'approved' } },
-  { key: 'unverified', label: 'Unverified', params: { status: 'all', profile_status: 'pending' } },
-  { key: 'rejected', label: 'Rejected', params: { status: 'all', profile_status: 'rejected' } },
+  { key: 'unverified', label: 'Unverified', params: { status: 'pending', ready: false } },
+  { key: 'pending_activation', label: 'Pending Activation', params: { status: 'pending', ready: true } },
+  { key: 'verified', label: 'Verified', params: { status: 'approved' } },
+  { key: 'rejected', label: 'Rejected', params: { status: 'rejected' } },
 ];
 
 export default function AdminVerificationPage() {
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState('pending');
+  const [tab, setTab] = useState('unverified');
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState([]);
   const [action, setAction] = useState(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [previewDocument, setPreviewDocument] = useState(null);
-  const profileTab = tab !== 'pending';
   const params = { ...TABS.find((item) => item.key === tab).params, page };
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'verification', tab, params],
-    queryFn: () => profileTab
-      ? verificationApi.listProviders({ status: params.profile_status, page })
-      : verificationApi.listDocuments(params),
+    queryFn: () => verificationApi.listProviders(params),
   });
   const { data: countData } = useQuery({
     queryKey: ['admin', 'verification', 'counts'],
     queryFn: () => verificationApi.listDocuments({ status: 'pending', per_page: 1 }),
   });
-  const documents = profileTab ? [] : (data?.items ?? []);
-  const profiles = profileTab ? (data?.items ?? []) : [];
-  const pendingIds = documents.filter((doc) => doc.status === 'pending').map((doc) => doc.id);
-  const groupedDocuments = Object.values(documents.reduce((groups, doc) => {
-    const key = String(doc.provider.id);
-    if (!groups[key]) groups[key] = { provider: doc.provider, documents: [] };
-    groups[key].documents.push(doc);
-    return groups;
-  }, {}));
-  const selectedPending = selected.filter((id) => pendingIds.includes(id));
-  const allSelected = pendingIds.length > 0 && pendingIds.every((id) => selectedPending.includes(id));
+  const profiles = data?.items ?? [];
 
   const changeTab = (next) => {
     setTab(next);
     setPage(1);
-    setSelected([]);
   };
 
   const runAction = async () => {
@@ -85,7 +70,6 @@ export default function AdminVerificationPage() {
         setNotice({ tone: 'success', message: 'Document rejected with the recorded reason.' });
       }
       setAction(null);
-      setSelected([]);
       setReason('');
       await queryClient.invalidateQueries({ queryKey: ['admin', 'verification'] });
     } catch (err) {
@@ -102,7 +86,7 @@ export default function AdminVerificationPage() {
         a criminal background check, or a guarantee of safety.
       </p>
       <p className="mb-4 text-sm text-ink-muted">
-        Both required documents must be approved. Then select Verify provider in the Unverified tab.
+        Providers start in Unverified. After both required documents are approved, they move to Pending Activation for final approval.
       </p>
       {notice && <Alert tone={notice.tone} className="mb-4">{notice.message}</Alert>}
 
@@ -116,21 +100,13 @@ export default function AdminVerificationPage() {
         ))}
       </div>
 
-      {selectedPending.length > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-navy-50 p-3 text-sm">
-          <span>{selectedPending.length} pending document(s) selected</span>
-          <IconActionButton icon="check" label={`Accept ${selectedPending.length} selected documents`} onClick={() => setAction({ kind: 'bulk', decision: 'approve', ids: selectedPending })} />
-          <IconActionButton icon="close" label={`Decline ${selectedPending.length} selected documents`} onClick={() => setAction({ kind: 'bulk', decision: 'reject', ids: selectedPending })} />
-        </div>
-      )}
-
-      {isPending && <LoadingState label="Loading documents…" />}
+      {isPending && <LoadingState label="Loading providers…" />}
       {isError && <ErrorState description={error?.message} onRetry={() => refetch()} />}
-      {!isPending && !isError && data?.items?.length === 0 && (
-        <EmptyState title={profileTab ? 'No providers in this view' : 'No pending documents'}
-          description={profileTab ? 'Providers will appear here when their overall verification status matches this tab.' : 'New submissions will appear here for review.'} />
+      {!isPending && !isError && profiles.length === 0 && (
+        <EmptyState title="No providers in this view"
+          description="Providers will appear here when they match this verification stage." />
       )}
-      {!isPending && !isError && profileTab && profiles.length > 0 && (
+      {!isPending && !isError && profiles.length > 0 && (
         <div className="space-y-4">
           {profiles.map((profile) => (
             <div key={profile.id} className="rounded-lg border border-line p-4">
@@ -179,48 +155,7 @@ export default function AdminVerificationPage() {
           ))}
         </div>
       )}
-      {!isPending && !isError && documents.length > 0 && (
-        <div>
-          <label className="mb-3 inline-flex min-h-10 items-center gap-2 text-sm text-ink">
-            <input type="checkbox" aria-label="Select all pending documents on this page" checked={allSelected}
-              onChange={(event) => setSelected(event.target.checked ? pendingIds : [])} disabled={pendingIds.length === 0} />
-            Select all pending documents on this page
-          </label>
-          <div className="space-y-3">
-            {groupedDocuments.map(({ provider, documents: providerDocuments }) => (
-              <details key={provider.id} className="rounded-lg border border-line bg-white">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-navy-800">
-                  <span>
-                    <span className="text-navy-700">{provider.user_full_name}</span>
-                    <span className="ml-2 text-xs font-normal text-ink-muted">{provider.business_name || 'Business name not set'}</span>
-                  </span>
-                  <Badge tone="warning">{providerDocuments.length} document{providerDocuments.length === 1 ? '' : 's'}</Badge>
-                </summary>
-                <div className="border-t border-line px-4">
-                  {providerDocuments.map((doc) => (
-                    <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line py-3 last:border-b-0">
-                      <div className="flex items-center gap-3 text-sm">
-                        <input type="checkbox" aria-label={`Select ${doc.original_name}`} checked={selectedPending.includes(doc.id)} disabled={doc.status !== 'pending'}
-                          onChange={(event) => setSelected(event.target.checked ? [...selectedPending, doc.id] : selectedPending.filter((id) => id !== doc.id))} />
-                        <span className="capitalize">{doc.document_type.replaceAll('_', ' ')}<span className="block text-xs text-ink-muted">{doc.original_name}</span></span>
-                        <Badge tone={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'danger' : 'warning'}>{doc.status}</Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <IconActionButton icon="eye" label={`View ${doc.original_name}`} onClick={() => setPreviewDocument(doc)} />
-                        {doc.status === 'pending' && <>
-                          <IconActionButton icon="check" label={`Approve ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })} />
-                          <IconActionButton icon="close" label={`Decline ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })} />
-                        </>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            ))}
-          </div>
-        </div>
-      )}
-      <Pagination meta={data?.meta} onChange={(next) => { setPage(next); setSelected([]); }} />
+      <Pagination meta={data?.meta} onChange={setPage} />
 
       {previewDocument && <VerificationDocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />}
 

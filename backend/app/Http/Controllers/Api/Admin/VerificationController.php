@@ -15,6 +15,7 @@ use App\Support\AuditLogger;
 use App\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -43,7 +44,8 @@ class VerificationController extends Controller
             ['counts' => [
                 'pending' => ProviderVerificationDocument::where('status', DocumentStatus::Pending->value)->count(),
                 'verified' => ProviderProfile::where('verification_status', VerificationStatus::Approved->value)->count(),
-                'unverified' => ProviderProfile::where('verification_status', VerificationStatus::Pending->value)->count(),
+                'pending_activation' => $this->pendingActivationQuery()->count(),
+                'unverified' => $this->unverifiedQuery()->count(),
                 'rejected' => ProviderProfile::where('verification_status', VerificationStatus::Rejected->value)->count(),
             ]],
         );
@@ -54,11 +56,18 @@ class VerificationController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(VerificationStatus::values())],
+            'ready' => ['nullable', Rule::in(['0', '1', 0, 1, 'true', 'false', true, false])],
         ]);
         $perPage = min(max(1, $request->integer('per_page', config('webis.pagination.default'))), config('webis.pagination.max'));
-        $query = ProviderProfile::query()
-            ->where('verification_status', $validated['status'])
-            ->with(['user', 'verificationDocuments']);
+        $query = ProviderProfile::query()->where('verification_status', $validated['status']);
+
+        if ($validated['status'] === VerificationStatus::Pending->value && array_key_exists('ready', $validated)) {
+            $query = filter_var($validated['ready'], FILTER_VALIDATE_BOOLEAN)
+                ? $this->pendingActivationQuery($query)
+                : $this->unverifiedQuery($query);
+        }
+
+        $query->with(['user', 'verificationDocuments']);
 
         return ApiResponse::paginated(
             $query->orderByDesc('created_at')->paginate($perPage),
@@ -206,5 +215,50 @@ class VerificationController extends Controller
             ->where('document_type', $document->document_type->value)
             ->orderByDesc('id')
             ->value('id') === $document->id;
+    }
+
+    private function pendingActivationQuery(?Builder $query = null): Builder
+    {
+        $query ??= ProviderProfile::query();
+
+        $query->where('verification_status', VerificationStatus::Pending->value);
+        foreach ([VerificationDocumentType::GovernmentId, VerificationDocumentType::BusinessPermit] as $type) {
+            $this->whereCurrentRequiredDocument($query, $type, DocumentStatus::Approved);
+        }
+
+        return $query;
+    }
+
+    private function unverifiedQuery(?Builder $query = null): Builder
+    {
+        $query ??= ProviderProfile::query();
+
+        $query->where('verification_status', VerificationStatus::Pending->value)
+            ->where(function (Builder $pending) {
+                $pending->whereDoesntHave('verificationDocuments', function (Builder $documents) {
+                    $this->constrainCurrentRequiredDocument($documents, VerificationDocumentType::GovernmentId, DocumentStatus::Approved);
+                })->orWhereDoesntHave('verificationDocuments', function (Builder $documents) {
+                    $this->constrainCurrentRequiredDocument($documents, VerificationDocumentType::BusinessPermit, DocumentStatus::Approved);
+                });
+            });
+
+        return $query;
+    }
+
+    private function whereCurrentRequiredDocument(Builder $query, VerificationDocumentType $type, DocumentStatus $status): void
+    {
+        $query->whereHas('verificationDocuments', function (Builder $documents) use ($type, $status) {
+            $this->constrainCurrentRequiredDocument($documents, $type, $status);
+        });
+    }
+
+    private function constrainCurrentRequiredDocument(Builder $query, VerificationDocumentType $type, DocumentStatus $status): void
+    {
+        $query->where('document_type', $type->value)
+            ->where('status', $status->value)
+            ->whereRaw(
+                'provider_verification_documents.id = (SELECT MAX(latest.id) FROM provider_verification_documents latest WHERE latest.provider_profile_id = provider_verification_documents.provider_profile_id AND latest.document_type = ?)',
+                [$type->value],
+            );
     }
 }

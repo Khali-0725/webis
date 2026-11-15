@@ -104,6 +104,51 @@ class VerificationApprovalTest extends TestCase
             ->assertJsonPath('data.0.required_documents.business_permit', 'missing');
     }
 
+    public function test_pending_activation_requires_both_latest_required_documents_approved(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $unverified = ProviderProfile::factory()->create();
+        $ready = ProviderProfile::factory()->create();
+        $id = $this->makeDocument($ready->id);
+        $permit = $this->makeDocument($ready->id, VerificationDocumentType::BusinessPermit);
+        $id->forceFill(['status' => DocumentStatus::Approved])->save();
+        $permit->forceFill(['status' => DocumentStatus::Approved])->save();
+
+        $this->actingAs($admin)
+            ->getJson('/api/admin/verification/providers?status=pending&ready=false')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.id', $unverified->id);
+
+        $this->actingAs($admin)
+            ->getJson('/api/admin/verification/providers?status=pending&ready=true')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.id', $ready->id);
+    }
+
+    public function test_new_pending_document_keeps_provider_out_of_pending_activation(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $profile = ProviderProfile::factory()->create();
+        $id = $this->makeDocument($profile->id);
+        $permit = $this->makeDocument($profile->id, VerificationDocumentType::BusinessPermit);
+        $id->forceFill(['status' => DocumentStatus::Approved])->save();
+        $permit->forceFill(['status' => DocumentStatus::Approved])->save();
+        $replacement = $this->makeDocument($profile->id);
+
+        $this->actingAs($admin)
+            ->getJson('/api/admin/verification/providers?status=pending&ready=true')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0);
+
+        $this->actingAs($admin)
+            ->getJson('/api/admin/verification/providers?status=pending&ready=false')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.id', $profile->id);
+    }
+
     public function test_rejection_requires_reason_and_non_admin_cannot_decide(): void
     {
         $admin = User::factory()->admin()->create();
