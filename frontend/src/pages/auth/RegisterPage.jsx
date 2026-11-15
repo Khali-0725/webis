@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,6 +75,8 @@ export default function RegisterPage() {
   // which the React Compiler cannot memoize safely. useWatch subscribes to the
   // single field and re-renders only when it changes.
   const selectedRole = useWatch({ control, name: 'role' });
+  const selectedRoleRef = useRef(selectedRole);
+  selectedRoleRef.current = selectedRole;
 
   const onSubmit = async (values) => {
     setFormError(null);
@@ -104,14 +106,14 @@ export default function RegisterPage() {
       setFormError(null);
 
       try {
-        const user = await googleAuth.mutateAsync({ credential, role: selectedRole });
+        const user = await googleAuth.mutateAsync({ credential, role: selectedRoleRef.current });
 
         navigate(ROLE_HOME[user.role] ?? '/', { replace: true });
       } catch (error) {
         setFormError(error?.message ?? 'Unable to continue with Google right now.');
       }
     },
-    [googleAuth, selectedRole, navigate],
+    [googleAuth, navigate],
   );
 
   return (
