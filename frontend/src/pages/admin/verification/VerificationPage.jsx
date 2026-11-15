@@ -74,6 +74,9 @@ export default function AdminVerificationPage() {
       } else if (action.kind === 'provider') {
         await verificationApi.approveProvider(action.providerId);
         setNotice({ tone: 'success', message: 'Provider verified after required document checks.' });
+      } else if (action.kind === 'replacement') {
+        await verificationApi.requestReplacement(action.id);
+        setNotice({ tone: 'success', message: 'Replacement requested from provider.' });
       } else if (action.decision === 'approve') {
         await verificationApi.approveDocument(action.id);
         setNotice({ tone: 'success', message: 'Document approved. Both required documents and a final provider decision are still needed.' });
@@ -158,6 +161,9 @@ export default function AdminVerificationPage() {
                           <IconActionButton icon="check" label={`Approve ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'approve', id: doc.id })} />
                           <IconActionButton icon="close" label={`Decline ${doc.original_name}`} onClick={() => setAction({ kind: 'document', decision: 'reject', id: doc.id })} />
                         </>}
+                        {doc.status === 'approved' && !doc.replacement_requested && (
+                          <IconActionButton icon="settings" label={`Request a new ${doc.document_type.replaceAll('_', ' ')} from ${profile.owner_name}`} onClick={() => setAction({ kind: 'replacement', id: doc.id })} />
+                        )}
                       </span>
                     </li>
                   ))}
@@ -219,9 +225,9 @@ export default function AdminVerificationPage() {
       {previewDocument && <VerificationDocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />}
 
       <ConfirmDialog open={Boolean(action)} onClose={() => { setAction(null); setActionError(null); setReason(''); }}
-        onConfirm={runAction} title={action?.kind === 'provider' ? 'Verify this provider?' : `${action?.decision === 'reject' ? 'Decline' : 'Approve'} selected document${action?.kind === 'bulk' ? 's' : ''}?`}
-        description={action?.kind === 'provider' ? 'Both required documents must already be approved.' : 'This decision is recorded in the audit log.'}
-        confirmLabel={action?.kind === 'provider' ? 'Verify provider' : action?.decision === 'reject' ? 'Decline' : 'Approve'}
+        onConfirm={runAction} title={action?.kind === 'provider' ? 'Verify this provider?' : action?.kind === 'replacement' ? 'Request a replacement?' : `${action?.decision === 'reject' ? 'Decline' : 'Approve'} selected document${action?.kind === 'bulk' ? 's' : ''}?`}
+        description={action?.kind === 'provider' ? 'Both required documents must already be approved.' : action?.kind === 'replacement' ? 'The provider will be allowed to upload a new copy of this approved document.' : 'This decision is recorded in the audit log.'}
+        confirmLabel={action?.kind === 'provider' ? 'Verify provider' : action?.kind === 'replacement' ? 'Request replacement' : action?.decision === 'reject' ? 'Decline' : 'Approve'}
         tone={action?.decision === 'reject' ? 'danger' : 'primary'} loading={busy} error={actionError}>
         {action?.decision === 'reject' && <Input label="Reason for declining" required value={reason} onChange={(event) => setReason(event.target.value)} />}
       </ConfirmDialog>

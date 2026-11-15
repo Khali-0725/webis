@@ -12,6 +12,7 @@ use App\Models\ProviderVerificationDocument;
 use App\Models\ProviderProfile;
 use App\Support\Api\ApiResponse;
 use App\Support\AuditLogger;
+use App\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -113,6 +114,18 @@ class VerificationController extends Controller
         });
 
         return ApiResponse::ok(null, 'Document rejected.');
+    }
+
+    public function requestReplacement(Request $request, ProviderVerificationDocument $document): JsonResponse
+    {
+        if ($document->status !== DocumentStatus::Approved) {
+            throw DomainException::conflict('Only an approved document can be sent back for replacement.');
+        }
+
+        $document->forceFill(['replacement_requested' => true])->save();
+        AuditLogger::record($request->user(), 'verification.document_replacement_requested', $document, [], $request);
+
+        return ApiResponse::ok(new VerificationDocumentResource($document->fresh()->load('providerProfile.user')), 'Replacement requested from provider.');
     }
 
     public function approveProvider(Request $request, ProviderProfile $providerProfile): JsonResponse

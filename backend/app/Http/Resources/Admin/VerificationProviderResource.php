@@ -29,6 +29,7 @@ class VerificationProviderResource extends JsonResource
                 'document_type' => $document->document_type->value,
                 'original_name' => $document->original_name,
                 'status' => $document->status->value,
+                'replacement_requested' => (bool) $document->replacement_requested,
                 'preview_url' => '/api/files/verification-document/'.$document->id,
             ])->all(),
         ];

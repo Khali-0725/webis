@@ -29,6 +29,7 @@ class VerificationDocumentResource extends JsonResource
             'original_name' => $this->original_name,
             'preview_url' => '/api/files/verification-document/'.$this->id,
             'status' => $this->status->value,
+            'replacement_requested' => (bool) $this->replacement_requested,
             'provider_verification_status' => $this->providerProfile->verification_status->value,
             'review_notes' => $this->review_notes,
             'created_at' => $this->created_at?->toIso8601String(),

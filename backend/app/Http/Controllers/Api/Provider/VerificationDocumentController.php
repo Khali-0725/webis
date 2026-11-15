@@ -47,6 +47,14 @@ class VerificationDocumentController extends Controller
             return ApiResponse::error('Provider profile not found.', [], 404);
         }
 
+        $current = $profile->verificationDocuments()
+            ->where('document_type', $request->document_type)
+            ->latest('id')
+            ->first();
+        if ($current?->status === \App\Enums\DocumentStatus::Approved && ! $current->replacement_requested) {
+            return ApiResponse::error('This approved document cannot be replaced unless an administrator requests a new copy.', [], 422);
+        }
+
         $disk = config('webis.uploads.disk');
         $path = $request->file('document')->store('documents', $disk);
         try {

@@ -24,6 +24,10 @@ export default function ProviderVerificationPage() {
   const [notice, setNotice] = useState(null);
   const [previewDocument, setPreviewDocument] = useState(null);
   const documents = Array.isArray(statusQuery.data?.documents) ? statusQuery.data.documents : [];
+  const latestDocuments = REQUIRED_DOCUMENTS.reduce((result, document) => {
+    result[document.value] = documents.find((item) => item.document_type === document.value);
+    return result;
+  }, {});
 
   const handleSubmit = async (e, documentType) => {
     e.preventDefault();
@@ -101,6 +105,12 @@ export default function ProviderVerificationPage() {
 
       <div className="space-y-4">
         {REQUIRED_DOCUMENTS.map((document) => (
+          latestDocuments[document.value]?.status === 'approved' && !latestDocuments[document.value]?.replacement_requested ? (
+            <div key={document.value} className="rounded-lg border border-line bg-navy-50 p-4">
+              <p className="text-sm font-semibold text-ink">{document.label}</p>
+              <p className="mt-1 text-sm text-ink-muted">Approved. Uploading a replacement is disabled unless an administrator requests a new copy.</p>
+            </div>
+          ) : (
           <form key={document.value} onSubmit={(event) => handleSubmit(event, document.value)} className="rounded-lg border border-line p-4">
             <label htmlFor={`${document.value}-file`} className="mb-1 block text-sm font-semibold text-ink">
               {document.label}
@@ -117,6 +127,7 @@ export default function ProviderVerificationPage() {
               Upload {document.label}
             </Button>
           </form>
+          )
         ))}
       </div>
       {previewDocument && <VerificationDocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />}

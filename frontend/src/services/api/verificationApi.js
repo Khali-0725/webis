@@ -35,6 +35,11 @@ export const verificationApi = {
     return unwrap(response);
   },
 
+  async requestReplacement(documentId) {
+    const response = await api.patch(`/admin/verification/documents/${documentId}/request-replacement`);
+    return unwrap(response);
+  },
+
   async listProviders(params = {}) {
     const response = await api.get('/admin/verification/providers', { params });
     return { items: unwrap(response) ?? [], meta: unwrapMeta(response) };

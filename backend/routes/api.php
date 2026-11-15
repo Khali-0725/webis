@@ -341,6 +341,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/verification/providers', [VerificationController::class, 'providers'])->name('verification.providers.index');
         Route::patch('/verification/documents/{document}/approve', [VerificationController::class, 'approve'])->name('verification.approve');
         Route::patch('/verification/documents/{document}/reject', [VerificationController::class, 'reject'])->name('verification.reject');
+        Route::patch('/verification/documents/{document}/request-replacement', [VerificationController::class, 'requestReplacement'])->name('verification.request-replacement');
         Route::post('/verification/documents/bulk', [VerificationController::class, 'bulk'])->name('verification.bulk');
         Route::patch('/verification/providers/{providerProfile}/approve', [VerificationController::class, 'approveProvider'])->name('verification.providers.approve');
 

@@ -32,6 +32,7 @@ class ProviderVerificationDocument extends Model
         return [
             'document_type' => VerificationDocumentType::class,
             'status' => DocumentStatus::class,
+            'replacement_requested' => 'boolean',
             'size_bytes' => 'integer',
             'reviewed_at' => 'datetime',
         ];
