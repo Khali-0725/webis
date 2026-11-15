@@ -57,7 +57,6 @@ export default function RegisterPage() {
     setValue,
     setError,
     getValues,
-    trigger,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
@@ -105,18 +104,14 @@ export default function RegisterPage() {
     async (credential) => {
       setFormError(null);
 
-      const passwordValid = await trigger(['password', 'password_confirmation']);
-      if (!passwordValid) {
-        setFormError('Set a password below before continuing with Google.');
-        return;
-      }
-
       try {
         const user = await googleAuth.mutateAsync({
           credential,
           role: getValues('role'),
-          password: getValues('password'),
-          password_confirmation: getValues('password_confirmation'),
+          ...(getValues('password') ? {
+            password: getValues('password'),
+            password_confirmation: getValues('password_confirmation'),
+          } : {}),
         });
 
         navigate(ROLE_HOME[user.role] ?? '/', { replace: true });
@@ -124,7 +119,7 @@ export default function RegisterPage() {
         setFormError(error?.message ?? 'Unable to continue with Google right now.');
       }
     },
-    [getValues, googleAuth, navigate, trigger],
+    [getValues, googleAuth, navigate],
   );
 
   return (

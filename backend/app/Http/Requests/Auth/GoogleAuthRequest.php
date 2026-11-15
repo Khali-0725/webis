@@ -27,7 +27,7 @@ class GoogleAuthRequest extends FormRequest
             // brand-new account should get. Omitted (Login page) means "sign
             // in to an existing account only, never create one."
             'role' => ['nullable', 'string', Rule::in(UserRole::selfRegisterable())],
-            'password' => ['required_with:role', 'nullable', 'string', 'confirmed', Password::min(8)->letters()->numbers()],
+            'password' => ['sometimes', 'nullable', 'string', 'confirmed', Password::min(8)->letters()->numbers()],
         ];
     }
 

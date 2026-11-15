@@ -178,7 +178,7 @@ class AuthService
     /**
      * @param  array{sub: string, email: string, given_name: string, family_name: string}  $google
      */
-    private function registerWithGoogle(array $google, UserRole $role, string $password): User
+    private function registerWithGoogle(array $google, UserRole $role, ?string $password = null): User
     {
         if (app(ChatModerationService::class)->containsProfanity($google['given_name'])
             || app(ChatModerationService::class)->containsProfanity($google['family_name'])) {
@@ -196,7 +196,8 @@ class AuthService
                 'first_name' => $google['given_name'],
                 'last_name' => $google['family_name'],
                 'email' => $google['email'],
-                'password' => $password,
+                'password' => $password ?: Str::random(40),
+                'password_setup_required' => $password === null,
             ]);
 
             $user->google_id = $google['sub'];
