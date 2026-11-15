@@ -87,6 +87,7 @@ class AuthController extends Controller
             $request,
             $claims,
             $request->validated('role'),
+            $request->validated('password'),
         );
 
         return $created

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Auth;
 use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class GoogleAuthRequest extends FormRequest
 {
@@ -26,6 +27,7 @@ class GoogleAuthRequest extends FormRequest
             // brand-new account should get. Omitted (Login page) means "sign
             // in to an existing account only, never create one."
             'role' => ['nullable', 'string', Rule::in(UserRole::selfRegisterable())],
+            'password' => ['required_with:role', 'nullable', 'string', 'confirmed', Password::min(8)->letters()->numbers()],
         ];
     }
 

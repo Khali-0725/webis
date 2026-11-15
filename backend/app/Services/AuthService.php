@@ -119,7 +119,7 @@ class AuthService
      * @throws DomainException on a suspended account, or a login-page attempt
      *                         with no matching account yet
      */
-    public function loginWithGoogle(Request $request, array $google, ?string $role = null): array
+    public function loginWithGoogle(Request $request, array $google, ?string $role = null, ?string $password = null): array
     {
         $user = User::where('google_id', $google['sub'])
             ->orWhere('email', $google['email'])
@@ -149,7 +149,7 @@ class AuthService
                 );
             }
 
-            $user = $this->registerWithGoogle($google, UserRole::from($role));
+            $user = $this->registerWithGoogle($google, UserRole::from($role), $password);
         } elseif (! $user->canAccessAccount()) {
             throw DomainException::forbidden(
                 $user->getRawOriginal('terminated_at') !== null
@@ -178,7 +178,7 @@ class AuthService
     /**
      * @param  array{sub: string, email: string, given_name: string, family_name: string}  $google
      */
-    private function registerWithGoogle(array $google, UserRole $role): User
+    private function registerWithGoogle(array $google, UserRole $role, string $password): User
     {
         if (app(ChatModerationService::class)->containsProfanity($google['given_name'])
             || app(ChatModerationService::class)->containsProfanity($google['family_name'])) {
@@ -189,17 +189,14 @@ class AuthService
             );
         }
 
-        $user = DB::transaction(function () use ($google, $role) {
+        $user = DB::transaction(function () use ($google, $role, $password) {
             $user = new User;
 
             $user->fill([
                 'first_name' => $google['given_name'],
                 'last_name' => $google['family_name'],
                 'email' => $google['email'],
-                // Unknown, unguessable, never shown or emailed - this account
-                // only ever signs in through Google unless the owner later
-                // sets a real one via "Forgot password".
-                'password' => Str::random(40),
+                'password' => $password,
             ]);
 
             $user->google_id = $google['sub'];
