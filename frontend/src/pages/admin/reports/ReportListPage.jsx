@@ -87,7 +87,7 @@ export default function ReportListPage() {
   };
 
   return (
-    <Card title="Reports" action={<div className="flex items-center gap-2"><Button size="sm" onClick={() => exportRowsToPdf({ filename: 'webis-reports.pdf', title: 'WEBIS Reports', columns: [{ label: 'Reporter', width: 48, value: (r) => r.reporter?.full_name ?? 'Unknown' }, { label: 'Against', width: 45, value: (r) => `${r.reportable_type} #${r.reportable_id}` }, { label: 'Reason', width: 65, value: (r) => r.reason_label }, { label: 'Status', width: 38, value: (r) => r.status_label }], rows: reports })}>Export PDF</Button><TrashToggle superAdminOnly value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} /></div>}>
+    <Card title="Reports" action={<div className="flex items-center gap-2"><Button size="sm" onClick={() => exportRowsToPdf({ filename: 'serbisyolink-reports.pdf', title: 'SERBISYOLINK Reports', columns: [{ label: 'Reporter', width: 48, value: (r) => r.reporter?.full_name ?? 'Unknown' }, { label: 'Against', width: 45, value: (r) => `${r.reportable_type} #${r.reportable_id}` }, { label: 'Reason', width: 65, value: (r) => r.reason_label }, { label: 'Status', width: 38, value: (r) => r.status_label }], rows: reports })}>Export PDF</Button><TrashToggle superAdminOnly value={trashed} onChange={(v) => { setTrashed(v); setPage(1); }} /></div>}>
       {notice && (
         <Alert tone={notice.tone} className="mb-4">
           {notice.message}

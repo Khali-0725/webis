@@ -35,7 +35,7 @@ class ProfileController extends Controller
         $data = $request->validated();
         if (! empty($data['welcome_message'])
             && app(ChatModerationService::class)->evaluate($data['welcome_message'])['tier'] !== 'allowed') {
-            throw DomainException::unprocessable('The automatic welcome message contains content that WEBIS does not allow in chat.');
+            throw DomainException::unprocessable('The automatic welcome message contains content that SERBISYOLINK does not allow in chat.');
         }
         $profile->update($data);
 

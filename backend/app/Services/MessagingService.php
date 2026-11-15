@@ -95,7 +95,7 @@ class MessagingService
 
             throw DomainException::unprocessable(
                 "This message wasn't sent because it looks like it contains contact information. "
-                .'WEBIS keeps bookings and payments on the platform for your protection.',
+                .'SERBISYOLINK keeps bookings and payments on the platform for your protection.',
             );
         }
 
@@ -201,7 +201,7 @@ class MessagingService
 
             throw DomainException::unprocessable(
                 "This edit wasn't saved because it looks like it contains contact information. "
-                .'WEBIS keeps bookings and payments on the platform for your protection.',
+                .'SERBISYOLINK keeps bookings and payments on the platform for your protection.',
             );
         }
 

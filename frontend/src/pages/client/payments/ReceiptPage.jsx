@@ -48,7 +48,7 @@ export default function ReceiptPage() {
   ];
 
   const download = () => {
-    const filename = String(receipt.receipt_id || 'WEBIS-receipt').replace(/[^a-zA-Z0-9_-]/g, '-');
+    const filename = String(receipt.receipt_id || 'SERBISYOLINK-receipt').replace(/[^a-zA-Z0-9_-]/g, '-');
     const blob = createReceiptPdf(receipt, fields, designation).output('blob');
     const url = URL.createObjectURL(blob);
     setPdfUrl(url);
@@ -69,7 +69,7 @@ export default function ReceiptPage() {
       </div>
       <Card>
         <div className="border-b border-line pb-5">
-          <p className="font-display text-2xl font-bold text-navy-800">WEBIS</p>
+          <p className="font-display text-2xl font-bold text-navy-800">SERBISYOLINK</p>
           <p className="text-sm text-ink-muted">Booking payment record</p>
           <h1 className="mt-4 text-xl font-semibold text-ink">{designation}</h1>
           {receipt.status !== 'verified' && <p className="mt-1 text-sm text-ink-muted">This record does not confirm that funds were received.</p>}
@@ -81,7 +81,7 @@ export default function ReceiptPage() {
             </div>
           ))}
         </dl>
-        <p className="mt-5 text-xs text-ink-muted">Generated {date(new Date().toISOString())} · WEBIS, Tanza, Cavite</p>
+        <p className="mt-5 text-xs text-ink-muted">Generated {date(new Date().toISOString())} · SERBISYOLINK, Tanza, Cavite</p>
       </Card>
     </div>
   );

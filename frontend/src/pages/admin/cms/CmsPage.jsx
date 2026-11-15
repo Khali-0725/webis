@@ -42,7 +42,7 @@ export default function CmsPage() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `webis-platform-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `serbisyolink-platform-backup-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
     setNotice({ tone: 'success', message: 'Platform configuration backup downloaded.' });

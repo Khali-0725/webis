@@ -143,9 +143,9 @@ class AuthService
 
             if (! in_array($role, UserRole::selfRegisterable(), true)) {
                 throw new DomainException(
-                    'No WEBIS account is linked to this Google account yet. Create one from the Register page.',
+                    'No SERBISYOLINK account is linked to this Google account yet. Create one from the Register page.',
                     422,
-                    ['email' => ['No WEBIS account is linked to this Google account yet. Create one from the Register page.']]
+                    ['email' => ['No SERBISYOLINK account is linked to this Google account yet. Create one from the Register page.']]
                 );
             }
 
@@ -153,14 +153,14 @@ class AuthService
         } elseif (! $user->canAccessAccount()) {
             throw DomainException::forbidden(
                 $user->getRawOriginal('terminated_at') !== null
-                    ? 'This account has been terminated. Please contact the WEBIS administrator.'
-                    : 'This account has been suspended. Please contact the WEBIS administrator.'
+                    ? 'This account has been terminated. Please contact the SERBISYOLINK administrator.'
+                    : 'This account has been suspended. Please contact the SERBISYOLINK administrator.'
             );
         } elseif ($role !== null && $user->role->value !== $role) {
             throw new DomainException(
                 'This Google account is already registered as a '.$user->role->label().'. Use a different Google account for the other role.',
                 422,
-                ['role' => ['This Google account already has a different WEBIS role.']]
+                    ['role' => ['This Google account already has a different SERBISYOLINK role.']]
             );
         } elseif ($user->google_id === null) {
             // First "Continue with Google" on a pre-existing password
@@ -234,8 +234,8 @@ class AuthService
 
             throw DomainException::forbidden(
                 $user->getRawOriginal('terminated_at') !== null
-                    ? 'This account has been terminated. Please contact the WEBIS administrator.'
-                    : 'This account has been suspended. Please contact the WEBIS administrator.'
+                    ? 'This account has been terminated. Please contact the SERBISYOLINK administrator.'
+                    : 'This account has been suspended. Please contact the SERBISYOLINK administrator.'
             );
         }
 

@@ -24,7 +24,7 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     // Replaced by a real reporter (Sentry or a Laravel log endpoint) in Phase 10.
-    console.error('WEBIS render error', error, info);
+    console.error('SERBISYOLINK render error', error, info);
   }
 
   render() {

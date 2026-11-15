@@ -177,7 +177,7 @@ export function DashboardLayout({ title }) {
       <Modal
         open={Boolean(user?.password_setup_required || googlePasswordSetup)}
         onClose={() => {}}
-        title="Create your WEBIS password"
+        title="Create your SERBISYOLINK password"
         description="Set a password before exploring your dashboard. You can use it to sign in without Google."
       >
         {passwordError && <Alert tone="error" className="mb-4">{passwordError}</Alert>}

@@ -19,20 +19,20 @@ const SECTIONS = [
     title: 'Who can see what',
     body: `A booking's exact location is only shared with the assigned provider once they accept the
       booking - never before, and never with other providers. Verification documents and payment
-      proofs are only ever visible to you, the counterparty on that specific booking, and WEBIS
+      proofs are only ever visible to you, the counterparty on that specific booking, and SERBISYOLINK
       administrators - they are never public. Your public provider profile (business name, bio,
-      skills, rating) is visible to anyone browsing WEBIS; your email and phone are not.`,
+      skills, rating) is visible to anyone browsing SERBISYOLINK; your email and phone are not.`,
   },
   {
     title: 'Google Sign-In',
     body: `"Continue with Google" is verified server-side against Google's own token endpoint before
       any account is created or signed in. We only ever read the profile fields Google shares (name,
-      email, verification status) - WEBIS never sees or stores your Google password, and this sign-in
+      email, verification status) - SERBISYOLINK never sees or stores your Google password, and this sign-in
       method grants us no access to your Gmail, Drive, or any other Google service.`,
   },
   {
     title: 'Other services we rely on',
-    body: `WEBIS is hosted on Render and Vercel with a TiDB Cloud database, and uses Pusher Channels
+    body: `SERBISYOLINK is hosted on Render and Vercel with a TiDB Cloud database, and uses Pusher Channels
       to deliver realtime updates (new messages, booking and payment status) and Google for sign-in.
       Each only receives the minimum needed to do its job - for example Pusher relays a notice that
       "booking #12 changed," never a message's content or a payment proof.`,
@@ -55,7 +55,7 @@ export default function PrivacyPolicyPage() {
         Privacy Policy
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-ink-muted sm:text-base">
-        WEBIS is a student capstone project connecting clients with independent service providers in
+        SERBISYOLINK is a student capstone project connecting clients with independent service providers in
         Tanza, Cavite. This page explains, in plain language, what information we collect and how we
         use it.
       </p>

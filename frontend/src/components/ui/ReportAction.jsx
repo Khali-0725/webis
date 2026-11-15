@@ -25,7 +25,7 @@ export function ReportAction({ type, id, label }) {
 
   return (
     <section className="mt-6 rounded-lg border border-line bg-white p-4" aria-label={`Report ${label}`}>
-      <p className="text-sm text-ink-muted">See a problem with this {label}? Send its details to the WEBIS administrator.</p>
+      <p className="text-sm text-ink-muted">See a problem with this {label}? Send its details to the SERBISYOLINK administrator.</p>
       {submitted ? <Alert tone="success" className="mt-3">Report submitted for administrator review.</Alert> : !isAuthenticated ? (
         <Link to="/login" state={{ from: location.pathname }} className="mt-3 inline-block text-sm font-semibold text-brand hover:underline">Sign in to report {label}</Link>
       ) : !open ? (

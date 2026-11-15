@@ -124,7 +124,7 @@ export function Sidebar({ onNavigate }) {
   return (
     <div className="flex h-full flex-col bg-navy-800 text-white">
       <div className="px-5 py-5">
-        <Link to={user.home_path} onClick={onNavigate} aria-label="WEBIS dashboard">
+        <Link to={user.home_path} onClick={onNavigate} aria-label="SERBISYOLINK dashboard">
           <Logo variant="light" sublabel={PORTAL_LABEL[user.role]} showMark={false} />
         </Link>
       </div>

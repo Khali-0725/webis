@@ -78,8 +78,8 @@ api.interceptors.response.use(
       return Promise.reject({
         status: 0,
         message: timedOut
-          ? 'The WEBIS server took too long to respond. Check that it is running, then try again.'
-          : 'Cannot reach the WEBIS server. Check your connection and try again.',
+          ? 'The SERBISYOLINK server took too long to respond. Check that it is running, then try again.'
+          : 'Cannot reach the SERBISYOLINK server. Check your connection and try again.',
         errors: {},
         isNetworkError: true,
       });

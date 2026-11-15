@@ -19,7 +19,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="mt-4 max-w-lg text-sm text-white/70 sm:text-base">
-              WEBIS helps clients and service providers coordinate bookings, messages, and payments in one place.
+              SERBISYOLINK helps clients and service providers coordinate bookings, messages, and payments in one place.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/register"><Button variant="brand">Create an account</Button></Link>
@@ -39,12 +39,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {announcement?.text && <section className="border-b border-line bg-blue-50"><div className="mx-auto max-w-7xl px-4 py-5 sm:px-6"><h2 className="font-display text-lg font-semibold text-navy-800">WEBIS update</h2><p className="mt-1 whitespace-pre-wrap text-sm text-ink">{announcement.text}</p></div></section>}
+      {announcement?.text && <section className="border-b border-line bg-blue-50"><div className="mx-auto max-w-7xl px-4 py-5 sm:px-6"><h2 className="font-display text-lg font-semibold text-navy-800">SERBISYOLINK update</h2><p className="mt-1 whitespace-pre-wrap text-sm text-ink">{announcement.text}</p></div></section>}
 
       <section className="border-t border-line bg-canvas">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-12 text-center sm:px-6">
           <h2 className="font-display text-2xl font-bold text-navy-800">
-            Offer your skills on WEBIS
+            Offer your skills on SERBISYOLINK
           </h2>
           <p className="max-w-xl text-sm text-ink-muted">
             Independent providers in Tanza can list services, manage bookings and get paid — all in
@@ -53,13 +53,13 @@ export default function LandingPage() {
         </div>
       </section>
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
-        <h2 className="font-display text-2xl font-bold text-navy-800">How WEBIS works</h2>
+        <h2 className="font-display text-2xl font-bold text-navy-800">How SERBISYOLINK works</h2>
         <ol className="mt-6 grid gap-4 md:grid-cols-3">
-          <li className="webis-card p-5"><span className="text-sm font-bold text-brand">01 · Discover</span><p className="mt-2 text-sm text-ink-muted">Create an account, then search services and providers inside WEBIS.</p></li>
+          <li className="webis-card p-5"><span className="text-sm font-bold text-brand">01 · Discover</span><p className="mt-2 text-sm text-ink-muted">Create an account, then search services and providers inside SERBISYOLINK.</p></li>
           <li className="webis-card p-5"><span className="text-sm font-bold text-brand">02 · Book</span><p className="mt-2 text-sm text-ink-muted">Choose an available time, share the job details, and wait for provider acceptance.</p></li>
           <li className="webis-card p-5"><span className="text-sm font-bold text-brand">03 · Confirm</span><p className="mt-2 text-sm text-ink-muted">Track payment verification and leave a final review after the work is completed.</p></li>
         </ol>
-        <p className="mt-5 text-sm text-ink-muted">Verification confirms that required documents were reviewed. It does not guarantee workmanship, availability, or personal safety. Review the listing and communicate through WEBIS before booking.</p>
+        <p className="mt-5 text-sm text-ink-muted">Verification confirms that required documents were reviewed. It does not guarantee workmanship, availability, or personal safety. Review the listing and communicate through SERBISYOLINK before booking.</p>
       </section>
       {faqs.length > 0 && (
         <section className="border-t border-line bg-white">

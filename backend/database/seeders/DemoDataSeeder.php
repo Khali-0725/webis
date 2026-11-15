@@ -134,7 +134,7 @@ class DemoDataSeeder extends Seeder
         foreach($cb as $b){$pv=collect($pr)->first(fn($p)=>$p['profile']->id===$b->provider_profile_id);if(!$pv)continue;$c=Conversation::firstOrCreate(['client_id'=>$b->client_id,'provider_user_id'=>$pv['user']->id],['booking_id'=>$b->id,'last_message_at'=>now()]);if($c->messages()->count()===0){Message::create(['conversation_id'=>$c->id,'sender_id'=>$b->client_id,'body'=>'Hi, booked your service.','moderation_status'=>ModerationStatus::Allowed]);Message::create(['conversation_id'=>$c->id,'sender_id'=>$pv['user']->id,'body'=>'Hello! See you then.','moderation_status'=>ModerationStatus::Allowed]);}}
     }
     private function settings(): void {
-        SystemSetting::firstOrCreate(['key'=>'platform.name'],['value'=>'WEBIS','group'=>'general','description'=>'Platform name']);
+        SystemSetting::firstOrCreate(['key'=>'platform.name'],['value'=>'SERBISYOLINK','group'=>'general','description'=>'Platform name']);
         SystemSetting::firstOrCreate(['key'=>'booking.min_lead_hours'],['value'=>24,'group'=>'booking','description'=>'Min lead hours']);
         SystemSetting::firstOrCreate(['key'=>'booking.max_advance_days'],['value'=>30,'group'=>'booking','description'=>'Max advance days']);
     }

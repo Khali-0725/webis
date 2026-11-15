@@ -93,7 +93,7 @@ export default function LoginPage() {
           W
         </span>
         <h1 className="font-display text-2xl font-bold text-navy-800">Welcome</h1>
-        <p className="mt-1 text-sm text-ink-muted">Sign in to your WEBIS account</p>
+        <p className="mt-1 text-sm text-ink-muted">Sign in to your SERBISYOLINK account</p>
       </div>
 
       {resetNotice && (

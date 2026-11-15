@@ -26,7 +26,7 @@ export function PublicLayout() {
     <div className="flex min-h-screen flex-col bg-white">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-8 px-4 sm:px-6">
-          <Link to="/" aria-label="WEBIS home">
+          <Link to="/" aria-label="SERBISYOLINK home">
             <Logo />
           </Link>
 
@@ -112,7 +112,7 @@ export function PublicLayout() {
 
       <footer className="border-t border-line bg-canvas">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-ink-muted sm:flex-row sm:px-6">
-          <p>WEBIS — Web-Based Platform for Independent Service Providers</p>
+          <p>SERBISYOLINK — Web-Based Platform for Independent Service Providers</p>
           <div className="flex items-center gap-4">
             <Link to="/privacy" className="hover:text-navy-700">
               Privacy Policy

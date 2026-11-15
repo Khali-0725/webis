@@ -51,7 +51,7 @@ export default function ProvidersPage() {
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <div className="flex items-center justify-between gap-3"><h1 className="font-display text-2xl font-bold text-navy-800">Browse providers</h1><Link to={`${providerPath}/map`} className="text-sm font-semibold text-brand hover:underline">Map view</Link></div>
       <p className="mt-1 text-sm text-ink-muted">
-        Verified service providers on WEBIS, ranked by rating.
+        Verified service providers on SERBISYOLINK, ranked by rating.
       </p>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -28,12 +28,12 @@ const STEPS = [
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
-      <p className="text-xs font-medium uppercase tracking-wide text-brand">About WEBIS</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-brand">About SERBISYOLINK</p>
       <h1 className="mt-2 font-display text-3xl font-bold text-navy-800 sm:text-4xl">
         A booking platform built for Tanza, Cavite
       </h1>
       <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink-muted sm:text-base">
-        WEBIS connects clients with independent service providers - plumbers, electricians, house
+        SERBISYOLINK connects clients with independent service providers - plumbers, electricians, house
         cleaners, and more - in one place. Every provider is manually reviewed by an administrator
         before they can accept bookings, and every payment is a QR-based transfer confirmed by a
         human, not an automated gateway.
@@ -57,9 +57,9 @@ export default function AboutPage() {
       </div>
 
       <div className="mt-10 webis-card p-6">
-        <h2 className="font-display text-lg font-semibold text-navy-800">What WEBIS is not</h2>
+        <h2 className="font-display text-lg font-semibold text-navy-800">What SERBISYOLINK is not</h2>
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-          WEBIS does not move money through a payment gateway, verify government IDs automatically,
+          SERBISYOLINK does not move money through a payment gateway, verify government IDs automatically,
           or provide live GPS tracking. Location pins are placed manually on a map, and identity
           verification is a manual document review by an administrator - by design, to keep the
           system simple and transparent about what it actually does.

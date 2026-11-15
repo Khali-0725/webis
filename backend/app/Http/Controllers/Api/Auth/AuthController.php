@@ -32,7 +32,7 @@ class AuthController extends Controller
 
         return ApiResponse::created(
             new UserResource($user->fresh()),
-            'Welcome to WEBIS, '.$user->first_name.'.'
+            'Welcome to SERBISYOLINK, '.$user->first_name.'.'
         );
     }
 
@@ -91,7 +91,7 @@ class AuthController extends Controller
         );
 
         return $created
-            ? ApiResponse::created(new UserResource($user->fresh()), 'Welcome to WEBIS, '.$user->first_name.'.')
+            ? ApiResponse::created(new UserResource($user->fresh()), 'Welcome to SERBISYOLINK, '.$user->first_name.'.')
             : ApiResponse::ok(new UserResource($user), 'Signed in successfully.');
     }
 

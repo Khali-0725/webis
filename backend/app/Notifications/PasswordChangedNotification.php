@@ -15,11 +15,11 @@ class PasswordChangedNotification extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your WEBIS password was changed')
+            ->subject('Your SERBISYOLINK password was changed')
             ->greeting('Password changed successfully')
-            ->line('The password for your WEBIS account was changed successfully.')
+            ->line('The password for your SERBISYOLINK account was changed successfully.')
             ->line('You can now sign in using your new password.')
-            ->action('Sign in to WEBIS', rtrim(config('webis.frontend_url'), '/').'/login')
+            ->action('Sign in to SERBISYOLINK', rtrim(config('webis.frontend_url'), '/').'/login')
             ->line('If you did not make this change, use Forgot Password on the sign-in page to secure your account.');
     }
 }

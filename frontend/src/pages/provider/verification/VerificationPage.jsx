@@ -63,7 +63,7 @@ export default function ProviderVerificationPage() {
         Upload a government-issued ID and a business permit. An administrator reviews each document, then makes a final provider decision. Business features remain unavailable until approval.
       </p>
       <p className="mb-4 text-xs text-ink-muted">
-        WEBIS verification means documents were reviewed by an administrator. It does not establish government validation, background clearance, or a guarantee of safety.
+        SERBISYOLINK verification means documents were reviewed by an administrator. It does not establish government validation, background clearance, or a guarantee of safety.
       </p>
       {statusQuery.data?.verification_status === 'approved' && (
         <Alert tone="warning" className="mb-4">

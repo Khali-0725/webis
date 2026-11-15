@@ -22,7 +22,7 @@ export default function EarningsPage() {
   if (summaryQuery.isError) return <ErrorState description={summaryQuery.error?.message} onRetry={() => summaryQuery.refetch()} />;
   const summary = summaryQuery.data;
   const download = () => {
-    createEarningsPdf(summary, transactionsQuery.data, from, to).save('WEBIS-earnings-report.pdf');
+    createEarningsPdf(summary, transactionsQuery.data, from, to).save('SERBISYOLINK-earnings-report.pdf');
   };
 
   return (

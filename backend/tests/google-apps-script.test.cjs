@@ -44,8 +44,8 @@ function relay({ quota = 100, sendFails = false, configured = true } = {}) {
 function request(overrides = {}, signingKey = secret) {
     const payload = JSON.stringify({
         timestamp: Math.floor(Date.now() / 1000), id: 'b'.repeat(32),
-        to: 'recipient@gmail.com', subject: 'Your WEBIS password reset code',
-        text: 'Code: 123456', html: '<p>Code: <b>123456</b></p>', name: 'WEBIS',
+      to: 'recipient@gmail.com', subject: 'Your SERBISYOLINK password reset code',
+      text: 'Code: 123456', html: '<p>Code: <b>123456</b></p>', name: 'SERBISYOLINK',
         ...overrides,
     });
     return { postData: { contents: JSON.stringify({
@@ -60,8 +60,8 @@ test('signed request sends text and HTML once, including on duplicate delivery',
     assert.equal(context.doPost(event).ok, true);
     assert.equal(sent.length, 1);
     assert.deepEqual(sent[0], {
-        to: 'recipient@gmail.com', subject: 'Your WEBIS password reset code',
-        body: 'Code: 123456', htmlBody: '<p>Code: <b>123456</b></p>', name: 'WEBIS',
+        to: 'recipient@gmail.com', subject: 'Your SERBISYOLINK password reset code',
+        body: 'Code: 123456', htmlBody: '<p>Code: <b>123456</b></p>', name: 'SERBISYOLINK',
     });
 });
 

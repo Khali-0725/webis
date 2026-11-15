@@ -167,4 +167,4 @@ export const SERVICE_SORT_OPTIONS = Object.freeze([
   { value: 'most_booked', label: 'Most Booked' },
 ]);
 
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'WEBIS';
+export const APP_NAME = 'SERBISYOLINK';

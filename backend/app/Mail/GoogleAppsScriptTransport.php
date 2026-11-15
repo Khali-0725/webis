@@ -37,7 +37,7 @@ class GoogleAppsScriptTransport extends AbstractTransport
             'subject' => $email->getSubject(),
             'text' => $email->getTextBody() ?? strip_tags($email->getHtmlBody() ?? ''),
             'html' => $email->getHtmlBody(),
-            'name' => $email->getFrom()[0]->getName() ?: 'WEBIS',
+            'name' => $email->getFrom()[0]->getName() ?: 'SERBISYOLINK',
         ], JSON_THROW_ON_ERROR);
 
         try {

@@ -55,7 +55,7 @@ class GoogleAuthService
         // `aud` proves the token was minted for *this* app, not some other
         // site's Google sign-in button being replayed against our API.
         if (($claims['aud'] ?? null) !== $clientId) {
-            throw DomainException::unprocessable('This Google sign-in was not issued for WEBIS.');
+            throw DomainException::unprocessable('This Google sign-in was not issued for SERBISYOLINK.');
         }
 
         // Google's own claim is the string "true", not a boolean - the

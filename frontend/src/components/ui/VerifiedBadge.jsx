@@ -4,8 +4,8 @@ export function VerifiedBadge({ verified }) {
   return (
     <span
       role="img"
-      aria-label="Verified provider by WEBIS"
-      title="WEBIS approved this provider's required documents"
+      aria-label="Verified provider by SERBISYOLINK"
+      title="SERBISYOLINK approved this provider's required documents"
       className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-blue-600"
     >
       <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" focusable="false">

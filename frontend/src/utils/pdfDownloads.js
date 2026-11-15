@@ -51,7 +51,7 @@ function row(doc, cells, widths, y, header = false) {
 
 export function createReceiptPdf(receipt, fields, designation) {
   const doc = new jsPDF();
-  let y = heading(doc, 'WEBIS Payment Receipt', receipt.receipt_id || 'Payment record');
+  let y = heading(doc, 'SERBISYOLINK Payment Receipt', receipt.receipt_id || 'Payment record');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   const statusLines = doc.splitTextToSize(pdfValue(designation), RIGHT - LEFT);
@@ -72,7 +72,7 @@ export function createReceiptPdf(receipt, fields, designation) {
 
 export function createEarningsPdf(summary, transactions, from, to) {
   const doc = new jsPDF();
-  let y = heading(doc, 'WEBIS Earnings Report', `${summary.provider_name} | ${from || 'All dates'} to ${to || 'Present'}`);
+  let y = heading(doc, 'SERBISYOLINK Earnings Report', `${summary.provider_name} | ${from || 'All dates'} to ${to || 'Present'}`);
   y = row(doc, ['Summary', 'Amount'], [89, 89], y, true);
   for (const [label, value] of [
     ['Confirmed earnings', summary.total_earnings],

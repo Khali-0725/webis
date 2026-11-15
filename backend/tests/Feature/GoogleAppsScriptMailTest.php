@@ -36,7 +36,7 @@ class GoogleAppsScriptMailTest extends TestCase
         $request = Http::recorded()[0][0];
         $payload = json_decode($request['payload'], true, flags: JSON_THROW_ON_ERROR);
         $this->assertSame($user->email, $payload['to']);
-        $this->assertSame('Your WEBIS password reset code', $payload['subject']);
+        $this->assertSame('Your SERBISYOLINK password reset code', $payload['subject']);
         $this->assertStringContainsString('expires in 10 minutes', $payload['text']);
         $this->assertStringContainsString('<html', $payload['html']);
         $this->assertSame(hash_hmac('sha256', $request['payload'], str_repeat('a', 64)), $request['signature']);
@@ -57,7 +57,7 @@ class GoogleAppsScriptMailTest extends TestCase
         $confirmation = Http::recorded()[1][0];
         $confirmationPayload = json_decode($confirmation['payload'], true, flags: JSON_THROW_ON_ERROR);
         $this->assertSame($user->email, $confirmationPayload['to']);
-        $this->assertSame('Your WEBIS password was changed', $confirmationPayload['subject']);
+        $this->assertSame('Your SERBISYOLINK password was changed', $confirmationPayload['subject']);
         $this->assertStringContainsString('changed successfully', $confirmationPayload['text']);
         $this->assertStringContainsString('If you did not make this change', $confirmationPayload['text']);
         $this->assertStringContainsString('https://webis.example/login', $confirmationPayload['html']);

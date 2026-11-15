@@ -24,7 +24,7 @@ class DemoVerificationDocuments
             $ink = imagecolorallocate($image, 26, 40, 63);
             $warning = imagecolorallocate($image, 175, 40, 32);
             imagefilledrectangle($image, 0, 0, 899, 539, $background);
-            imagestring($image, 5, 270, 145, 'WEBIS TEST DATA', $ink);
+            imagestring($image, 5, 270, 145, 'SERBISYOLINK TEST DATA', $ink);
             imagestring($image, 5, 240, 240, 'DEMO ONLY - NOT VALID', $warning);
             imagestring($image, 5, 300, 325, $label, $ink);
             ob_start();

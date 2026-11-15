@@ -127,7 +127,7 @@ export default function RegisterPage() {
     <>
       <div className="mb-6 text-center">
         <h1 className="font-display text-2xl font-bold text-navy-800">Create your account</h1>
-        <p className="mt-1 text-sm text-ink-muted">Join WEBIS in under a minute</p>
+        <p className="mt-1 text-sm text-ink-muted">Join SERBISYOLINK in under a minute</p>
       </div>
 
       {formError && (
@@ -244,7 +244,7 @@ export default function RegisterPage() {
               {...register('accepted_terms')}
             />
             <span>
-              I agree to the WEBIS terms of use and{' '}
+              I agree to the SERBISYOLINK terms of use and{' '}
               <Link to="/privacy" target="_blank" className="font-medium text-brand hover:text-brand-600">
                 privacy notice
               </Link>
