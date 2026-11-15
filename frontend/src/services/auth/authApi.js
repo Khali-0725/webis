@@ -55,6 +55,11 @@ export const authApi = {
     return unwrap(response);
   },
 
+  async resendVerification() {
+    const response = await api.post('/auth/email/verification-notification');
+    return unwrap(response);
+  },
+
   /**
    * GET /api/auth/me
    *

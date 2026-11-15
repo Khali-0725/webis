@@ -32,6 +32,10 @@ export function ProtectedRoute({ allow }) {
     return <Navigate to={user.home_path} replace />;
   }
 
+  if (!user.email_verified && location.pathname !== '/verify-email') {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   if (role === 'provider' && user.provider_verification_status !== 'approved'
       && !['/provider/verification', '/provider/profile', '/profile'].includes(location.pathname)) {
     return <Navigate to="/provider/verification" replace />;
@@ -52,5 +56,7 @@ export function GuestRoute() {
     );
   }
 
-  return isAuthenticated ? <Navigate to={user.home_path} replace /> : <Outlet />;
+  return isAuthenticated
+    ? <Navigate to={user.email_verified ? user.home_path : '/verify-email'} replace />
+    : <Outlet />;
 }

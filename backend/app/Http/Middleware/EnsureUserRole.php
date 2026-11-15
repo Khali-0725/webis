@@ -27,6 +27,12 @@ class EnsureUserRole
             return ApiResponse::error('This account is suspended or terminated.', [], 403);
         }
 
+        if (! $user->hasVerifiedEmail() && ! $request->is('api/auth/email/verification-notification')) {
+            return ApiResponse::error('Verify your email address before using WEBIS.', [
+                'email' => ['Check your inbox for the verification link.'],
+            ], 403);
+        }
+
         if (! in_array($user->role->value, $roles, true)) {
             return ApiResponse::error('You are not allowed to perform this action.', [], 403);
         }

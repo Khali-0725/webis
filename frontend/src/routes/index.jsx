@@ -12,6 +12,7 @@ const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
+const VerifyEmailPage = lazy(() => import('@/pages/auth/VerifyEmailPage'));
 const ClientDashboard = lazy(() => import('@/pages/client/ClientDashboard'));
 const ProviderDashboard = lazy(() => import('@/pages/provider/ProviderDashboard'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
@@ -104,6 +105,11 @@ export function AppRoutes() {
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
             <Route path="reset-password" element={<ResetPasswordPage />} />
           </Route>
+        </Route>
+
+        {/* Client portal */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="verify-email" element={<VerifyEmailPage />} />
         </Route>
 
         {/* Client portal */}
