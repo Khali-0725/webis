@@ -158,6 +158,12 @@ class AuthService
                     ? 'This account has been terminated. Please contact the WEBIS administrator.'
                     : 'This account has been suspended. Please contact the WEBIS administrator.'
             );
+        } elseif ($role !== null && $user->role->value !== $role) {
+            throw new DomainException(
+                'This Google account is already registered as a '.$user->role->label().'. Use a different Google account for the other role.',
+                422,
+                ['role' => ['This Google account already has a different WEBIS role.']]
+            );
         } elseif ($user->google_id === null) {
             // First "Continue with Google" on a pre-existing password
             // account - link it rather than blocking on "email taken".
