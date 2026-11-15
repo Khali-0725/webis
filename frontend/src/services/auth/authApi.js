@@ -35,7 +35,7 @@ export const authApi = {
   },
 
   async setPassword(payload) {
-    const response = await api.put('/me/password', payload);
+    const response = await api.post('/me/password', payload);
     return unwrap(response);
   },
 

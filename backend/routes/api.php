@@ -156,6 +156,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::prefix('me')->name('api.me.')->group(function () {
         Route::patch('/profile', [ProfileController::class, 'update'])->name('update');
         Route::put('/password', [ProfileController::class, 'setPassword'])->name('password.update');
+        Route::post('/password', [ProfileController::class, 'setPassword'])->name('password.store');
         Route::post('/avatar', [AvatarController::class, 'store'])->name('avatar.store');
         Route::get('/reviews', [ReviewController::class, 'myReviews'])->name('reviews.index');
         Route::delete('/account', [AccountController::class, 'destroy'])->name('account.destroy');
