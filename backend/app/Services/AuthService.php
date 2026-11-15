@@ -68,7 +68,6 @@ class AuthService
         // email can always be resent via POST /auth/email/verification-notification.
         try {
             event(new Registered($user));
-            $user->sendEmailVerificationNotification();
         } catch (Throwable $e) {
             Log::warning('Registration succeeded but the verification email failed to send.', [
                 'user_id' => $user->id,
