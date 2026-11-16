@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Icon } from '@/components/ui/Icon';
@@ -15,6 +15,7 @@ import { Alert } from '@/components/ui/Alert';
 import { authApi } from '@/services/auth/authApi';
 import { usePresenceHeartbeat } from '@/hooks/usePresenceHeartbeat';
 import { ProviderBookingAlert } from '@/components/layout/ProviderBookingAlert';
+import { AuthWelcomeScreen } from '@/components/layout/AuthWelcomeScreen';
 
 /**
  * The shell used by all three portals: fixed navy sidebar on desktop, a
@@ -40,6 +41,11 @@ export function DashboardLayout({ title }) {
   const [passwordError, setPasswordError] = useState(null);
   const [savingPassword, setSavingPassword] = useState(false);
   const [googlePasswordSetup, setGooglePasswordSetup] = useState(() => sessionStorage.getItem('webis:google-password-setup') === '1');
+  const [authWelcome, setAuthWelcome] = useState(() => sessionStorage.getItem('serbisyolink:auth-welcome') === '1');
+  const finishAuthWelcome = useCallback(() => {
+    sessionStorage.removeItem('serbisyolink:auth-welcome');
+    setAuthWelcome(false);
+  }, []);
   const backLink = role === ROLES.PROVIDER && user?.provider_verification_status !== 'approved'
     ? null
     : dashboardBackLink(location.pathname, user?.home_path);
@@ -94,6 +100,12 @@ export function DashboardLayout({ title }) {
 
   return (
     <div className="min-h-screen bg-canvas">
+      {authWelcome && (
+        <AuthWelcomeScreen
+          user={user}
+          onDone={finishAuthWelcome}
+        />
+      )}
       <a
         href="#main"
         className="sr-only-focusable fixed left-4 top-4 z-50 rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white"
@@ -178,7 +190,7 @@ export function DashboardLayout({ title }) {
         </main>
       </div>
       <Modal
-        open={Boolean(user?.password_setup_required || googlePasswordSetup)}
+        open={!authWelcome && Boolean(user?.password_setup_required || googlePasswordSetup)}
         onClose={() => {}}
         title="Create your SERBISYOLINK password"
         description="Set a password before exploring your dashboard. You can use it to sign in without Google."

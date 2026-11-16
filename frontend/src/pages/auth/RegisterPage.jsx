@@ -86,6 +86,7 @@ export default function RegisterPage() {
         phone: values.phone || null,
       });
 
+      sessionStorage.setItem('serbisyolink:auth-welcome', '1');
       navigate(ROLE_HOME[user.role] ?? '/', { replace: true });
     } catch (error) {
       const serverErrors = error?.errors ?? {};
@@ -115,6 +116,7 @@ export default function RegisterPage() {
         });
 
         sessionStorage.setItem('webis:google-password-setup', '1');
+        sessionStorage.setItem('serbisyolink:auth-welcome', '1');
         navigate(ROLE_HOME[user.role] ?? '/', { replace: true });
       } catch (error) {
         setFormError(error?.message ?? 'Unable to continue with Google right now.');

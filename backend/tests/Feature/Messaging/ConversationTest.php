@@ -3,6 +3,7 @@
 namespace Tests\Feature\Messaging;
 
 use App\Models\Conversation;
+use App\Models\Booking;
 use App\Models\Message;
 use App\Models\ProviderProfile;
 use App\Models\User;
@@ -57,6 +58,28 @@ class ConversationTest extends TestCase
         $this->actingAs($otherProvider)
             ->postJson('/api/conversations', ['provider_profile_id' => $profile->id])
             ->assertStatus(403);
+    }
+
+    public function test_a_provider_can_start_a_conversation_from_an_owned_booking(): void
+    {
+        $providerUser = User::factory()->provider()->create();
+        $profile = ProviderProfile::factory()->verified()->create(['user_id' => $providerUser->id]);
+        $client = User::factory()->client()->create();
+        $booking = Booking::factory()->create([
+            'client_id' => $client->id,
+            'provider_profile_id' => $profile->id,
+        ]);
+
+        $this->actingAs($providerUser)
+            ->postJson('/api/conversations', ['booking_id' => $booking->id])
+            ->assertOk()
+            ->assertJsonPath('data.other_participant.id', $client->id);
+
+        $this->assertDatabaseHas('conversations', [
+            'client_id' => $client->id,
+            'provider_user_id' => $providerUser->id,
+            'booking_id' => $booking->id,
+        ]);
     }
 
     public function test_new_conversation_gets_one_clearly_marked_automatic_greeting(): void

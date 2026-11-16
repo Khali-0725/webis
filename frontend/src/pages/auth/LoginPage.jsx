@@ -9,6 +9,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Icon } from '@/components/ui/Icon';
 import { Divider } from '@/components/ui/Divider';
 import { GoogleButton } from '@/components/ui/GoogleButton';
+import { Logo } from '@/components/ui/Logo';
 import { useLogin, useGoogleAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/authStore';
 import { googleSignInEnabled } from '@/services/auth/googleIdentity';
@@ -47,6 +48,7 @@ export default function LoginPage() {
       const user = await login.mutateAsync(values);
       const intended = location.state?.from;
 
+      sessionStorage.setItem('serbisyolink:auth-welcome', '1');
       navigate(intended || ROLE_HOME[user.role] || '/', { replace: true });
     } catch (error) {
       setAppealEligible(error?.status === 403 && /has been suspended/i.test(error?.message ?? ''));
@@ -74,6 +76,7 @@ export default function LoginPage() {
         const user = await googleAuth.mutateAsync({ credential });
         const intended = location.state?.from;
 
+        sessionStorage.setItem('serbisyolink:auth-welcome', '1');
         navigate(intended || ROLE_HOME[user.role] || '/', { replace: true });
       } catch (error) {
         setAppealEligible(error?.status === 403 && /has been suspended/i.test(error?.message ?? ''));
@@ -86,12 +89,7 @@ export default function LoginPage() {
   return (
     <>
       <div className="mb-6 text-center">
-        <span
-          className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-navy-700 font-display text-lg font-bold text-white"
-          aria-hidden="true"
-        >
-          W
-        </span>
+        <Logo className="mb-3 justify-center" />
         <h1 className="font-display text-2xl font-bold text-navy-800">Welcome</h1>
         <p className="mt-1 text-sm text-ink-muted">Sign in to your SERBISYOLINK account</p>
       </div>

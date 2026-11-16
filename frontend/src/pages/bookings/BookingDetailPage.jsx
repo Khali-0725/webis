@@ -539,16 +539,8 @@ export default function BookingDetailPage() {
         return conversationApi.start({ provider_profile_id: booking.provider.id });
       }
 
-      // A provider cannot start a conversation (only a client can) - find
-      // the existing thread with this booking's client instead.
-      const conversations = await conversationApi.list();
-      const existing = conversations.find((c) => c.other_participant?.id === booking.client?.id);
-
-      if (!existing) {
-        throw { message: 'This client has not started a conversation with you yet.' };
-      }
-
-      return existing;
+      // Provider may open or create the thread from their own booking.
+      return conversationApi.start({ booking_id: booking.id });
     },
     onSuccess: (conversation) => {
       navigate(`/${role}/messages/${conversation.id}`);
