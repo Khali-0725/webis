@@ -17,6 +17,7 @@ class ConversationResource extends JsonResource
 
         $other = $viewerIsClient ? $this->whenLoaded('providerUser') : $this->whenLoaded('clientUser');
         $unreadCount = $viewerIsClient ? $this->client_unread_count : $this->provider_unread_count;
+        $lastSeenAt = $other?->last_seen_at;
 
         return [
             'id' => $this->id,
@@ -30,6 +31,8 @@ class ConversationResource extends JsonResource
                 'avatar_url' => $other->avatar_path
                     ? '/api/files/avatar/'.$other->id.'?t='.$other->updated_at->timestamp
                     : null,
+                'is_online' => $lastSeenAt?->gt(now()->subMinutes(2)) ?? false,
+                'last_seen_at' => $lastSeenAt?->toIso8601String(),
             ] : null,
             'unread_count' => $unreadCount,
             'last_message_at' => $this->last_message_at?->toIso8601String(),

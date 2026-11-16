@@ -117,6 +117,15 @@ class AuthController extends Controller
 
     public function activity(Request $request): JsonResponse
     {
+        $request->user()->forceFill(['last_seen_at' => now()])->saveQuietly();
+
+        return ApiResponse::noContent();
+    }
+
+    public function presence(Request $request): JsonResponse
+    {
+        $request->user()->forceFill(['last_seen_at' => now()])->saveQuietly();
+
         return ApiResponse::noContent();
     }
 }

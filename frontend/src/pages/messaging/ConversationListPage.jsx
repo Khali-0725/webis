@@ -6,9 +6,9 @@ import { Avatar } from '@/components/ui/Avatar';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
 import { conversationApi } from '@/services/api/conversationApi';
 import { queryKeys } from '@/services/api/queryClient';
-import { POLL_SLOW } from '@/services/realtime/echo';
 import { useAuth } from '@/hooks/useAuth';
 import { ROLES } from '@/constants';
+import { formatPresence } from '@/utils/presence';
 
 export default function ConversationListPage() {
   const { role } = useAuth();
@@ -17,7 +17,7 @@ export default function ConversationListPage() {
   const { data: conversations = [], isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.conversations.list,
     queryFn: conversationApi.list,
-    refetchInterval: POLL_SLOW,
+    refetchInterval: 30_000,
   });
 
   return (
@@ -52,6 +52,9 @@ export default function ConversationListPage() {
                   </p>
                   <p className="truncate text-xs text-ink-muted">
                     {conversation.last_message_preview ?? 'No messages yet'}
+                  </p>
+                  <p className={conversation.other_participant?.is_online ? 'text-xs font-medium text-emerald-600' : 'text-xs text-ink-muted'}>
+                    {formatPresence(conversation.other_participant)}
                   </p>
                 </div>
                 {conversation.unread_count > 0 && (

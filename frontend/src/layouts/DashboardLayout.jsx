@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { authApi } from '@/services/auth/authApi';
+import { usePresenceHeartbeat } from '@/hooks/usePresenceHeartbeat';
+import { ProviderBookingAlert } from '@/components/layout/ProviderBookingAlert';
 
 /**
  * The shell used by all three portals: fixed navy sidebar on desktop, a
@@ -21,6 +23,7 @@ import { authApi } from '@/services/auth/authApi';
  */
 export function DashboardLayout({ title }) {
   const { user, role, refreshUser } = useAuth();
+  usePresenceHeartbeat();
   const unreadCount = useUnreadCount();
   const canMessage = role === ROLES.CLIENT || role === ROLES.PROVIDER;
   const { data: notifications } = useQuery({
@@ -187,6 +190,7 @@ export function DashboardLayout({ title }) {
           <Button type="submit" fullWidth loading={savingPassword}>Save password</Button>
         </form>
       </Modal>
+      <ProviderBookingAlert />
     </div>
   );
 }

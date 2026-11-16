@@ -22,6 +22,8 @@ class MessageResource extends JsonResource
                 'id' => $this->sender->id,
                 'full_name' => $this->sender->full_name,
                 'initials' => $this->sender->initials,
+                'is_online' => $this->sender->last_seen_at?->gt(now()->subMinutes(2)) ?? false,
+                'last_seen_at' => $this->sender->last_seen_at?->toIso8601String(),
                 // Relative, not url() - see the comment on qr_image_url in
                 // ProviderPaymentMethodResource for why.
                 'avatar_url' => $this->sender->avatar_path

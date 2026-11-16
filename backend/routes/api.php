@@ -130,6 +130,7 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('/me', [AuthController::class, 'me'])->name('me');
         Route::post('/activity', [AuthController::class, 'activity'])->middleware('throttle:60,1')->name('activity');
+        Route::post('/presence', [AuthController::class, 'presence'])->middleware('throttle:120,1')->name('presence');
     });
 });
 

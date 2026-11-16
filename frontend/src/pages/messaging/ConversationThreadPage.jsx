@@ -14,6 +14,7 @@ import { POLL_FAST } from '@/services/realtime/echo';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/utils/cn';
 import { ROLES } from '@/constants';
+import { formatPresence } from '@/utils/presence';
 
 const QUICK_REPLIES = {
   [ROLES.CLIENT]: [
@@ -43,6 +44,11 @@ export default function ConversationThreadPage() {
   const [formError, setFormError] = useState(null);
   const [prohibitedError, setProhibitedError] = useState(null);
   const bottomRef = useRef(null);
+  const conversationQuery = useQuery({
+    queryKey: queryKeys.conversations.list,
+    queryFn: conversationApi.list,
+    refetchInterval: 30_000,
+  });
 
   const messagesQuery = useQuery({
     queryKey: queryKeys.conversations.messages(id),
@@ -62,6 +68,7 @@ export default function ConversationThreadPage() {
     conversationApi.markRead(id).then(() => {
       queryClient.invalidateQueries({ queryKey: queryKeys.conversations.list });
       queryClient.invalidateQueries({ queryKey: queryKeys.conversations.unreadCount });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.messages(id) });
     });
   }, [id, queryClient]);
 
@@ -155,9 +162,15 @@ export default function ConversationThreadPage() {
   const messages = [...messagesQuery.data.items].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   );
+  const conversation = conversationQuery.data?.find((item) => item.id === Number(id) || item.id === id);
+  const otherParticipant = conversation?.other_participant ?? messages.find((message) => !message.is_mine)?.sender;
 
   return (
-    <Card title="Conversation" className="flex h-[calc(100dvh-12rem)] min-h-80 flex-col overflow-hidden" bodyClassName="flex min-h-0 flex-1 flex-col">
+    <Card
+      title={<span>Conversation <span className="ml-2 text-xs font-normal text-ink-muted">{formatPresence(otherParticipant)}</span></span>}
+      className="flex h-[calc(100dvh-12rem)] min-h-80 flex-col overflow-hidden"
+      bodyClassName="flex min-h-0 flex-1 flex-col"
+    >
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-lg border border-line bg-slate-50 p-4">
         {messages.length === 0 && (
           <p className="text-center text-sm text-ink-muted">No messages yet. Say hello!</p>
@@ -194,6 +207,11 @@ export default function ConversationThreadPage() {
               </div>
               <div className="mt-0.5 flex items-center gap-2 px-1 text-[11px] text-ink-muted">
                 {message.edited_at && <span>edited</span>}
+                {message.is_mine && !message.is_automated && (
+                  <span className={message.read_at ? 'font-medium text-emerald-600' : ''}>
+                    {message.read_at ? 'Read' : 'Sent'}
+                  </span>
+                )}
                 {message.is_mine && !message.is_automated && (
                   <>
                     <button type="button" className="hover:text-ink hover:underline" onClick={() => startEditing(message)}>

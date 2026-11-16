@@ -248,6 +248,7 @@ class AuthService
 
         $user->forceFill([
             'last_login_at' => now(),
+            'last_seen_at' => now(),
             'last_login_ip' => $request->ip(),
             'active_session_id' => $request->hasSession() ? $request->session()->getId() : null,
         ])->saveQuietly();
@@ -262,7 +263,7 @@ class AuthService
     {
         $user = Auth::guard('web')->user();
         if ($user && $request->hasSession() && $user->getRawOriginal('active_session_id') === $request->session()->getId()) {
-            $user->forceFill(['active_session_id' => null])->saveQuietly();
+            $user->forceFill(['active_session_id' => null, 'last_seen_at' => null])->saveQuietly();
         }
         Auth::guard('web')->logout();
 

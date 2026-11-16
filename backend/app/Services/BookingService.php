@@ -14,6 +14,7 @@ use App\Models\ProviderPaymentMethod;
 use App\Models\Service;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Notifications\AccountEventNotification;
 use App\Support\Realtime;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -138,6 +139,11 @@ class BookingService
         // The client's own list refetches off the mutation; the provider is
         // the one who has to learn about a new request unprompted.
         Realtime::push([$booking->providerProfile->user_id], 'bookings', ['booking_id' => $booking->id]);
+        $booking->providerProfile->user?->notify(new AccountEventNotification(
+            'booking.created',
+            "New booking request from {$client->full_name} for {$booking->service->title}.",
+            "/provider/bookings/{$booking->id}",
+        ));
 
         return $booking;
     }
