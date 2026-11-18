@@ -53,7 +53,14 @@ function KeepMapSized({ latitude, longitude, suggestedCenter }) {
  * A pin-drop location picker. No API key: OpenStreetMap raster tiles, per the
  * thesis scope note (manual pin placement, not a mapping-API integration).
  */
-export function LocationPicker({ latitude, longitude, onChange, suggestedCenter, height = 260 }) {
+export function LocationPicker({
+  latitude,
+  longitude,
+  onChange,
+  onLocationError,
+  suggestedCenter,
+  height = 260,
+}) {
   const [locating, setLocating] = useState(false);
   const onChangeRef = useRef(onChange);
   useLayoutEffect(() => { onChangeRef.current = onChange; }, [onChange]);
@@ -67,7 +74,10 @@ export function LocationPicker({ latitude, longitude, onChange, suggestedCenter,
   );
 
   const useMyLocation = () => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      onLocationError?.('Location access is not supported by this browser.');
+      return;
+    }
 
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
@@ -75,8 +85,15 @@ export function LocationPicker({ latitude, longitude, onChange, suggestedCenter,
         handlePick(position.coords.latitude, position.coords.longitude);
         setLocating(false);
       },
-      () => setLocating(false),
-      { timeout: 8000 },
+      (error) => {
+        setLocating(false);
+        onLocationError?.(
+          error.code === error.PERMISSION_DENIED
+            ? 'Allow location access in your browser, then try again.'
+            : 'Could not get your current location. Check GPS and try again.',
+        );
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
     );
   };
 

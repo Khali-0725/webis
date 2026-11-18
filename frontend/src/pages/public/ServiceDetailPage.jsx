@@ -162,17 +162,13 @@ function BookingRequestForm({ service, onClose }) {
               latitude={pin.latitude}
               longitude={pin.longitude}
               suggestedCenter={suggestedCenter}
+              onLocationError={setPinError}
               onChange={(lat, lng) => {
-                if (!isWithinBookingPinRange(lat, lng, suggestedCenter)) {
-                  setPin({ latitude: null, longitude: null });
-                  setPinError(suggestedCenter
-                    ? `Place the pin within 2 km of ${selectedBarangay.name}. Change the barangay if the address is elsewhere.`
-                    : 'Select a barangay with a map center before placing a pin.');
-                  setLocationConfirmed(false);
-                  return;
-                }
+                const withinRange = isWithinBookingPinRange(lat, lng, suggestedCenter);
                 setPin({ latitude: lat, longitude: lng });
-                setPinError(null);
+                setPinError(withinRange ? null : (suggestedCenter
+                  ? `Pin is outside 2 km of ${selectedBarangay?.name ?? 'the selected barangay'}. Change the barangay if the address is elsewhere.`
+                  : 'Select a barangay with a map center before placing a pin.'));
                 setLocationConfirmed(false);
               }}
               height={320}

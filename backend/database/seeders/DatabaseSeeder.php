@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             // Phase 1: reference data
-            BarangaySeeder::class,
+            CaviteBarangaySeeder::class,
             ServiceCategorySeeder::class,
 
             // Phase 2: demo accounts and providers
