@@ -1,3 +1,4 @@
+// Single booking radius. Map circle and client-side guard both use this value.
 export const BOOKING_PIN_RADIUS_KM = 5;
 
 export function isWithinBookingPinRange(latitude, longitude, center) {
