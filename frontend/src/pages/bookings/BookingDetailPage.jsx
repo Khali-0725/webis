@@ -637,6 +637,16 @@ export default function BookingDetailPage() {
                   <p className="text-xs text-ink-muted">{booking.location.landmark_notes}</p>
                 )}
                 <LocationView latitude={booking.location.latitude} longitude={booking.location.longitude} height={200} />
+                {isProvider && ['accepted', 'in_progress', 'completed'].includes(booking.status) && (
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${booking.location.latitude},${booking.location.longitude}`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-10 items-center justify-center rounded-lg bg-navy-700 px-4 text-sm font-semibold text-white hover:bg-navy-600"
+                  >
+                    Go to this location
+                  </a>
+                )}
               </div>
             ) : (
               <p className="text-sm text-ink-muted">

@@ -57,6 +57,7 @@ export function LocationPicker({
   latitude,
   longitude,
   onChange,
+  onLocationUsed,
   onLocationError,
   suggestedCenter,
   height = 260,
@@ -83,6 +84,7 @@ export function LocationPicker({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         handlePick(position.coords.latitude, position.coords.longitude);
+        onLocationUsed?.();
         setLocating(false);
       },
       (error) => {
