@@ -981,11 +981,13 @@ class CaviteBarangaySeeder extends Seeder
                 // Prefer canonical row. Older aliases may coexist after the
                 // first Cavite seed; never rename an alias into a duplicate.
                 $existing = Barangay::query()
+                    ->withTrashed()
                     ->where('municipality', $municipality)
                     ->where('name', $name)
                     ->first();
                 if (! $existing) {
                     $existing = Barangay::query()
+                        ->withTrashed()
                         ->where('municipality', $municipality)
                         ->whereIn('name', $aliases[$key] ?? [])
                         ->first();
@@ -998,6 +1000,9 @@ class CaviteBarangaySeeder extends Seeder
                         'longitude' => $coordinatesForRow[1],
                         'is_active' => true,
                     ])->save();
+                if ($existing?->trashed()) {
+                    $existing->restore();
+                }
             }
         }
 
