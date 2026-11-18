@@ -126,7 +126,7 @@ export function LocationPicker({
         </Button>
       </div>
       <p className="text-xs text-ink-muted">
-        {suggestedCenter ? 'Place the pin inside the circle, within 5 km of the selected barangay.' : 'Select a barangay to show the allowed pin area.'}
+        {suggestedCenter ? 'Place the pin inside the circle, within 3 km of the selected barangay.' : 'Select a barangay to show the allowed pin area.'}
       </p>
     </div>
   );

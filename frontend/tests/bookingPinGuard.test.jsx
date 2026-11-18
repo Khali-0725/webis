@@ -55,7 +55,7 @@ describe('booking pin guard', () => {
     await user.selectOptions(screen.getByLabelText(/Barangay/), '1');
 
     await user.click(screen.getByRole('button', { name: 'Pin China' }));
-    expect(screen.getByText(/within 5 km of Mulawin/)).toBeInTheDocument();
+    expect(screen.getByText(/within 3 km of Mulawin/)).toBeInTheDocument();
     expect(screen.getByText(/Selected pin: none/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Pin Mulawin' }));

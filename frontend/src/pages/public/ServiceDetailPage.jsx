@@ -91,7 +91,7 @@ function BookingRequestForm({ service, onClose }) {
       return;
     }
     if (!isWithinBookingPinRange(pin.latitude, pin.longitude, suggestedCenter)) {
-      setFormError(`Place the pin within 5 km of ${selectedBarangay?.name ?? 'the selected barangay'}.`);
+      setFormError(`Place the pin within 3 km of ${selectedBarangay?.name ?? 'the selected barangay'}.`);
       return;
     }
     if (!locationConfirmed) {
@@ -169,7 +169,7 @@ function BookingRequestForm({ service, onClose }) {
                 if (!isWithinBookingPinRange(lat, lng, suggestedCenter)) {
                   setPin({ latitude: null, longitude: null });
                   setPinError(suggestedCenter
-                    ? `Place the pin within 5 km of ${selectedBarangay?.name ?? 'the selected barangay'}. Change the barangay if the address is elsewhere.`
+                    ? `Place the pin within 3 km of ${selectedBarangay?.name ?? 'the selected barangay'}. Change the barangay if the address is elsewhere.`
                     : 'Select a barangay with a map center before placing a pin.');
                   setLocationConfirmed(false);
                   return;
