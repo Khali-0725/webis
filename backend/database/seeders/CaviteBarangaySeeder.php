@@ -978,15 +978,18 @@ class CaviteBarangaySeeder extends Seeder
             foreach ($names as $name) {
                 $key = $municipality.'|'.$name;
                 $coordinatesForRow = $coordinates[$key] ?? ($centers[$municipality] ?? [14.3292, 120.8553]);
+                // Prefer canonical row. Older aliases may coexist after the
+                // first Cavite seed; never rename an alias into a duplicate.
                 $existing = Barangay::query()
                     ->where('municipality', $municipality)
-                    ->where(function ($query) use ($name, $aliases, $key): void {
-                        $query->where('name', $name);
-                        foreach ($aliases[$key] ?? [] as $alias) {
-                            $query->orWhere('name', $alias);
-                        }
-                    })
+                    ->where('name', $name)
                     ->first();
+                if (! $existing) {
+                    $existing = Barangay::query()
+                        ->where('municipality', $municipality)
+                        ->whereIn('name', $aliases[$key] ?? [])
+                        ->first();
+                }
                 ($existing ?? new Barangay())->fill([
                         'name' => $name,
                         'municipality' => $municipality,
