@@ -1,4 +1,4 @@
-export const BOOKING_PIN_RADIUS_KM = 2;
+export const BOOKING_PIN_RADIUS_KM = 5;
 
 export function isWithinBookingPinRange(latitude, longitude, center) {
   if (center?.latitude == null || center?.longitude == null) return false;

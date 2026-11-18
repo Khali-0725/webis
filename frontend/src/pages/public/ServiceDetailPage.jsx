@@ -89,7 +89,7 @@ function BookingRequestForm({ service, onClose }) {
       return;
     }
     if (!isWithinBookingPinRange(pin.latitude, pin.longitude, suggestedCenter)) {
-      setFormError(`Place the pin within 2 km of ${selectedBarangay?.name ?? 'the selected barangay'}.`);
+      setFormError(`Place the pin within 5 km of ${selectedBarangay?.name ?? 'the selected barangay'}.`);
       return;
     }
     if (!locationConfirmed) {
@@ -164,11 +164,16 @@ function BookingRequestForm({ service, onClose }) {
               suggestedCenter={suggestedCenter}
               onLocationError={setPinError}
               onChange={(lat, lng) => {
-                const withinRange = isWithinBookingPinRange(lat, lng, suggestedCenter);
+                if (!isWithinBookingPinRange(lat, lng, suggestedCenter)) {
+                  setPin({ latitude: null, longitude: null });
+                  setPinError(suggestedCenter
+                    ? `Place the pin within 5 km of ${selectedBarangay?.name ?? 'the selected barangay'}. Change the barangay if the address is elsewhere.`
+                    : 'Select a barangay with a map center before placing a pin.');
+                  setLocationConfirmed(false);
+                  return;
+                }
                 setPin({ latitude: lat, longitude: lng });
-                setPinError(withinRange ? null : (suggestedCenter
-                  ? `Pin is outside 2 km of ${selectedBarangay?.name ?? 'the selected barangay'}. Change the barangay if the address is elsewhere.`
-                  : 'Select a barangay with a map center before placing a pin.'));
+                setPinError(null);
                 setLocationConfirmed(false);
               }}
               height={320}

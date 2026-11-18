@@ -40,6 +40,61 @@ class CaviteBarangaySeeder extends Seeder
             'Gen. Mariano Alvarez' => [14.3, 121],
         ];
 
+        // Tanza rows existed before the Cavite-wide list and had rough grid
+        // coordinates. Replace them with OSM barangay centers during deploy.
+        $coordinates = [
+            'Tanza|Amaya I' => [14.3886141, 120.8403530],
+            'Tanza|Bagtas' => [14.3349294, 120.8533218],
+            'Tanza|Biga' => [14.3619185, 120.8558721],
+            'Tanza|Biwas' => [14.3990841, 120.8554803],
+            'Tanza|Bucal' => [14.3912205, 120.8628635],
+            'Tanza|Bunga' => [14.3552045, 120.8716063],
+            'Tanza|Calibuyo' => [14.3599172, 120.8094016],
+            'Tanza|Capipisa' => [14.3589392, 120.7922029],
+            'Tanza|Daang Amaya I' => [14.3919658, 120.8552146],
+            'Tanza|Halayhay' => [14.3740223, 120.8122626],
+            'Tanza|Julugan I' => [14.4053429, 120.8428788],
+            'Tanza|Mulawin' => [14.3815757, 120.8545483],
+            'Tanza|Paradahan I' => [14.3207518, 120.8607990],
+            'Tanza|Barangay I (Pob.)' => [14.4007024, 120.8577708],
+            'Tanza|Barangay II (Pob.)' => [14.3990881, 120.8575053],
+            'Tanza|Barangay III (Pob.)' => [14.3981940, 120.8561711],
+            'Tanza|Barangay IV (Pob.)' => [14.3972059, 120.8596404],
+            'Tanza|Punta I' => [14.3520856, 120.8598544],
+            'Tanza|Sahud Ulan' => [14.3710092, 120.8240641],
+            'Tanza|Sanja Mayor' => [14.3750722, 120.8541510],
+            'Tanza|Santol' => [14.3750474, 120.8734517],
+            'Tanza|Tanauan' => [14.2923273, 120.8290803],
+            'Tanza|Tres Cruses' => [14.3311487, 120.8327066],
+            'Tanza|Lambingan' => [14.3527110, 120.7999306],
+            'Tanza|Amaya II' => [14.3815031, 120.8335619],
+            'Tanza|Amaya III' => [14.3829976, 120.8340822],
+            'Tanza|Amaya IV' => [14.3842637, 120.8308653],
+            'Tanza|Amaya V' => [14.3900179, 120.8291408],
+            'Tanza|Amaya VI' => [14.3774988, 120.8326493],
+            'Tanza|Amaya VII' => [14.3885388, 120.8290180],
+            'Tanza|Daang Amaya II' => [14.3961947, 120.8515357],
+            'Tanza|Daang Amaya III' => [14.3955895, 120.8549104],
+            'Tanza|Julugan II' => [14.4050494, 120.8471124],
+            'Tanza|Julugan III' => [14.4072455, 120.8444373],
+            'Tanza|Julugan IV' => [14.4021313, 120.8442870],
+            'Tanza|Julugan V' => [14.4029325, 120.8426895],
+            'Tanza|Julugan VI' => [14.3992794, 120.8437402],
+            'Tanza|Julugan VII' => [14.4011116, 120.8422161],
+            'Tanza|Julugan VIII' => [14.3991157, 120.8412201],
+            'Tanza|Paradahan II' => [14.3253489, 120.8600210],
+            'Tanza|Punta II' => [14.3417364, 120.8598857],
+        ];
+
+        $aliases = [
+            'Tanza|Bucal' => ['Bukal'],
+            'Tanza|Sahud Ulan' => ['Sahud-Ulan'],
+            'Tanza|Barangay I (Pob.)' => ['Poblacion I'],
+            'Tanza|Barangay II (Pob.)' => ['Poblacion II'],
+            'Tanza|Barangay III (Pob.)' => ['Poblacion III'],
+            'Tanza|Barangay IV (Pob.)' => ['Poblacion IV'],
+        ];
+
         $barangays = [
             'Alfonso' => [
                 'Amuyong',
@@ -921,15 +976,25 @@ class CaviteBarangaySeeder extends Seeder
         foreach ($barangays as $municipality => $names) {
             [$latitude, $longitude] = $centers[$municipality] ?? [14.3292, 120.8553];
             foreach ($names as $name) {
-                Barangay::firstOrCreate(
-                    ['name' => $name, 'municipality' => $municipality],
-                    [
+                $key = $municipality.'|'.$name;
+                $coordinatesForRow = $coordinates[$key] ?? ($centers[$municipality] ?? [14.3292, 120.8553]);
+                $existing = Barangay::query()
+                    ->where('municipality', $municipality)
+                    ->where(function ($query) use ($name, $aliases, $key): void {
+                        $query->where('name', $name);
+                        foreach ($aliases[$key] ?? [] as $alias) {
+                            $query->orWhere('name', $alias);
+                        }
+                    })
+                    ->first();
+                ($existing ?? new Barangay())->fill([
+                        'name' => $name,
+                        'municipality' => $municipality,
                         'province' => 'Cavite',
-                        'latitude' => $latitude,
-                        'longitude' => $longitude,
+                        'latitude' => $coordinatesForRow[0],
+                        'longitude' => $coordinatesForRow[1],
                         'is_active' => true,
-                    ],
-                );
+                    ])->save();
             }
         }
 

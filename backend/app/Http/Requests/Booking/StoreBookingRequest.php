@@ -53,8 +53,8 @@ class StoreBookingRequest extends FormRequest
                 + cos($centerLatitude) * cos($latitude) * sin(($longitude - $centerLongitude) / 2) ** 2;
             $distanceKm = 6371 * 2 * asin(sqrt(min(1, $haversine)));
 
-            if ($distanceKm > 2) {
-                $validator->errors()->add('latitude', 'Place the pin within 2 km of the selected barangay.');
+            if ($distanceKm > 5) {
+                $validator->errors()->add('latitude', 'Place the pin within 5 km of the selected barangay.');
             }
         }];
     }
