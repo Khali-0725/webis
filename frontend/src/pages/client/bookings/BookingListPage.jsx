@@ -13,6 +13,14 @@ import { queryKeys } from '@/services/api/queryClient';
 import { POLL_SLOW } from '@/services/realtime/echo';
 import { BOOKING_STATUS_META } from '@/constants';
 
+const formatBookedAt = (value) => value
+  ? new Date(value).toLocaleString('en-PH', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Manila',
+    })
+  : '—';
+
 export default function BookingListPage() {
   const location = useLocation();
   const bookingCreated = location.state?.bookingCreated;
@@ -72,7 +80,7 @@ export default function BookingListPage() {
               <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
                 <th className="py-2 pr-4 font-medium">Service</th>
                 <th className="py-2 pr-4 font-medium">Provider</th>
-                <th className="py-2 pr-4 font-medium">Date &amp; time</th>
+                <th className="py-2 pr-4 font-medium">Booked on</th>
                 <th className="py-2 pr-4 font-medium">Status</th>
                 <th className="py-2 font-medium"><span className="sr-only">Actions</span></th>
               </tr>
@@ -83,7 +91,7 @@ export default function BookingListPage() {
                   <td className="py-3 pr-4 text-ink">{booking.service?.title}</td>
                   <td className="py-3 pr-4 text-ink-muted">{booking.provider?.business_name}</td>
                   <td className="py-3 pr-4 text-ink-muted">
-                    {booking.scheduled_date} · {booking.scheduled_start_time?.slice(0, 5)}
+                    {formatBookedAt(booking.created_at)}
                   </td>
                   <td className="py-3 pr-4">
                     <StatusBadge status={booking.status} />

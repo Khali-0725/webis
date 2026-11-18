@@ -103,7 +103,9 @@ class BookingController extends Controller
         if ($user->isAdmin() && $request->string('trashed')->toString() === 'only') {
             $query->orderBy('deleted_at', $direction)->orderBy('id', $direction);
         } else {
-            $query->orderBy('scheduled_date', $direction)->orderBy('scheduled_start_time', $direction);
+            // Booking lists show newest requests first. Scheduled service time
+            // is separate from the time the client submitted the request.
+            $query->orderBy('created_at', $direction)->orderBy('id', $direction);
         }
 
         return ApiResponse::paginated(
