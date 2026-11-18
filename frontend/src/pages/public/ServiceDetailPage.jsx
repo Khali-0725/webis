@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { PRICING_TYPE_META, ROLES, SETTLEMENT_METHOD_META } from '@/constants';
 import { todayLocal } from '@/utils/date';
 import { isWithinBookingPinRange } from '@/utils/bookingPinRange';
+import { withCorrectedBarangayCoordinates } from '@/utils/barangayCoordinates';
 
 function priceLabelFor(service) {
   return service.pricing_type === 'quote'
@@ -48,10 +49,11 @@ function BookingRequestForm({ service, onClose }) {
   const [formError, setFormError] = useState(null);
   const [pinError, setPinError] = useState(null);
 
-  const { data: barangays = [] } = useQuery({
+  const { data: rawBarangays = [] } = useQuery({
     queryKey: queryKeys.public.barangays,
     queryFn: publicApi.listBarangays,
   });
+  const barangays = rawBarangays.map(withCorrectedBarangayCoordinates);
 
   const slotsQuery = useQuery({
     queryKey: queryKeys.bookings.availability(providerId, date),

@@ -10,8 +10,8 @@ vi.mock('@/components/map/LocationPicker', () => ({
   LocationPicker: ({ onChange, latitude, suggestedCenter }) => (
     <div>
       <button type="button" onClick={() => onChange(39.9, 116.4)}>Pin China</button>
-      <button type="button" onClick={() => onChange(14.326, 120.853)}>Pin Mulawin</button>
-      <button type="button" onClick={() => onChange(14.352, 120.866)}>Pin Halayhay</button>
+      <button type="button" onClick={() => onChange(14.3815757, 120.8545483)}>Pin Mulawin</button>
+      <button type="button" onClick={() => onChange(14.3740223, 120.8122626)}>Pin Halayhay</button>
       <output>Selected pin: {latitude ?? 'none'}; center: {suggestedCenter?.latitude ?? 'none'}</output>
     </div>
   ),
@@ -41,8 +41,8 @@ describe('booking pin guard', () => {
       provider: { id: 9, business_name: 'Provider', is_verified: true },
     });
     publicApi.listBarangays.mockResolvedValue([
-      { id: 1, name: 'Mulawin', province: 'Cavite', municipality: 'Tanza', latitude: 14.326, longitude: 120.853 },
-      { id: 2, name: 'Halayhay', province: 'Cavite', municipality: 'Tanza', latitude: 14.352, longitude: 120.866 },
+      { id: 1, name: 'Mulawin', province: 'Cavite', municipality: 'Tanza', latitude: 14.3815757, longitude: 120.8545483 },
+      { id: 2, name: 'Halayhay', province: 'Cavite', municipality: 'Tanza', latitude: 14.3740223, longitude: 120.8122626 },
     ]);
   });
 
@@ -59,10 +59,10 @@ describe('booking pin guard', () => {
     expect(screen.getByText(/Selected pin: none/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Pin Mulawin' }));
-    expect(screen.getByText(/Selected pin: 14.326/)).toBeInTheDocument();
+    expect(screen.getByText(/Selected pin: 14.3815757/)).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText(/Barangay/), '2');
-    expect(screen.getByText(/Selected pin: none; center: 14.352/)).toBeInTheDocument();
+    expect(screen.getByText(/Selected pin: none; center: 14.3740223/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Pin Halayhay' }));
-    expect(screen.getByText(/Selected pin: 14.352; center: 14.352/)).toBeInTheDocument();
+    expect(screen.getByText(/Selected pin: 14.3740223; center: 14.3740223/)).toBeInTheDocument();
   });
 });
