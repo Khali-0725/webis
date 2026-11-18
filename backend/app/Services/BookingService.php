@@ -216,7 +216,7 @@ class BookingService
 
     private function assertLeadTime(string $date, Carbon $startTime): void
     {
-        $minLeadHours = (int) SystemSetting::getValue('booking.min_lead_hours', 24);
+        $minLeadHours = (int) SystemSetting::getValue('booking.min_lead_hours', 0);
         $maxAdvanceDays = (int) SystemSetting::getValue('booking.max_advance_days', 30);
 
         $scheduledAt = Carbon::parse($date.' '.$startTime->format('H:i:s'));

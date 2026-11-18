@@ -135,7 +135,7 @@ class DemoDataSeeder extends Seeder
     }
     private function settings(): void {
         SystemSetting::firstOrCreate(['key'=>'platform.name'],['value'=>'SERBISYOLINK','group'=>'general','description'=>'Platform name']);
-        SystemSetting::firstOrCreate(['key'=>'booking.min_lead_hours'],['value'=>24,'group'=>'booking','description'=>'Min lead hours']);
+        SystemSetting::firstOrCreate(['key'=>'booking.min_lead_hours'],['value'=>0,'group'=>'booking','description'=>'Min lead hours']);
         SystemSetting::firstOrCreate(['key'=>'booking.max_advance_days'],['value'=>30,'group'=>'booking','description'=>'Max advance days']);
     }
 }

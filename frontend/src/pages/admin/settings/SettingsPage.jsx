@@ -12,7 +12,7 @@ import CmsPage from '@/pages/admin/cms/CmsPage';
 
 const KNOWN_KEYS = [
   { key: 'platform.name', label: 'Platform name', defaultValue: 'SERBISYOLINK' },
-  { key: 'booking.min_lead_hours', label: 'Minimum booking lead time (hours)', defaultValue: '24' },
+  { key: 'booking.min_lead_hours', label: 'Minimum booking lead time (hours)', defaultValue: '0' },
   { key: 'booking.max_advance_days', label: 'Maximum booking advance (days)', defaultValue: '30' },
 ];
 
