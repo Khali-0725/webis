@@ -25,8 +25,14 @@ const TANZA_COORDINATES = {
   'Barangay IV (Pob.)': [14.3972059, 120.8596404], 'Poblacion IV': [14.3972059, 120.8596404],
 };
 
+const BARANGAY_COORDINATES = {
+  'Naic|Sabang': [14.3146, 120.7930],
+};
+
 export function withCorrectedBarangayCoordinates(barangay) {
-  if (!barangay || barangay.municipality !== 'Tanza') return barangay;
-  const coordinates = TANZA_COORDINATES[barangay.name];
+  if (!barangay) return barangay;
+  const coordinates = barangay.municipality === 'Tanza'
+    ? TANZA_COORDINATES[barangay.name]
+    : BARANGAY_COORDINATES[`${barangay.municipality}|${barangay.name}`];
   return coordinates ? { ...barangay, latitude: coordinates[0], longitude: coordinates[1] } : barangay;
 }

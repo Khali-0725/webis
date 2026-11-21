@@ -45,6 +45,7 @@ class CaviteBarangaySeeder extends Seeder
         $coordinates = [
             'Tanza|Amaya I' => [14.3886141, 120.8403530],
             'Tanza|Bagtas' => [14.3349294, 120.8533218],
+            'Naic|Sabang' => [14.3146000, 120.7930000],
             'Tanza|Biga' => [14.3619185, 120.8558721],
             'Tanza|Biwas' => [14.3990841, 120.8554803],
             'Tanza|Bucal' => [14.3912205, 120.8628635],
