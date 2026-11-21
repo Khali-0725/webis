@@ -173,9 +173,12 @@ function BookingRequestForm({ service, onClose }) {
                 setLocationFromDevice(false);
                 setPinError(message);
               }}
-              onLocationUsed={() => {
+              onLocationUsed={(latitude, longitude) => {
+                // Keep the real GPS pin visible even when selected barangay
+                // center is stale or outside the allowed booking radius.
+                setPin({ latitude, longitude });
                 setLocationFromDevice(true);
-                setPinError(null);
+                if (isWithinBookingPinRange(latitude, longitude, suggestedCenter)) setPinError(null);
               }}
               onChange={(lat, lng) => {
                 if (!isWithinBookingPinRange(lat, lng, suggestedCenter)) {

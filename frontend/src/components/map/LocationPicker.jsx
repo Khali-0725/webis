@@ -83,8 +83,10 @@ export function LocationPicker({
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        handlePick(position.coords.latitude, position.coords.longitude);
-        onLocationUsed?.();
+        const latitude = Number(position.coords.latitude.toFixed(7));
+        const longitude = Number(position.coords.longitude.toFixed(7));
+        handlePick(latitude, longitude);
+        onLocationUsed?.(latitude, longitude);
         setLocating(false);
       },
       (error) => {
