@@ -47,7 +47,7 @@ export default function LandingPage() {
             Offer your skills on SERBISYOLINK
           </h2>
           <p className="max-w-xl text-sm text-ink-muted">
-            Independent providers in Tanza can list services, manage bookings and get paid — all in
+            Independent providers in Cavite, Philippines can list services, manage bookings and get paid — all in
             one verified platform.
           </p>
         </div>
