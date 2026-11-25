@@ -30,7 +30,7 @@ export default function AboutPage() {
     <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
       <p className="text-xs font-medium uppercase tracking-wide text-brand">About SERBISYOLINK</p>
       <h1 className="mt-2 font-display text-3xl font-bold text-navy-800 sm:text-4xl">
-        A booking platform built for Tanza, Cavite
+        A booking platform built for Cavite, Philippines
       </h1>
       <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink-muted sm:text-base">
         SERBISYOLINK connects clients with independent service providers - plumbers, electricians, house

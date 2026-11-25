@@ -117,7 +117,7 @@ export function PublicLayout() {
             <Link to="/privacy" className="hover:text-navy-700">
               Privacy Policy
             </Link>
-            <p>Tanza, Cavite</p>
+            <p>Cavite, Philippines</p>
           </div>
         </div>
       </footer>

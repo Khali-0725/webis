@@ -56,7 +56,7 @@ export default function PrivacyPolicyPage() {
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-ink-muted sm:text-base">
         SERBISYOLINK is a student capstone project connecting clients with independent service providers in
-        Tanza, Cavite. This page explains, in plain language, what information we collect and how we
+        Cavite, Philippines. This page explains, in plain language, what information we collect and how we
         use it.
       </p>
 

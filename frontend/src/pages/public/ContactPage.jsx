@@ -16,7 +16,7 @@ const CHANNELS = [
   {
     icon: 'pin',
     label: 'Location',
-    value: 'Tanza, Cavite, Philippines',
+    value: 'Cavite, Philippines',
     href: null,
   },
 ];
