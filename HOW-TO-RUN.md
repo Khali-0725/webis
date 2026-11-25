@@ -1,134 +1,119 @@
-# WEBIS — how to start the system
+# SERBISYOLINK — How to Run
 
-Everything runs from the **Laragon Terminal**. You do not need PowerShell or CMD.
+## 1. Requirements
 
----
+- Windows with Laragon, or equivalent PHP/MySQL setup
+- PHP 8.3 or newer
+- Composer 2
+- Node.js 20 or newer and npm
+- MySQL 8-compatible server
+- Git
 
-## 1. Start Laragon
+Laravel 13 requires PHP 8.3+. Apache is not required for local development because Laravel and Vite provide development servers.
 
-Open Laragon, press **Start All**.
-Wait until **MySQL 8.4.3** turns green. (Apache is not needed.)
+## 2. Start the database
 
-## 2. Open the Laragon Terminal
+Start MySQL from Laragon. Create a database named `webis` if it does not already exist.
 
-Press the **Terminal** button in the Laragon window.
+## 3. Configure and start the backend
 
-## 3. Tab 1 — backend
-
+```bash
+cd backend
+composer install
+copy .env.example .env
+php artisan key:generate
 ```
-cd "C:\Users\Josh\Desktop\WEBIS SYSTEM\backend"
+
+Edit `backend/.env`:
+
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=webis
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Run migrations and local seed data:
+
+```bash
+php artisan migrate --seed
 php artisan serve
 ```
 
-Wait for:
+Backend URL: `http://localhost:8000`.
 
-```
-INFO  Server running on [http://127.0.0.1:8000].
-```
+Health check: `http://localhost:8000/api/health`.
 
-Leave this tab alone.
+## 4. Configure and start the frontend
 
-## 4. Tab 2 — frontend
+Open a second terminal:
 
-Press **Ctrl + T**, then **Enter**. That opens a second tab in the same window.
-
-```
-cd "C:\Users\Josh\Desktop\WEBIS SYSTEM\frontend"
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-Wait for:
+Open the URL shown by Vite, normally `http://localhost:5173`.
 
-```
-VITE v8.2.2  ready in ___ ms
-➜  Local:   http://localhost:5173/
-```
+The local Vite proxy forwards `/api` and `/sanctum` to `http://localhost:8000`. Keep the backend running.
 
-Switch between tabs with **Ctrl + Tab**.
-
-## 5. Open the app
-
-<http://localhost:5173>
+## 5. Demo accounts
 
 | Role | Email | Password |
 |---|---|---|
-| Administrator | admin@webis.test | password123 |
-| Client | client@webis.test | password123 |
-| Service Provider | provider@webis.test | password123 |
+| Super administrator | `admin@webis.test` | `password123` |
+| Client | `client@webis.test` | `password123` |
+| Service provider | `provider@webis.test` | `password123` |
 
-## 6. Stopping
+Use a separate browser profile when testing different roles at the same time.
 
-`Ctrl + C` in each tab, then **Stop All** in Laragon.
+## 6. Test and production builds
 
----
+Frontend:
 
-## Which command goes in which folder
-
-| Folder | Command |
-|---|---|
-| `backend` | `php artisan serve` |
-| `frontend` | `npm run dev` |
-
-Both must be running at the same time. The frontend alone shows the pages but
-cannot sign in; the backend alone has no user interface.
-
-Wrong-folder errors:
-
-- `npm error ENOENT ... backend\package.json` — a frontend command in the
-  backend folder. The backend has no `package.json`, and that is correct.
-- `Could not open input file: artisan` — a backend command in the frontend
-  folder.
-
----
-
-## Other commands
-
-Backend (in `backend`):
-
-```
-php artisan test                    run the backend test suite (325 passed on 2026-10-09)
-php artisan migrate                apply additive migrations to an existing database
+```bash
+npm run lint
+npm run test
+npm run build
 ```
 
-Frontend (in `frontend`):
+Backend:
 
-```
-npm run test     run the frontend tests (33 passed on 2026-10-09)
-npm run lint     check code style
-npm run build    production build
+```bash
+php artisan test
 ```
 
----
+Never run `migrate:fresh --seed` against production. It deletes all application data.
 
-## If something is wrong
+## 7. Common problems
 
-**"Cannot reach the WEBIS server" on the dashboard**
-`php artisan serve` is not running, or it is on a different port than
-`VITE_API_URL` in `frontend/.env`.
+### Database connection error
 
-**`database: down`, or `SQLSTATE ... Connection refused`**
-MySQL is not green in Laragon. Press Start All.
+Confirm MySQL is running and `DB_*` values match the local database. Then run `php artisan config:clear`.
 
-**419 / CSRF error when signing in**
-`SANCTUM_STATEFUL_DOMAINS` in `backend/.env` must contain the exact origin the
-SPA runs on, including the port. Use `localhost` in the browser, not
-`127.0.0.1` — the browser treats them as different sites.
+### Frontend cannot reach API
 
-**Avatars, QR codes, or payment-proof images don't load, but everything
-else works**
-The backend (Tab 1) was not running yet when the frontend (Tab 2) started,
-or was restarted after. Restart `npm run dev` in Tab 2 with the backend
-already up in Tab 1 first.
+Confirm Laravel is running on port 8000. Restart Vite after changing environment or proxy settings.
 
-**Port 8000 already in use**
-An older `php artisan serve` is still running. Close that tab, or run
-`php artisan serve --port=8001` and change `VITE_API_URL` in `frontend/.env`
-to match.
+### Authentication loops or 419 errors
 
-**`php` is not recognized**
-You are in PowerShell or CMD, not the Laragon Terminal. PHP lives inside
-`C:\laragon\bin\php` and is not on the system PATH. Use the Laragon Terminal.
+Use the same browser origin, clear stale cookies, and confirm `/sanctum/csrf-cookie` responds before login.
 
-**`npm.ps1 cannot be loaded because running scripts is disabled`**
-Same cause: that is PowerShell, not the Laragon Terminal. Use the Laragon
-Terminal and the error does not occur.
+### GPS button does not work
+
+Allow browser location permission. Browser geolocation requires HTTPS in production; `localhost` is allowed during local development.
+
+### Upload fails
+
+Check `storage` permissions and filesystem variables. Production uses Backblaze B2; local development can use the local disk.
+
+### Seed conflict
+
+Run migrations once, then use `php artisan db:seed` for normal local reseeding. Do not edit production data manually to fix a seed failure.
+
+## 8. Stop services
+
+Press `Ctrl+C` in each terminal. Stop MySQL from Laragon when finished.

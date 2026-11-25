@@ -1,207 +1,121 @@
-# WEBIS — Web-Based Platform for Independent Service Providers
+# SERBISYOLINK
 
-Capstone system for the study *Design and Development of a Web-Based Platform for Independent Service Provider* (Bartolome, Cacha, Carienena — Cavite State University–CCAT Campus, Rosario, Cavite).
+Web-based service marketplace for clients and independent service providers in Cavite, Philippines.
 
-WEBIS connects clients in Tanza, Cavite with verified independent service providers: service listings with barangay-based discovery, time-slot booking with an exact service-location pin, in-platform messaging with off-platform-contact filtering, QR-based payment recording, ratings, and an administrator console.
-
-> **Local revision status (2026-10-09):** Backend 325 tests and frontend 33 tests pass; frontend lint and build pass. The original 12-phase build is complete, while the professor revision checklist still has open manual and scope items. See `docs/PROFESSOR-REVISION-TRACKER.md` and `docs/PROFESSOR-REVISION-TESTING.md` for verified results and limitations.
-
-**Live deployment** (free tier, testing phase — see `docs/deployment/DEPLOYMENT.md` for the full setup): React frontend on Vercel, Laravel API on Render (Singapore), MySQL-compatible TiDB Cloud Starter (AWS Singapore, same region as the API), uploaded files on Backblaze B2 (S3-compatible). An UptimeRobot monitor on the backend's `/api/health` every 5 minutes keeps Render's free tier from spinning down between visits (a GitHub Actions cron does the same as a best-effort backup).
-
----
-
-## Architecture
-
-```
-React 18 + Vite  ──HTTP/JSON──▶  Laravel 13 API  ──▶  MySQL 8
-   (frontend/)      cookies         (backend/)
-```
-
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, Vite 8, Tailwind CSS 3, React Router 7, TanStack Query 5, React Hook Form + Zod, Zustand, Axios |
-| Backend | Laravel 13 (PHP 8.3+), Sanctum 4 (stateful cookie auth), Form Requests, Policies, API Resources, service classes |
-| Database | MySQL 8 (InnoDB, utf8mb4) |
-| Maps (Phase 5) | Leaflet + OpenStreetMap tiles |
-| Charts (Phase 9) | Recharts |
-| Tests | PHPUnit (backend), Vitest + Testing Library (frontend) |
-
-Authentication uses Sanctum's **stateful cookie** mode, not bearer tokens in `localStorage`. The session cookie is `HttpOnly`, so it cannot be read by injected JavaScript — a deliberate choice that supports the *Confidentiality* and *Resistance* sub-criteria of the ISO/IEC 25010 evaluation.
-
----
-
-## Repository layout
-
-```
-WEBIS/
-├── backend/          Laravel 13 API
-│   ├── app/
-│   │   ├── Enums/            UserRole, UserStatus
-│   │   ├── Exceptions/       DomainException (business-rule failures)
-│   │   ├── Http/
-│   │   │   ├── Controllers/Api/   grouped by audience
-│   │   │   ├── Middleware/        EnsureUserRole, ForceJsonResponse
-│   │   │   ├── Requests/          one Form Request per write endpoint
-│   │   │   └── Resources/         API Resources (field allowlists)
-│   │   ├── Models/
-│   │   ├── Services/         business logic (AuthService, …)
-│   │   └── Support/Api/      ApiResponse envelope, ExceptionRenderer
-│   ├── config/webis.php      app-specific settings
-│   ├── database/{migrations,factories,seeders}/
-│   ├── routes/api.php
-│   └── tests/{Feature,Unit}/
-│
-├── frontend/         React SPA
-│   └── src/
-│       ├── components/{ui,layout}/   design-system primitives
-│       ├── constants/                enums mirrored from the backend
-│       ├── hooks/                    useAuth and friends
-│       ├── layouts/                  Public / Auth / Dashboard shells
-│       ├── pages/{public,auth,client,provider,admin}/
-│       ├── routes/                   router + route guards
-│       ├── services/{api,auth}/      Axios instance, query client
-│       └── store/                    Zustand session store
-│
-└── docs/             audit, architecture, database, API, deployment, testing
-```
-
----
-
-## Requirements
-
-| Tool | Version |
-|---|---|
-| PHP | **8.3 – 8.5** (Laravel 13 will not run on 8.2) |
-| Composer | 2.x |
-| Node.js | 20 LTS or newer |
-| MySQL | 8.0+ (Laragon ships 8.4) |
-
----
-
-## Setup
-
-### 1. Database
-
-Create an empty database. In Laragon: **Menu → MySQL → phpMyAdmin**, or from the terminal:
-
-```sql
-CREATE DATABASE webis CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-### 2. Backend
-
-```bash
-cd backend
-
-composer install
-cp .env.example .env          # Windows: copy .env.example .env
-php artisan key:generate
-
-# Edit .env if your MySQL credentials differ from root / (blank password)
-
-php artisan migrate --seed
-php artisan serve             # http://localhost:8000
-```
-
-Verify: open <http://localhost:8000/api/health> — you should see
-`{"success":true,"data":{"status":"ok","database":"up",...}}`.
-
-### 3. Frontend
-
-In a second terminal:
-
-```bash
-cd frontend
-
-npm install
-cp .env.example .env          # Windows: copy .env.example .env
-npm run dev                   # http://localhost:5173
-```
-
-The backend must be running on `http://localhost:8000` (the default) before
-starting the frontend, even though most API calls use the absolute
-`VITE_API_URL` from `.env` and don't need this: a handful of responses
-(avatar, QR code, payment-proof images) embed a *relative* `/api/files/...`
-URL on purpose, so the same code works unchanged in production behind
-Vercel's rewrite proxy. Locally, `vite.config.js`'s dev-server `proxy`
-forwards those to `localhost:8000` — if the backend isn't up yet, those
-images (not the rest of the app) will 404 until you restart `npm run dev`
-with the backend already running.
-
-### 4. Sign in
-
-Seeded demo accounts — **password for all: `password123`**
-
-| Role | Email |
-|---|---|
-| Administrator | `admin@webis.test` |
-| Client | `client@webis.test` |
-| Service Provider | `provider@webis.test` |
-| Suspended (for testing) | `suspended@webis.test` |
-
-> These are development accounts only. The deployment guide requires changing or removing them before any real deployment.
-
----
-
-## Commands
-
-**Backend**
-
-```bash
-php artisan test                    # full test suite
-php artisan test --filter=Login     # one test class
-php artisan migrate                # apply additive migrations; back up data first
-vendor/bin/pint                     # format PHP to Laravel's style
-```
-
-**Frontend**
-
-```bash
-npm run dev        # dev server with HMR
-npm run test       # Vitest suite
-npm run lint       # ESLint
-npm run build      # production build into dist/
-npm run preview    # serve the production build locally
-```
-
----
-
-## Troubleshooting
-
-**`CSRF token mismatch` / 419 on login**
-`SANCTUM_STATEFUL_DOMAINS` and `CORS_ALLOWED_ORIGINS` in `backend/.env` must both include the exact origin the SPA is served from, including the port. `VITE_API_URL` in `frontend/.env` must point at the backend with no trailing slash.
-
-**Login succeeds but `/api/auth/me` returns 401**
-The session cookie is not being stored. Both apps must be on `localhost` (not one on `localhost` and the other on `127.0.0.1`) — the browser treats those as different sites.
-
-**`SQLSTATE[HY000] [1049] Unknown database 'webis'`**
-The database has not been created yet. See step 1.
-
-**`Class "PDO" not found` or a missing extension**
-Enable `pdo_mysql` and `fileinfo` in Laragon's `php.ini`, then restart Laragon.
-
-**`Your requirements could not be resolved` mentioning security advisories**
-The framework version being requested is past end of security support. Do **not**
-bypass the check with `policy.advisories.block=false` — upgrade instead. This is
-why WEBIS targets Laravel 13 rather than 11 (see `backend/README.md`).
-
-**`laravel/framework ... requires php ^8.3`**
-Laragon is running PHP 8.2. Right-click the Laragon tray icon → **PHP → Version**
-and pick 8.3 or 8.4, then restart Laragon.
-
----
+SERBISYOLINK lets clients discover services, choose a service location, book an available schedule, message providers, submit payment proof, and leave reviews. Providers manage their profile, services, availability, bookings, messages, payments, and verification documents. Super administrators manage users, providers, services, categories, barangays, reports, FAQs, announcements, backups, and platform settings.
 
 ## Documentation
 
-| File | Contents |
+- [How to run locally](HOW-TO-RUN.md)
+- [Reviewer and defense guide](REVIEWER.md)
+- [Complete thesis documentation](docs/THESIS-DOCUMENTATION.md)
+- [Deployment guide](docs/deployment/DEPLOYMENT.md)
+- [Database ERD](docs/database/ERD.md)
+- [Professor revision tracker](docs/PROFESSOR-REVISION-TRACKER.md)
+
+## Architecture
+
+```text
+React SPA (Vercel)
+        │ HTTP/JSON, Sanctum session cookie
+        ▼
+Laravel API (Render)
+        │ Eloquent ORM
+        ▼
+MySQL-compatible database (TiDB Cloud)
+        │
+        └── S3-compatible file storage (Backblaze B2)
+```
+
+Vercel rewrites `/api/*` and `/sanctum/*` to the Laravel API. This keeps authentication cookies first-party from the browser.
+
+## Technology stack
+
+| Layer | Technology |
 |---|---|
-| `docs/PHASE-0-REQUIREMENTS-AUDIT.md` | Requirements matrix, thesis contradictions, ERD proposal, API inventory, roadmap |
-| `docs/database/ERD.md` | Entity-relationship diagram |
-| `docs/deployment/DEPLOYMENT.md` | Deploying to Render + Vercel + TiDB Cloud + Backblaze B2 for free |
-| `backend/BUILD-LOG.md` | **The authoritative build log** — per-phase decisions, bugs found and fixed, and every change made after the 12-phase plan closed. Architecture conventions, endpoint/request/response shape, and the test plan all live here rather than in separate `docs/` files, which were superseded by this log during the build. |
+| Client | React 18, Vite 8, React Router 7 |
+| UI | Tailwind CSS 3, accessible reusable components |
+| Client data | TanStack Query 5, Axios |
+| Maps | Leaflet 1.9, OpenStreetMap tiles, browser Geolocation API |
+| API | Laravel 13, PHP 8.3+, Laravel Sanctum 4 |
+| Database | MySQL 8-compatible database, InnoDB, `utf8mb4` |
+| Storage | Backblaze B2 through Laravel filesystem/S3 adapter |
+| Tests | PHPUnit 12, Vitest 5, Testing Library |
+| Hosting | Vercel frontend, Render backend, TiDB Cloud database |
 
----
+## Repository layout
 
-## Licence
+```text
+backend/                 Laravel API, migrations, seeders, tests
+frontend/                React SPA, components, pages, API clients, tests
+docs/                    Thesis, architecture, database, deployment, testing
+README.md                Project overview
+REVIEWER.md              Oral defense and demonstration guide
+HOW-TO-RUN.md            Local setup and troubleshooting
+```
 
-Academic capstone project. Not licensed for redistribution.
+## Local quick start
+
+Requirements: PHP 8.3+, Composer, Node.js 20+, npm, MySQL 8-compatible database.
+
+```bash
+cd backend
+composer install
+copy .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
+
+In another terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. Full instructions are in [HOW-TO-RUN.md](HOW-TO-RUN.md).
+
+## Useful commands
+
+```bash
+# frontend
+npm run dev
+npm run lint
+npm run test
+npm run build
+
+# backend
+php artisan serve
+php artisan test
+php artisan migrate
+php artisan migrate:fresh --seed   # local development only
+```
+
+## Demo accounts
+
+Seeded local accounts use password `password123`:
+
+| Role | Email |
+|---|---|
+| Super administrator | `admin@webis.test` |
+| Client | `client@webis.test` |
+| Service provider | `provider@webis.test` |
+
+Do not use seeded credentials in production.
+
+## Important behavior
+
+- Provider verification requires the required documents and administrator approval.
+- Client booking requires a selected barangay, address, payment method, and successful **Use my location** GPS confirmation.
+- Booking GPS pins are restricted to the configured 3 km barangay radius.
+- Exact booking location is hidden until the provider accepts the booking.
+- Providers can open accepted-job coordinates in Google Maps.
+- Booking lists sort newest request first using `created_at`.
+- Google sign-up users must create a local password before using password login.
+- Reports, provider violations, performance deductions, chat moderation, and audit logs are administrator-controlled.
+
+## License and academic use
+
+SERBISYOLINK is a student thesis/capstone system. Review `docs/THESIS-DOCUMENTATION.md` for scope, limitations, security controls, test strategy, and deployment notes.
